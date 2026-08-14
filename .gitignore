@@ -66,3 +66,9 @@ build-output.txt
 *.tmp
 *.bak
 *.orig
+
+
+# ===== Ignored files =====
+cookies.txt
+gradle-8.9-bin.zip
+log.log.txt
