@@ -1,6 +1,16 @@
 plugins {
     id 'org.springframework.boot' version '3.3.2' apply false
     id 'io.spring.dependency-management' version '1.1.6' apply false
+    id 'org.sonarqube' version '5.1.0.4882'
+}
+
+sonar {
+    properties {
+        property "sonar.projectKey", "saga-microservices"
+        property "sonar.projectName", "Saga Microservices"
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.java.coveragePlugin", "jacoco"
+    }
 }
 
 ext {

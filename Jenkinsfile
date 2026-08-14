@@ -81,9 +81,6 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            when {
-                expression { return false } // Enable when SonarQube is configured
-            }
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh './gradlew sonarqube'
