@@ -6,6 +6,7 @@ plugins {
 
 sonar {
     properties {
+        property "sonar.host.url", "http://sonarqube:9000"
         property "sonar.projectKey", "saga-microservices"
         property "sonar.projectName", "Saga Microservices"
         property "sonar.sourceEncoding", "UTF-8"

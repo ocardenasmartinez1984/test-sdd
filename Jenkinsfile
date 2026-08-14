@@ -75,20 +75,21 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            when {
-                expression { return false }
+            environment {
+                SONAR_HOST_URL = 'http://sonarqube:9000'
             }
             steps {
-                echo 'SonarQube analysis skipped - plugin not configured'
+                withSonarQubeEnv('sonar') {
+                    sh './gradlew sonar --info'
+                }
             }
         }
 
         stage('Quality Gate') {
-            when {
-                expression { return false }
-            }
             steps {
-                echo 'Quality Gate skipped - plugin not configured'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
