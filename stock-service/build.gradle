@@ -1,0 +1,6 @@
+// Stock Service - Microservicio de gestión de inventario
+// Participa en el patrón SAGA como participante
+
+dependencies {
+    // Dependencias adicionales específicas del servicio
+}

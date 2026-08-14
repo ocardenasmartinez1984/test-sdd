@@ -1,0 +1,7 @@
+{
+  "name": "POS - Punto de Venta",
+  "short_name": "POS",
+  "theme_color": "#10b981",
+  "background_color": "#f8fafc",
+  "display": "standalone"
+}

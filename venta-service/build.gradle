@@ -1,0 +1,6 @@
+// Venta Service - Microservicio orquestador de la SAGA
+// Coordina el flujo de venta entre Stock y Despacho
+
+dependencies {
+    // Dependencias adicionales específicas del servicio
+}

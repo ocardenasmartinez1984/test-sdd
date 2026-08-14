@@ -1,0 +1,6 @@
+// Despacho Service - Microservicio de gestión de despachos/envíos
+// Participa en el patrón SAGA como participante
+
+dependencies {
+    // Dependencias adicionales específicas del servicio
+}

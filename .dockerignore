@@ -1,0 +1,7 @@
+.git
+.gitignore
+*.md
+**/build/
+**/out/
+**/.gradle/
+**/node_modules/
