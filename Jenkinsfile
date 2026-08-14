@@ -76,26 +76,19 @@ pipeline {
 
         stage('SonarQube Analysis') {
             when {
-                expression { return false } // Enable after configuring SonarQube plugin in Jenkins
+                expression { return false }
             }
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''./gradlew sonarqube \
-                        -Dsonar.host.url=http://sonarqube:9000 \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=**/build/reports/jacoco/test/jacocoTestReport.xml
-                    '''
-                }
+                echo 'SonarQube analysis skipped - plugin not configured'
             }
         }
 
         stage('Quality Gate') {
             when {
-                expression { return false } // Enable after configuring SonarQube plugin in Jenkins
+                expression { return false }
             }
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+                echo 'Quality Gate skipped - plugin not configured'
             }
         }
 
