@@ -6,7 +6,6 @@ pipeline {
         DOCKER_REPO = 'ocard/saga-microservices'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         GRADLE_OPTS = '-Dorg.gradle.daemon=false'
-        IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT?.take(7) ?: 'latest'}"
     }
 
     tools {
@@ -27,8 +26,12 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                script {
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                }
                 echo "Branch: ${env.BRANCH_NAME}"
                 echo "Commit: ${env.GIT_COMMIT}"
+                echo "Image Tag: ${env.IMAGE_TAG}"
             }
         }
 
@@ -255,7 +258,9 @@ pipeline {
             //      body: "Check: ${env.BUILD_URL}"
         }
         cleanup {
-            cleanWs()
+            node('') {
+                cleanWs()
+            }
         }
     }
 }
