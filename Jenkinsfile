@@ -8,12 +8,6 @@ pipeline {
         GRADLE_OPTS = '-Dorg.gradle.daemon=false'
     }
 
-    tools {
-        jdk 'jdk-17'
-        gradle 'gradle-8.9'
-        nodejs 'node-20'
-    }
-
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
@@ -56,6 +50,19 @@ pipeline {
                 always {
                     junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
                 }
+            }
+        }
+
+        stage('Install Node.js') {
+            steps {
+                sh '''
+                    if ! command -v node &> /dev/null; then
+                        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                        apt-get install -y nodejs
+                    fi
+                    node --version
+                    npm --version
+                '''
             }
         }
 
