@@ -53,15 +53,6 @@ pipeline {
             }
         }
 
-        stage('Install Node.js') {
-            steps {
-                sh '''
-                    node --version
-                    npm --version
-                '''
-            }
-        }
-
         stage('Build Frontends') {
             parallel {
                 stage('Frontend Admin') {
