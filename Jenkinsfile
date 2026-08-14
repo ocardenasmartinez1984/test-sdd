@@ -108,7 +108,7 @@ pipeline {
 
         stage('Stress Tests') {
             when {
-                expression { return false } // Enable when services are running in the pipeline environment
+                expression { return true }
             }
             steps {
                 sh '''./gradlew :stress-test:gatlingRun-simulations.AuthServiceSimulation \
