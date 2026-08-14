@@ -26,13 +26,13 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    checkout scm
+                    git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
                     def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     env.IMAGE_TAG = "${env.BUILD_NUMBER}-${gitCommit}"
                     env.GIT_COMMIT_SHORT = gitCommit
+                    echo "Commit: ${gitCommit}"
+                    echo "Image Tag: ${env.IMAGE_TAG}"
                 }
-                echo "Commit: ${env.GIT_COMMIT_SHORT}"
-                echo "Image Tag: ${env.IMAGE_TAG}"
             }
         }
 
