@@ -25,12 +25,13 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
                 script {
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                    checkout scm
+                    def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${gitCommit}"
+                    env.GIT_COMMIT_SHORT = gitCommit
                 }
-                echo "Branch: ${env.BRANCH_NAME}"
-                echo "Commit: ${env.GIT_COMMIT}"
+                echo "Commit: ${env.GIT_COMMIT_SHORT}"
                 echo "Image Tag: ${env.IMAGE_TAG}"
             }
         }
@@ -61,11 +62,6 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
-                    jacoco(
-                        execPattern: '**/build/jacoco/test.exec',
-                        classPattern: '**/build/classes/java/main',
-                        sourcePattern: '**/src/main/java'
-                    )
                 }
             }
         }
@@ -107,10 +103,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'develop'
-                }
+                expression { return false } // Enable when SonarQube is configured
             }
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -127,10 +120,7 @@ pipeline {
 
         stage('Docker Build') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'develop'
-                }
+                expression { return false } // Enable when Docker is available on Jenkins agent
             }
             steps {
                 script {
@@ -161,7 +151,7 @@ pipeline {
 
         stage('Docker Push') {
             when {
-                branch 'main'
+                expression { return false } // Enable when Docker registry credentials are configured
             }
             steps {
                 withCredentials([usernamePassword(
@@ -203,7 +193,7 @@ pipeline {
 
         stage('Deploy to Dev') {
             when {
-                branch 'develop'
+                expression { return false } // Enable for dev deployments
             }
             steps {
                 script {
@@ -221,7 +211,7 @@ pipeline {
 
         stage('Deploy to Production (K8s)') {
             when {
-                branch 'main'
+                expression { return false } // Enable when K8s cluster is configured
             }
             steps {
                 script {
