@@ -83,7 +83,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh './gradlew sonarqube'
+                    sh './gradlew sonarqube -Dsonar.host.url=http://sonarqube:9000'
                 }
             }
         }
