@@ -75,6 +75,9 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
+            when {
+                expression { return false } // Enable after configuring SonarQube plugin in Jenkins
+            }
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''./gradlew sonarqube \
@@ -86,6 +89,9 @@ pipeline {
         }
 
         stage('Quality Gate') {
+            when {
+                expression { return false } // Enable after configuring SonarQube plugin in Jenkins
+            }
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
