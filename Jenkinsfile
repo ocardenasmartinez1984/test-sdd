@@ -106,6 +106,26 @@ pipeline {
             }
         }
 
+        stage('Stress Tests') {
+            when {
+                expression { return false } // Enable when services are running in the pipeline environment
+            }
+            steps {
+                sh '''./gradlew :stress-test:gatlingRun-simulations.AuthServiceSimulation \
+                    -DbaseUrl=http://auth-service:8084'''
+                sh '''./gradlew :stress-test:gatlingRun-simulations.StockServiceSimulation \
+                    -DbaseUrl=http://stock-service:8081'''
+                sh '''./gradlew :stress-test:gatlingRun-simulations.VentaServiceSimulation \
+                    -DventaUrl=http://venta-service:8082 \
+                    -DstockUrl=http://stock-service:8081'''
+            }
+            post {
+                always {
+                    gatlingArchive()
+                }
+            }
+        }
+
         stage('Docker Build') {
             when {
                 expression { return false } // Enable when Docker is available on Jenkins agent

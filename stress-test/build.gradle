@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+    id 'io.gatling.gradle' version '3.11.5.2'
+}
+
+// Exclude from Spring Boot plugin applied in root
+tasks.findByName('bootJar')?.enabled = false
+tasks.findByName('bootRun')?.enabled = false
+
+group = 'com'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    gatling 'io.gatling.highcharts:gatling-charts-highcharts:3.11.5'
+    gatling 'io.gatling:gatling-http-java:3.11.5'
+    gatling 'com.google.code.gson:gson:2.11.0'
+}
+
+gatling {
+    logLevel = 'WARN'
+    logHttp = 'NONE'
+}
