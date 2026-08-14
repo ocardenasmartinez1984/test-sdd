@@ -25,39 +25,32 @@ pipeline {
 
         stage('Checkout') {
             steps {
+                git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
+            }
+        }
+
+        stage('Prepare') {
+            steps {
+                sh 'git rev-parse --short HEAD > commit.txt'
                 script {
-                    git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
-                    def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${gitCommit}"
-                    env.GIT_COMMIT_SHORT = gitCommit
-                    echo "Commit: ${gitCommit}"
-                    echo "Image Tag: ${env.IMAGE_TAG}"
+                    env.GIT_COMMIT_SHORT = readFile('commit.txt').trim()
+                    env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_COMMIT_SHORT}"
                 }
+                echo "Commit: ${env.GIT_COMMIT_SHORT}"
+                echo "Image Tag: ${env.IMAGE_TAG}"
             }
         }
 
         stage('Build Backend') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'chmod +x gradlew'
-                        sh './gradlew clean build -x test'
-                    } else {
-                        bat 'gradlew.bat clean build -x test'
-                    }
-                }
+                sh 'chmod +x gradlew'
+                sh './gradlew clean build -x test'
             }
         }
 
         stage('Unit Tests') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh './gradlew test'
-                    } else {
-                        bat 'gradlew.bat test'
-                    }
-                }
+                sh './gradlew test'
             }
             post {
                 always {
@@ -71,30 +64,16 @@ pipeline {
                 stage('Frontend Admin') {
                     steps {
                         dir('frontend') {
-                            script {
-                                if (isUnix()) {
-                                    sh 'npm install'
-                                    sh 'npm run build -- --configuration=production'
-                                } else {
-                                    bat 'npm install'
-                                    bat 'npm run build -- --configuration=production'
-                                }
-                            }
+                            sh 'npm install'
+                            sh 'npm run build -- --configuration=production'
                         }
                     }
                 }
                 stage('Frontend POS') {
                     steps {
                         dir('pos-frontend') {
-                            script {
-                                if (isUnix()) {
-                                    sh 'npm install'
-                                    sh 'npm run build -- --configuration=production'
-                                } else {
-                                    bat 'npm install'
-                                    bat 'npm run build -- --configuration=production'
-                                }
-                            }
+                            sh 'npm install'
+                            sh 'npm run build -- --configuration=production'
                         }
                     }
                 }
@@ -107,13 +86,7 @@ pipeline {
             }
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    script {
-                        if (isUnix()) {
-                            sh './gradlew sonarqube'
-                        } else {
-                            bat 'gradlew.bat sonarqube'
-                        }
-                    }
+                    sh './gradlew sonarqube'
                 }
             }
         }
@@ -137,13 +110,8 @@ pipeline {
 
                     services.each { service ->
                         echo "Building Docker image for ${service}..."
-                        if (isUnix()) {
-                            sh "docker build -t ${DOCKER_REPO}/${service}:${IMAGE_TAG} -f ${service}/Dockerfile ."
-                            sh "docker tag ${DOCKER_REPO}/${service}:${IMAGE_TAG} ${DOCKER_REPO}/${service}:latest"
-                        } else {
-                            bat "docker build -t ${DOCKER_REPO}/${service}:${IMAGE_TAG} -f ${service}/Dockerfile ."
-                            bat "docker tag ${DOCKER_REPO}/${service}:${IMAGE_TAG} ${DOCKER_REPO}/${service}:latest"
-                        }
+                        sh "docker build -t ${DOCKER_REPO}/${service}:${IMAGE_TAG} -f ${service}/Dockerfile ."
+                        sh "docker tag ${DOCKER_REPO}/${service}:${IMAGE_TAG} ${DOCKER_REPO}/${service}:latest"
                     }
                 }
             }
@@ -160,11 +128,7 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     script {
-                        if (isUnix()) {
-                            sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        } else {
-                            bat "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                        }
+                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
 
                         def services = [
                             'eureka-server',
@@ -178,13 +142,8 @@ pipeline {
                         ]
 
                         services.each { service ->
-                            if (isUnix()) {
-                                sh "docker push ${DOCKER_REPO}/${service}:${IMAGE_TAG}"
-                                sh "docker push ${DOCKER_REPO}/${service}:latest"
-                            } else {
-                                bat "docker push ${DOCKER_REPO}/${service}:${IMAGE_TAG}"
-                                bat "docker push ${DOCKER_REPO}/${service}:latest"
-                            }
+                            sh "docker push ${DOCKER_REPO}/${service}:${IMAGE_TAG}"
+                            sh "docker push ${DOCKER_REPO}/${service}:latest"
                         }
                     }
                 }
@@ -196,16 +155,8 @@ pipeline {
                 expression { return false } // Enable for dev deployments
             }
             steps {
-                script {
-                    echo 'Deploying to Development environment...'
-                    if (isUnix()) {
-                        sh 'docker-compose down || true'
-                        sh 'docker-compose up -d --build'
-                    } else {
-                        bat 'docker-compose down || exit 0'
-                        bat 'docker-compose up -d --build'
-                    }
-                }
+                sh 'docker-compose down || true'
+                sh 'docker-compose up -d --build'
             }
         }
 
@@ -214,24 +165,12 @@ pipeline {
                 expression { return false } // Enable when K8s cluster is configured
             }
             steps {
-                script {
-                    echo 'Deploying to Kubernetes...'
-                    if (isUnix()) {
-                        sh "kubectl apply -f k8s/00-namespace.yaml"
-                        sh "kubectl apply -f k8s/01-mongodb.yaml"
-                        sh "kubectl apply -f k8s/02-postgres.yaml"
-                        sh "kubectl apply -f k8s/03-kafka.yaml"
-                        sh "kubectl apply -f k8s/04-microservices.yaml"
-                        sh "kubectl apply -f k8s/05-frontend.yaml"
-                    } else {
-                        bat "kubectl apply -f k8s/00-namespace.yaml"
-                        bat "kubectl apply -f k8s/01-mongodb.yaml"
-                        bat "kubectl apply -f k8s/02-postgres.yaml"
-                        bat "kubectl apply -f k8s/03-kafka.yaml"
-                        bat "kubectl apply -f k8s/04-microservices.yaml"
-                        bat "kubectl apply -f k8s/05-frontend.yaml"
-                    }
-                }
+                sh 'kubectl apply -f k8s/00-namespace.yaml'
+                sh 'kubectl apply -f k8s/01-mongodb.yaml'
+                sh 'kubectl apply -f k8s/02-postgres.yaml'
+                sh 'kubectl apply -f k8s/03-kafka.yaml'
+                sh 'kubectl apply -f k8s/04-microservices.yaml'
+                sh 'kubectl apply -f k8s/05-frontend.yaml'
             }
         }
     }
@@ -242,15 +181,9 @@ pipeline {
         }
         failure {
             echo '❌ Pipeline failed!'
-            // Uncomment to enable email notifications:
-            // mail to: 'team@example.com',
-            //      subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-            //      body: "Check: ${env.BUILD_URL}"
         }
-        cleanup {
-            node('') {
-                cleanWs()
-            }
+        always {
+            cleanWs()
         }
     }
 }
