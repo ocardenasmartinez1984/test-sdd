@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         GRADLE_OPTS = '-Dorg.gradle.daemon=false'
+        JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
+        PATH = "${JAVA_HOME}/bin:${PATH}"
     }
 
     stages {
