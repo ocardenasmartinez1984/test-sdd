@@ -16,14 +16,23 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'chmod +x gradlew'
-                sh './gradlew clean build -x test'
+                sh '''
+                    export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    java -version
+                    chmod +x gradlew
+                    ./gradlew clean build -x test
+                '''
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh './gradlew sonar --info'
+                sh '''
+                    export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    ./gradlew sonar --info
+                '''
             }
         }
     }
