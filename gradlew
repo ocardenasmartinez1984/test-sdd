@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Use Java 21 by default if available
+if [ -z "$JAVA_HOME" ] && [ -d "/usr/lib/jvm/temurin-21-jdk" ]; then
+    JAVA_HOME="/usr/lib/jvm/temurin-21-jdk"
+    export JAVA_HOME
+fi
+
 #
 # Copyright © 2015-2021 the original authors.
 #
