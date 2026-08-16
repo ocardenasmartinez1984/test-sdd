@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        GRADLE_OPTS = '-Dorg.gradle.daemon=false'
         JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
         PATH = "${JAVA_HOME}/bin:${PATH}"
+        GRADLE_OPTS = '-Dorg.gradle.daemon=false'
     }
 
     stages {
@@ -14,24 +14,13 @@ pipeline {
             }
         }
 
-        stage('Build') {
-            steps {
-                sh '''
-                    export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
-                    export PATH=$JAVA_HOME/bin:$PATH
-                    java -version
-                    chmod +x gradlew
-                    ./gradlew clean build -x test
-                '''
-            }
-        }
-
         stage('SonarQube Analysis') {
             steps {
                 sh '''
                     export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
                     export PATH=$JAVA_HOME/bin:$PATH
-                    ./gradlew sonar --info
+                    chmod +x gradlew
+                    ./gradlew sonar -Dsonar.host.url=http://saga-sonarqube:9000 --info
                 '''
             }
         }
@@ -42,7 +31,7 @@ pipeline {
             echo '✅ SonarQube analysis completed!'
         }
         failure {
-            echo '❌ Failed!'
+            echo '❌ SonarQube analysis failed!'
         }
         always {
             cleanWs()
