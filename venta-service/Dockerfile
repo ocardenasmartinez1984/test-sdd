@@ -7,6 +7,7 @@ COPY gradlew.bat .
 COPY build.gradle .
 COPY settings.gradle .
 COPY venta-service/ venta-service/
+RUN mkdir -p eureka-server api-gateway stock-service despacho-service auth-service stress-test
 RUN chmod +x gradlew && ./gradlew :venta-service:bootJar --no-daemon
 
 # Stage 2: Run

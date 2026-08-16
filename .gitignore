@@ -70,5 +70,5 @@ build-output.txt
 
 # ===== Ignored files =====
 cookies.txt
-gradle-8.9-bin.zip
+gradle-*-bin.zip
 log.log.txt

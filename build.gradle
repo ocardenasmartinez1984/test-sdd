@@ -1,13 +1,14 @@
 plugins {
     id 'org.springframework.boot' version '3.3.2' apply false
     id 'io.spring.dependency-management' version '1.1.6' apply false
-    id 'org.sonarqube' version '5.1.0.4882'
+    id 'org.sonarqube' version '7.4.0.8496'
 }
 
 sonar {
     properties {
-        property "sonar.host.url", "http://sonarqube:9000"
+        property "sonar.host.url", "http://localhost:9000"
         property "sonar.token", "sqa_ccc80114c35a7efd550e74bc80115fe93186ae4f"
+        property "sonar.login", "sqa_ccc80114c35a7efd550e74bc80115fe93186ae4f"
         property "sonar.projectKey", "saga-microservices"
         property "sonar.projectName", "Saga Microservices"
         property "sonar.sourceEncoding", "UTF-8"

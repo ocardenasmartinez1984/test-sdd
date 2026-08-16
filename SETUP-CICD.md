@@ -89,8 +89,8 @@ Ir a: **Manage Jenkins → Tools**
 - Instalar automáticamente o apuntar a una instalación existente
 
 #### Gradle
-- Name: `gradle-8.9`
-- Install from Gradle.org: versión `8.9`
+- Name: `gradle-9.6`
+- Install from Gradle.org: versión `9.6`
 
 #### NodeJS
 - Name: `node-20`

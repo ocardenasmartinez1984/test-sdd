@@ -10,30 +10,72 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="login-wrapper">
+      <!-- Animated background orbs -->
+      <div class="login-bg-orb"></div>
+      <div class="login-bg-orb"></div>
+
       <div class="login-box">
-        <h1>🛒 Punto de Venta</h1>
-        <p>Ingresa con tus credenciales para comenzar a vender</p>
+        <div style="text-align:center; margin-bottom: 8px;">
+          <span style="font-size: 48px;">🛒</span>
+        </div>
+        <h1>Punto de Venta</h1>
+        <p>Ingresa con tus credenciales para comenzar</p>
 
         @if (error()) {
-          <div class="error-msg">{{ error() }}</div>
+          <div class="error-msg">⚠️ {{ error() }}</div>
         }
 
         <form (ngSubmit)="onLogin()">
           <div class="form-group">
-            <label>Usuario</label>
-            <input [(ngModel)]="username" name="username" placeholder="Tu usuario" required>
+            <label>👤 Usuario</label>
+            <input
+              [(ngModel)]="username"
+              name="username"
+              placeholder="Ingresa tu usuario"
+              autocomplete="username"
+              required
+              [disabled]="loading()">
           </div>
           <div class="form-group">
-            <label>Contraseña</label>
-            <input type="password" [(ngModel)]="password" name="password" placeholder="Tu contraseña" required>
+            <label>🔒 Contraseña</label>
+            <input
+              type="password"
+              [(ngModel)]="password"
+              name="password"
+              placeholder="Ingresa tu contraseña"
+              autocomplete="current-password"
+              required
+              [disabled]="loading()">
           </div>
-          <button type="submit" class="btn-login" [disabled]="loading()">
-            {{ loading() ? 'Ingresando...' : '🚀 Ingresar al POS' }}
+          <button type="submit" class="btn-login" [disabled]="loading() || !username.trim() || !password.trim()">
+            @if (loading()) {
+              <span class="spinner"></span> Verificando...
+            } @else {
+              🚀 Ingresar al POS
+            }
           </button>
         </form>
+
+        <div style="text-align:center; margin-top: 24px; font-size: 12px; color: var(--text-light);">
+          Sistema de Punto de Venta v2.0
+        </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  `]
 })
 export class LoginComponent {
   username = '';
@@ -44,13 +86,15 @@ export class LoginComponent {
   constructor(private authService: AuthService, private router: Router) {}
 
   onLogin(): void {
+    if (!this.username.trim() || !this.password.trim()) return;
+
     this.loading.set(true);
     this.error.set('');
 
     this.authService.login(this.username, this.password).subscribe({
       next: () => this.router.navigate(['/']),
-      error: () => {
-        this.error.set('Credenciales inválidas');
+      error: (err) => {
+        this.error.set(err.status === 401 ? 'Credenciales inválidas' : 'Error de conexión con el servidor');
         this.loading.set(false);
       }
     });

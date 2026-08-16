@@ -7,6 +7,7 @@ COPY gradlew.bat .
 COPY build.gradle .
 COPY settings.gradle .
 COPY eureka-server/ eureka-server/
+RUN mkdir -p api-gateway stock-service venta-service despacho-service auth-service stress-test
 RUN chmod +x gradlew && ./gradlew :eureka-server:bootJar --no-daemon
 
 # Stage 2: Run
