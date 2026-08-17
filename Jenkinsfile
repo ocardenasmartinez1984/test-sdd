@@ -9,28 +9,22 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage("Checkout") {
             steps {
                 git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
                 sh 'chmod +x gradlew'
             }
         }
 
-        stage('Build') {
+        stage("Build") {
             steps {
-                sh '''
-                    export PATH=$JAVA_HOME/bin:$PATH
-                    ./gradlew clean build -x test
-                '''
+                sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew clean build -x test'
             }
         }
 
-        stage('Unit Tests') {
+        stage("Unit Tests") {
             steps {
-                sh '''
-                    export PATH=$JAVA_HOME/bin:$PATH
-                    ./gradlew test
-                '''
+                sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew test'
             }
             post {
                 always {
@@ -39,48 +33,45 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage("SonarQube Analysis") {
             steps {
-                sh '''
-                    export PATH=$JAVA_HOME/bin:$PATH
-                    ./gradlew sonar -Dsonar.host.url=$SONAR_URL
-                '''
+                sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew sonar -Dsonar.host.url=$SONAR_URL'
             }
         }
 
-        stage('Docker Build') {
+        stage("Docker Build") {
             parallel {
-                stage('eureka-server') {
+                stage("eureka-server") {
                     steps {
                         sh 'docker build -f eureka-server/Dockerfile -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
                     }
                 }
-                stage('api-gateway') {
+                stage("api-gateway") {
                     steps {
                         sh 'docker build -f api-gateway/Dockerfile -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
                     }
                 }
-                stage('auth-service') {
+                stage("auth-service") {
                     steps {
                         sh 'docker build -f auth-service/Dockerfile -t $REGISTRY/auth-service:$BUILD_NUMBER .'
                     }
                 }
-                stage('stock-service') {
+                stage("stock-service") {
                     steps {
                         sh 'docker build -f stock-service/Dockerfile -t $REGISTRY/stock-service:$BUILD_NUMBER .'
                     }
                 }
-                stage('venta-service') {
+                stage("venta-service") {
                     steps {
                         sh 'docker build -f venta-service/Dockerfile -t $REGISTRY/venta-service:$BUILD_NUMBER .'
                     }
                 }
-                stage('despacho-service') {
+                stage("despacho-service") {
                     steps {
                         sh 'docker build -f despacho-service/Dockerfile -t $REGISTRY/despacho-service:$BUILD_NUMBER .'
                     }
                 }
-                stage('frontend') {
+                stage("frontend") {
                     steps {
                         sh 'docker build -f pos-frontend/Dockerfile -t $REGISTRY/pos-frontend:$BUILD_NUMBER .'
                     }
@@ -88,27 +79,25 @@ pipeline {
             }
         }
 
-        stage('Docker Push') {
+        stage("Docker Push") {
             when {
                 branch 'main'
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push $REGISTRY/eureka-server:$BUILD_NUMBER
-                        docker push $REGISTRY/api-gateway:$BUILD_NUMBER
-                        docker push $REGISTRY/auth-service:$BUILD_NUMBER
-                        docker push $REGISTRY/stock-service:$BUILD_NUMBER
-                        docker push $REGISTRY/venta-service:$BUILD_NUMBER
-                        docker push $REGISTRY/despacho-service:$BUILD_NUMBER
-                        docker push $REGISTRY/pos-frontend:$BUILD_NUMBER
-                    '''
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker push $REGISTRY/eureka-server:$BUILD_NUMBER'
+                    sh 'docker push $REGISTRY/api-gateway:$BUILD_NUMBER'
+                    sh 'docker push $REGISTRY/auth-service:$BUILD_NUMBER'
+                    sh 'docker push $REGISTRY/stock-service:$BUILD_NUMBER'
+                    sh 'docker push $REGISTRY/venta-service:$BUILD_NUMBER'
+                    sh 'docker push $REGISTRY/despacho-service:$BUILD_NUMBER'
+                    sh 'docker push $REGISTRY/pos-frontend:$BUILD_NUMBER'
                 }
             }
         }
 
-        stage('Deploy') {
+        stage("Deploy") {
             when {
                 branch 'main'
             }
