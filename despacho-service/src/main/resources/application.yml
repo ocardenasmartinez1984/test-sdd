@@ -33,7 +33,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      dynatrace:
+        enabled: ${DYNATRACE_ENABLED:false}
+        uri: ${DYNATRACE_URI:}
+        api-token: ${DYNATRACE_API_TOKEN:}
+        v2:
+          metric-key-prefix: pos
+          enrich-with-dynatrace-metadata: true
+    tags:
+      application: pos-system
+      service: despacho-service
+
 
 eureka:
   client:

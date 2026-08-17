@@ -3,26 +3,56 @@ pipeline {
 
     environment {
         JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
         GRADLE_OPTS = '-Dorg.gradle.daemon=false'
         SONAR_URL = 'http://sonarqube:9000'
         REGISTRY = 'ocardenasmartinez1984'
+        DYNATRACE_URL = credentials('dynatrace-url')
     }
 
     stages {
-        stage("Checkout") {
+        stage('Checkout') {
             steps {
                 git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
                 sh 'chmod +x gradlew'
             }
         }
 
-        stage("Build") {
+        stage('Build') {
             steps {
-                sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew clean build -x test'
+                sh './gradlew clean build -x test'
             }
         }
 
-        stage("Docker Build") {
+        stage('Unit Tests') {
+            steps {
+                sh './gradlew test'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                sh './gradlew sonar -Dsonar.host.url=$SONAR_URL'
+            }
+        }
+
+        stage('Stress Tests') {
+            steps {
+                sh './gradlew :stress-test:gatlingRun'
+            }
+            post {
+                always {
+                    gatlingArchive()
+                }
+            }
+        }
+
+        stage('Docker Build') {
             steps {
                 sh 'docker build -f eureka-server/Dockerfile.ci -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
                 sh 'docker build -f api-gateway/Dockerfile.ci -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
@@ -34,7 +64,7 @@ pipeline {
             }
         }
 
-        stage("Docker Push") {
+        stage('Docker Push') {
             when {
                 branch 'main'
             }
@@ -52,13 +82,39 @@ pipeline {
             }
         }
 
-        stage("Deploy") {
+        stage('Deploy') {
             when {
                 branch 'main'
             }
             steps {
                 sh 'docker compose down'
                 sh 'docker compose up -d'
+            }
+        }
+
+        stage('Dynatrace Deployment Event') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([string(credentialsId: 'dynatrace-api-token', variable: 'DT_API_TOKEN')]) {
+                    sh '''
+                        curl -X POST "${DYNATRACE_URL}/api/v2/events/ingest" \
+                          -H "Authorization: Api-Token ${DT_API_TOKEN}" \
+                          -H "Content-Type: application/json" \
+                          -d "{
+                            \\"eventType\\": \\"CUSTOM_DEPLOYMENT\\",
+                            \\"title\\": \\"POS System Deployment #${BUILD_NUMBER}\\",
+                            \\"properties\\": {
+                              \\"dt.event.deployment.name\\": \\"pos-system\\",
+                              \\"dt.event.deployment.version\\": \\"${BUILD_NUMBER}\\",
+                              \\"dt.event.deployment.ci_back_link\\": \\"${BUILD_URL}\\",
+                              \\"dt.event.deployment.remediation_action_link\\": \\"${BUILD_URL}\\",
+                              \\"source\\": \\"Jenkins\\"
+                            }
+                          }"
+                    '''
+                }
             }
         }
     }

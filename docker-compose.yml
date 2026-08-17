@@ -77,6 +77,9 @@ services:
     environment:
       EUREKA_INSTANCE_HOSTNAME: eureka-server
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
+      DYNATRACE_URI: ${DYNATRACE_URI:-}
+      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
     networks:
       - saga-network
     healthcheck:
@@ -95,6 +98,9 @@ services:
       - "8080:8080"
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
+      DYNATRACE_URI: ${DYNATRACE_URI:-}
+      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -139,6 +145,9 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/stock_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
+      DYNATRACE_URI: ${DYNATRACE_URI:-}
+      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -161,6 +170,9 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/venta_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
+      DYNATRACE_URI: ${DYNATRACE_URI:-}
+      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -183,6 +195,9 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/despacho_db
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
+      DYNATRACE_URI: ${DYNATRACE_URI:-}
+      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -280,6 +295,20 @@ services:
       - saga-network
     restart: on-failure
 
+  dynatrace-oneagent:
+    image: dynatrace/oneagent:latest
+    container_name: saga-dynatrace-oneagent
+    privileged: true
+    pid: host
+    network_mode: host
+    environment:
+      ONEAGENT_INSTALLER_SCRIPT_URL: ${DT_ONEAGENT_URL:}
+      ONEAGENT_INSTALLER_DOWNLOAD_TOKEN: ${DT_PAAS_TOKEN:}
+    volumes:
+      - /:/mnt/root
+      - dynatrace_oneagent:/opt/dynatrace/oneagent
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   mongodb_data:
@@ -288,6 +317,7 @@ volumes:
   sonarqube_extensions:
   sonarqube_logs:
   postgres_sonar_data:
+  dynatrace_oneagent:
 
 networks:
   saga-network:
