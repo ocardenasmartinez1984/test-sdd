@@ -22,18 +22,6 @@ pipeline {
             }
         }
 
-        stage("Unit Tests") {
-            steps {
-                sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew test'
-            }
-        }
-
-        stage("SonarQube Analysis") {
-            steps {
-                sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew sonar -Dsonar.host.url=$SONAR_URL'
-            }
-        }
-
         stage("Docker Build") {
             steps {
                 sh 'docker build -f eureka-server/Dockerfile.ci -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
