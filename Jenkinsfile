@@ -14,12 +14,22 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Build') {
             steps {
                 sh '''
                     export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
                     export PATH=$JAVA_HOME/bin:$PATH
                     chmod +x gradlew
+                    ./gradlew clean classes -x test
+                '''
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                sh '''
+                    export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
+                    export PATH=$JAVA_HOME/bin:$PATH
                     ./gradlew sonar -Dsonar.host.url=http://sonarqube:9000 --info
                 '''
             }
