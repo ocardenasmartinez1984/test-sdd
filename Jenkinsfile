@@ -20,7 +20,7 @@ pipeline {
                     export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
                     export PATH=$JAVA_HOME/bin:$PATH
                     chmod +x gradlew
-                    ./gradlew sonar -Dsonar.host.url=http://saga-sonarqube:9000 --info
+                    ./gradlew sonar -Dsonar.host.url=http://sonarqube:9000 --info
                 '''
             }
         }
