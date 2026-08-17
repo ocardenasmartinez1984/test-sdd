@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
-        PATH = "${JAVA_HOME}/bin:${PATH}"
         GRADLE_OPTS = '-Dorg.gradle.daemon=false'
         SONAR_URL = 'http://sonarqube:9000'
         REGISTRY = 'ocardenasmartinez1984'
@@ -19,24 +18,33 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh './gradlew clean build -x test'
+                sh '''
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    ./gradlew clean build -x test
+                '''
             }
         }
 
         stage('Unit Tests') {
             steps {
-                sh './gradlew test'
+                sh '''
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    ./gradlew test
+                '''
             }
             post {
                 always {
-                    junit '**/build/test-results/test/*.xml'
+                    junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
                 }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh "./gradlew sonar -Dsonar.host.url=${env.SONAR_URL}"
+                sh '''
+                    export PATH=$JAVA_HOME/bin:$PATH
+                    ./gradlew sonar -Dsonar.host.url=$SONAR_URL
+                '''
             }
         }
 
@@ -44,37 +52,37 @@ pipeline {
             parallel {
                 stage('eureka-server') {
                     steps {
-                        sh "docker build -f eureka-server/Dockerfile -t ${env.REGISTRY}/eureka-server:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f eureka-server/Dockerfile -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
                     }
                 }
                 stage('api-gateway') {
                     steps {
-                        sh "docker build -f api-gateway/Dockerfile -t ${env.REGISTRY}/api-gateway:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f api-gateway/Dockerfile -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
                     }
                 }
                 stage('auth-service') {
                     steps {
-                        sh "docker build -f auth-service/Dockerfile -t ${env.REGISTRY}/auth-service:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f auth-service/Dockerfile -t $REGISTRY/auth-service:$BUILD_NUMBER .'
                     }
                 }
                 stage('stock-service') {
                     steps {
-                        sh "docker build -f stock-service/Dockerfile -t ${env.REGISTRY}/stock-service:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f stock-service/Dockerfile -t $REGISTRY/stock-service:$BUILD_NUMBER .'
                     }
                 }
                 stage('venta-service') {
                     steps {
-                        sh "docker build -f venta-service/Dockerfile -t ${env.REGISTRY}/venta-service:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f venta-service/Dockerfile -t $REGISTRY/venta-service:$BUILD_NUMBER .'
                     }
                 }
                 stage('despacho-service') {
                     steps {
-                        sh "docker build -f despacho-service/Dockerfile -t ${env.REGISTRY}/despacho-service:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f despacho-service/Dockerfile -t $REGISTRY/despacho-service:$BUILD_NUMBER .'
                     }
                 }
                 stage('frontend') {
                     steps {
-                        sh "docker build -f pos-frontend/Dockerfile -t ${env.REGISTRY}/pos-frontend:${env.BUILD_NUMBER} ."
+                        sh 'docker build -f pos-frontend/Dockerfile -t $REGISTRY/pos-frontend:$BUILD_NUMBER .'
                     }
                 }
             }
@@ -86,14 +94,16 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
-                    sh "docker push ${env.REGISTRY}/eureka-server:${env.BUILD_NUMBER}"
-                    sh "docker push ${env.REGISTRY}/api-gateway:${env.BUILD_NUMBER}"
-                    sh "docker push ${env.REGISTRY}/auth-service:${env.BUILD_NUMBER}"
-                    sh "docker push ${env.REGISTRY}/stock-service:${env.BUILD_NUMBER}"
-                    sh "docker push ${env.REGISTRY}/venta-service:${env.BUILD_NUMBER}"
-                    sh "docker push ${env.REGISTRY}/despacho-service:${env.BUILD_NUMBER}"
-                    sh "docker push ${env.REGISTRY}/pos-frontend:${env.BUILD_NUMBER}"
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $REGISTRY/eureka-server:$BUILD_NUMBER
+                        docker push $REGISTRY/api-gateway:$BUILD_NUMBER
+                        docker push $REGISTRY/auth-service:$BUILD_NUMBER
+                        docker push $REGISTRY/stock-service:$BUILD_NUMBER
+                        docker push $REGISTRY/venta-service:$BUILD_NUMBER
+                        docker push $REGISTRY/despacho-service:$BUILD_NUMBER
+                        docker push $REGISTRY/pos-frontend:$BUILD_NUMBER
+                    '''
                 }
             }
         }
