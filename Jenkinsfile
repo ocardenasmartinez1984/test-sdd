@@ -7,7 +7,6 @@ pipeline {
         GRADLE_OPTS = '-Dorg.gradle.daemon=false'
         SONAR_URL = 'http://sonarqube:9000'
         REGISTRY = 'ocardenasmartinez1984'
-        IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -31,14 +30,13 @@ pipeline {
             post {
                 always {
                     junit '**/build/test-results/test/*.xml'
-                    jacoco execPattern: '**/build/jacoco/test.jacocoExec'
                 }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                sh "./gradlew sonar -Dsonar.host.url=${SONAR_URL}"
+                sh "./gradlew sonar -Dsonar.host.url=${env.SONAR_URL}"
             }
         }
 
@@ -46,37 +44,37 @@ pipeline {
             parallel {
                 stage('eureka-server') {
                     steps {
-                        sh "docker build -f eureka-server/Dockerfile -t ${REGISTRY}/eureka-server:${IMAGE_TAG} ."
+                        sh "docker build -f eureka-server/Dockerfile -t ${env.REGISTRY}/eureka-server:${env.BUILD_NUMBER} ."
                     }
                 }
                 stage('api-gateway') {
                     steps {
-                        sh "docker build -f api-gateway/Dockerfile -t ${REGISTRY}/api-gateway:${IMAGE_TAG} ."
+                        sh "docker build -f api-gateway/Dockerfile -t ${env.REGISTRY}/api-gateway:${env.BUILD_NUMBER} ."
                     }
                 }
                 stage('auth-service') {
                     steps {
-                        sh "docker build -f auth-service/Dockerfile -t ${REGISTRY}/auth-service:${IMAGE_TAG} ."
+                        sh "docker build -f auth-service/Dockerfile -t ${env.REGISTRY}/auth-service:${env.BUILD_NUMBER} ."
                     }
                 }
                 stage('stock-service') {
                     steps {
-                        sh "docker build -f stock-service/Dockerfile -t ${REGISTRY}/stock-service:${IMAGE_TAG} ."
+                        sh "docker build -f stock-service/Dockerfile -t ${env.REGISTRY}/stock-service:${env.BUILD_NUMBER} ."
                     }
                 }
                 stage('venta-service') {
                     steps {
-                        sh "docker build -f venta-service/Dockerfile -t ${REGISTRY}/venta-service:${IMAGE_TAG} ."
+                        sh "docker build -f venta-service/Dockerfile -t ${env.REGISTRY}/venta-service:${env.BUILD_NUMBER} ."
                     }
                 }
                 stage('despacho-service') {
                     steps {
-                        sh "docker build -f despacho-service/Dockerfile -t ${REGISTRY}/despacho-service:${IMAGE_TAG} ."
+                        sh "docker build -f despacho-service/Dockerfile -t ${env.REGISTRY}/despacho-service:${env.BUILD_NUMBER} ."
                     }
                 }
                 stage('frontend') {
                     steps {
-                        sh "docker build -f pos-frontend/Dockerfile -t ${REGISTRY}/pos-frontend:${IMAGE_TAG} ."
+                        sh "docker build -f pos-frontend/Dockerfile -t ${env.REGISTRY}/pos-frontend:${env.BUILD_NUMBER} ."
                     }
                 }
             }
@@ -88,16 +86,14 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${REGISTRY}/eureka-server:${IMAGE_TAG}
-                        docker push ${REGISTRY}/api-gateway:${IMAGE_TAG}
-                        docker push ${REGISTRY}/auth-service:${IMAGE_TAG}
-                        docker push ${REGISTRY}/stock-service:${IMAGE_TAG}
-                        docker push ${REGISTRY}/venta-service:${IMAGE_TAG}
-                        docker push ${REGISTRY}/despacho-service:${IMAGE_TAG}
-                        docker push ${REGISTRY}/pos-frontend:${IMAGE_TAG}
-                    '''
+                    sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                    sh "docker push ${env.REGISTRY}/eureka-server:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.REGISTRY}/api-gateway:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.REGISTRY}/auth-service:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.REGISTRY}/stock-service:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.REGISTRY}/venta-service:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.REGISTRY}/despacho-service:${env.BUILD_NUMBER}"
+                    sh "docker push ${env.REGISTRY}/pos-frontend:${env.BUILD_NUMBER}"
                 }
             }
         }
@@ -107,10 +103,8 @@ pipeline {
                 branch 'main'
             }
             steps {
-                sh '''
-                    docker compose down
-                    docker compose up -d
-                '''
+                sh 'docker compose down'
+                sh 'docker compose up -d'
             }
         }
     }
