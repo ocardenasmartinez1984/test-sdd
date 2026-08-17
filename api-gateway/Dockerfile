@@ -6,6 +6,7 @@ COPY gradlew .
 COPY gradlew.bat .
 COPY build.gradle .
 COPY settings.gradle .
+COPY gradle.properties .
 COPY api-gateway/ api-gateway/
 RUN mkdir -p eureka-server stock-service venta-service despacho-service auth-service stress-test
 RUN chmod +x gradlew && ./gradlew :api-gateway:bootJar --no-daemon

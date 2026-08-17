@@ -36,12 +36,12 @@ pipeline {
 
         stage("Docker Build") {
             steps {
-                sh 'docker build -f eureka-server/Dockerfile -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
-                sh 'docker build -f api-gateway/Dockerfile -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
-                sh 'docker build -f auth-service/Dockerfile -t $REGISTRY/auth-service:$BUILD_NUMBER .'
-                sh 'docker build -f stock-service/Dockerfile -t $REGISTRY/stock-service:$BUILD_NUMBER .'
-                sh 'docker build -f venta-service/Dockerfile -t $REGISTRY/venta-service:$BUILD_NUMBER .'
-                sh 'docker build -f despacho-service/Dockerfile -t $REGISTRY/despacho-service:$BUILD_NUMBER .'
+                sh 'docker build -f eureka-server/Dockerfile.ci -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
+                sh 'docker build -f api-gateway/Dockerfile.ci -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
+                sh 'docker build -f auth-service/Dockerfile.ci -t $REGISTRY/auth-service:$BUILD_NUMBER .'
+                sh 'docker build -f stock-service/Dockerfile.ci -t $REGISTRY/stock-service:$BUILD_NUMBER .'
+                sh 'docker build -f venta-service/Dockerfile.ci -t $REGISTRY/venta-service:$BUILD_NUMBER .'
+                sh 'docker build -f despacho-service/Dockerfile.ci -t $REGISTRY/despacho-service:$BUILD_NUMBER .'
                 sh 'docker build -f pos-frontend/Dockerfile -t $REGISTRY/pos-frontend:$BUILD_NUMBER .'
             }
         }
