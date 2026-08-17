@@ -7,7 +7,7 @@ plugins {
 sonar {
     properties {
         property "sonar.host.url", System.getProperty("sonar.host.url", "http://localhost:9000")
-        property "sonar.token", "squ_76fc4ef019622f2e12724f1e49480f4168ecadbb"
+        property "sonar.token", "sqa_d60fc9b88c974e5f51313fe7d81c296415d113ed"
         property "sonar.projectKey", "saga-microservices"
         property "sonar.projectName", "Saga Microservices"
         property "sonar.sourceEncoding", "UTF-8"
