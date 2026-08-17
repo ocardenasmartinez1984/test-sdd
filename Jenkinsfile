@@ -26,11 +26,6 @@ pipeline {
             steps {
                 sh 'export PATH=$JAVA_HOME/bin:$PATH && ./gradlew test'
             }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: '**/build/test-results/test/*.xml'
-                }
-            }
         }
 
         stage("SonarQube Analysis") {
@@ -40,42 +35,14 @@ pipeline {
         }
 
         stage("Docker Build") {
-            parallel {
-                stage("eureka-server") {
-                    steps {
-                        sh 'docker build -f eureka-server/Dockerfile -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
-                    }
-                }
-                stage("api-gateway") {
-                    steps {
-                        sh 'docker build -f api-gateway/Dockerfile -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
-                    }
-                }
-                stage("auth-service") {
-                    steps {
-                        sh 'docker build -f auth-service/Dockerfile -t $REGISTRY/auth-service:$BUILD_NUMBER .'
-                    }
-                }
-                stage("stock-service") {
-                    steps {
-                        sh 'docker build -f stock-service/Dockerfile -t $REGISTRY/stock-service:$BUILD_NUMBER .'
-                    }
-                }
-                stage("venta-service") {
-                    steps {
-                        sh 'docker build -f venta-service/Dockerfile -t $REGISTRY/venta-service:$BUILD_NUMBER .'
-                    }
-                }
-                stage("despacho-service") {
-                    steps {
-                        sh 'docker build -f despacho-service/Dockerfile -t $REGISTRY/despacho-service:$BUILD_NUMBER .'
-                    }
-                }
-                stage("frontend") {
-                    steps {
-                        sh 'docker build -f pos-frontend/Dockerfile -t $REGISTRY/pos-frontend:$BUILD_NUMBER .'
-                    }
-                }
+            steps {
+                sh 'docker build -f eureka-server/Dockerfile -t $REGISTRY/eureka-server:$BUILD_NUMBER .'
+                sh 'docker build -f api-gateway/Dockerfile -t $REGISTRY/api-gateway:$BUILD_NUMBER .'
+                sh 'docker build -f auth-service/Dockerfile -t $REGISTRY/auth-service:$BUILD_NUMBER .'
+                sh 'docker build -f stock-service/Dockerfile -t $REGISTRY/stock-service:$BUILD_NUMBER .'
+                sh 'docker build -f venta-service/Dockerfile -t $REGISTRY/venta-service:$BUILD_NUMBER .'
+                sh 'docker build -f despacho-service/Dockerfile -t $REGISTRY/despacho-service:$BUILD_NUMBER .'
+                sh 'docker build -f pos-frontend/Dockerfile -t $REGISTRY/pos-frontend:$BUILD_NUMBER .'
             }
         }
 
@@ -110,10 +77,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed!'
+            echo 'Pipeline failed!'
         }
         always {
             cleanWs()
