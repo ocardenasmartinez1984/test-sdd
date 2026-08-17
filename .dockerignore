@@ -2,6 +2,7 @@
 .gitignore
 *.md
 **/build/
+!**/build/libs/
 **/out/
 **/.gradle/
 **/node_modules/
