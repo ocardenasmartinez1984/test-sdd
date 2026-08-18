@@ -48,8 +48,8 @@ public class VentaServiceSimulation extends Simulation {
             .feed(orderFeeder)
             // First create a product so we have a valid productId
             .exec(
-                    http("POST /api/products (setup)")
-                            .post(STOCK_URL + "/api/products")
+                    http("POST /api/stock (setup)")
+                            .post(STOCK_URL + "/api/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -58,7 +58,7 @@ public class VentaServiceSimulation extends Simulation {
                                         "category": "Electronics"
                                     }
                                     """))
-                            .check(status().is(201))
+                            .check(status().is(200))
                             .check(jsonPath("$.id").saveAs("productId"))
             )
             .pause(Duration.ofMillis(200), Duration.ofMillis(500))
@@ -90,8 +90,8 @@ public class VentaServiceSimulation extends Simulation {
             .feed(orderFeeder)
             .feed(productFeeder)
             .exec(
-                    http("POST /api/products (setup)")
-                            .post(STOCK_URL + "/api/products")
+                    http("POST /api/stock (setup)")
+                            .post(STOCK_URL + "/api/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -100,7 +100,7 @@ public class VentaServiceSimulation extends Simulation {
                                         "category": "Food"
                                     }
                                     """))
-                            .check(status().is(201))
+                            .check(status().is(200))
                             .check(jsonPath("$.id").saveAs("productId"))
             )
             .pause(Duration.ofMillis(100))

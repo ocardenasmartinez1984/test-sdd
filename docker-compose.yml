@@ -14,9 +14,10 @@ services:
       - saga-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
-      interval: 5s
-      timeout: 3s
+      interval: 3s
+      timeout: 2s
       retries: 5
+      start_period: 5s
 
   mongodb:
     image: mongo:7.0
@@ -29,9 +30,10 @@ services:
       - saga-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh --quiet
-      interval: 10s
-      timeout: 5s
+      interval: 3s
+      timeout: 2s
       retries: 5
+      start_period: 5s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
@@ -43,12 +45,19 @@ services:
       - "2181:2181"
     networks:
       - saga-network
+    healthcheck:
+      test: ["CMD-SHELL", "zookeeper-shell localhost:2181 ls / || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
     container_name: saga-kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
     environment:
@@ -63,9 +72,10 @@ services:
       - saga-network
     healthcheck:
       test: kafka-broker-api-versions --bootstrap-server localhost:9092
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   eureka-server:
     build:
@@ -80,13 +90,21 @@ services:
       DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
     restart: on-failure
 
   api-gateway:
@@ -108,9 +126,10 @@ services:
       - saga-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
     restart: on-failure
 
   auth-service:
@@ -217,10 +236,8 @@ services:
     ports:
       - "4200:80"
     depends_on:
-      - auth-service
-      - stock-service
-      - venta-service
-      - despacho-service
+      api-gateway:
+        condition: service_healthy
     networks:
       - saga-network
     restart: on-failure
@@ -233,12 +250,29 @@ services:
     ports:
       - "4300:80"
     depends_on:
-      - auth-service
-      - stock-service
-      - venta-service
+      api-gateway:
+        condition: service_healthy
     networks:
       - saga-network
     restart: on-failure
+
+  postgres-sonar:
+    image: postgres:16-alpine
+    container_name: saga-postgres-sonar
+    environment:
+      POSTGRES_DB: sonarqube
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - postgres_sonar_data:/var/lib/postgresql/data
+    networks:
+      - saga-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonarqube"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
 
   sonarqube:
     image: sonarqube:lts-community
@@ -260,23 +294,6 @@ services:
       - saga-network
     restart: on-failure
 
-  postgres-sonar:
-    image: postgres:16-alpine
-    container_name: saga-postgres-sonar
-    environment:
-      POSTGRES_DB: sonarqube
-      POSTGRES_USER: sonar
-      POSTGRES_PASSWORD: sonar
-    volumes:
-      - postgres_sonar_data:/var/lib/postgresql/data
-    networks:
-      - saga-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sonar -d sonarqube"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
   jenkins:
     build:
       context: .
@@ -295,19 +312,19 @@ services:
       - saga-network
     restart: on-failure
 
-  dynatrace-oneagent:
-    image: dynatrace/oneagent:latest
-    container_name: saga-dynatrace-oneagent
-    privileged: true
-    pid: host
-    network_mode: host
-    environment:
-      ONEAGENT_INSTALLER_SCRIPT_URL: ${DT_ONEAGENT_URL:}
-      ONEAGENT_INSTALLER_DOWNLOAD_TOKEN: ${DT_PAAS_TOKEN:}
-    volumes:
-      - /:/mnt/root
-      - dynatrace_oneagent:/opt/dynatrace/oneagent
-    restart: unless-stopped
+  # dynatrace-oneagent:
+  #   image: dynatrace/oneagent:latest
+  #   container_name: saga-dynatrace-oneagent
+  #   privileged: true
+  #   pid: host
+  #   network_mode: host
+  #   environment:
+  #     ONEAGENT_INSTALLER_SCRIPT_URL: ${DT_ONEAGENT_URL:-}
+  #     ONEAGENT_INSTALLER_DOWNLOAD_TOKEN: ${DT_PAAS_TOKEN:-}
+  #   volumes:
+  #     - /:/mnt/root
+  #     - dynatrace_oneagent:/opt/dynatrace/oneagent
+  #   restart: unless-stopped
 
 volumes:
   postgres_data:

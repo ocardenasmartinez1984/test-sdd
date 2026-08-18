@@ -53,8 +53,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: saga/frontend:latest
-          imagePullPolicy: Never
+          image: 172.19.0.5:5000/pos-test-frontend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           volumeMounts:

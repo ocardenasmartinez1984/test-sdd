@@ -35,8 +35,8 @@ public class StockServiceSimulation extends Simulation {
     ScenarioBuilder createProductScenario = scenario("Stock - Create Products")
             .feed(productFeeder)
             .exec(
-                    http("POST /api/products")
-                            .post("/api/products")
+                    http("POST /api/stock")
+                            .post("/api/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -45,24 +45,24 @@ public class StockServiceSimulation extends Simulation {
                                         "category": "#{category}"
                                     }
                                     """))
-                            .check(status().is(201))
+                            .check(status().is(200))
                             .check(jsonPath("$.id").saveAs("productId"))
             )
             .pause(Duration.ofMillis(100), Duration.ofMillis(300));
 
     ScenarioBuilder listProductsScenario = scenario("Stock - List Products")
             .exec(
-                    http("GET /api/products")
-                            .get("/api/products")
+                    http("GET /api/stock")
+                            .get("/api/stock")
                             .check(status().is(200))
             )
             .pause(Duration.ofMillis(200), Duration.ofMillis(600));
 
-    ScenarioBuilder createAndUpdateScenario = scenario("Stock - Create & Update Product")
+    ScenarioBuilder createAndCheckScenario = scenario("Stock - Create & Check Product")
             .feed(productFeeder)
             .exec(
-                    http("POST /api/products (create)")
-                            .post("/api/products")
+                    http("POST /api/stock (create)")
+                            .post("/api/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -71,29 +71,21 @@ public class StockServiceSimulation extends Simulation {
                                         "category": "#{category}"
                                     }
                                     """))
-                            .check(status().is(201))
+                            .check(status().is(200))
                             .check(jsonPath("$.id").saveAs("productId"))
             )
             .pause(Duration.ofMillis(300), Duration.ofMillis(800))
             .exec(
-                    http("PUT /api/products/{id} (update stock)")
-                            .put("/api/products/#{productId}")
-                            .body(StringBody("""
-                                    {
-                                        "name": "#{productName}-updated",
-                                        "price": #{price},
-                                        "stock": 9999,
-                                        "category": "#{category}"
-                                    }
-                                    """))
+                    http("GET /api/stock/{id}")
+                            .get("/api/stock/#{productId}")
                             .check(status().is(200))
             )
             .pause(Duration.ofMillis(100), Duration.ofMillis(300))
             .exec(
-                    http("GET /api/products/{id}")
-                            .get("/api/products/#{productId}")
+                    http("GET /api/stock/{id}/available")
+                            .get("/api/stock/#{productId}/available")
                             .check(status().is(200))
-                            .check(jsonPath("$.name").is("#{productName}-updated"))
+                            .check(jsonPath("$.availableQuantity").exists())
             );
 
     {
@@ -108,7 +100,7 @@ public class StockServiceSimulation extends Simulation {
                         rampUsers(50).during(Duration.ofSeconds(10)),
                         constantUsersPerSec(15).during(Duration.ofSeconds(40))
                 ),
-                createAndUpdateScenario.injectOpen(
+                createAndCheckScenario.injectOpen(
                         nothingFor(Duration.ofSeconds(5)),
                         rampUsers(40).during(Duration.ofSeconds(20)),
                         constantUsersPerSec(10).during(Duration.ofSeconds(30))

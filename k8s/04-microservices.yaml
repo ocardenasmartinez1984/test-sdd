@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: saga/auth-service:latest
-          imagePullPolicy: Never
+          image: 172.19.0.5:5000/pos-test-auth-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8084
           env:
@@ -26,6 +26,8 @@ spec:
               value: auth_user
             - name: SPRING_DATASOURCE_PASSWORD
               value: auth_pass
+            - name: EUREKA_CLIENT_ENABLED
+              value: "false"
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -62,8 +64,8 @@ spec:
     spec:
       containers:
         - name: stock-service
-          image: saga/stock-service:latest
-          imagePullPolicy: Never
+          image: 172.19.0.5:5000/pos-test-stock-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           env:
@@ -71,6 +73,8 @@ spec:
               value: mongodb://mongodb:27017/stock_db
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
+            - name: EUREKA_CLIENT_ENABLED
+              value: "false"
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -107,8 +111,8 @@ spec:
     spec:
       containers:
         - name: venta-service
-          image: saga/venta-service:latest
-          imagePullPolicy: Never
+          image: 172.19.0.5:5000/pos-test-venta-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
           env:
@@ -116,6 +120,8 @@ spec:
               value: mongodb://mongodb:27017/venta_db
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
+            - name: EUREKA_CLIENT_ENABLED
+              value: "false"
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -152,8 +158,8 @@ spec:
     spec:
       containers:
         - name: despacho-service
-          image: saga/despacho-service:latest
-          imagePullPolicy: Never
+          image: 172.19.0.5:5000/pos-test-despacho-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8083
           env:
@@ -161,6 +167,8 @@ spec:
               value: mongodb://mongodb:27017/despacho_db
             - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
               value: kafka:9092
+            - name: EUREKA_CLIENT_ENABLED
+              value: "false"
           readinessProbe:
             httpGet:
               path: /actuator/health
