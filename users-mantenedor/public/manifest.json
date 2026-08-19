@@ -1,0 +1,9 @@
+{
+  "name": "Users Mantenedor",
+  "short_name": "Users",
+  "theme_color": "#4f46e5",
+  "background_color": "#f5f7fa",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
+}

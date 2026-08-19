@@ -28,3 +28,21 @@ export interface Order {
   status: string;
   createdAt: string;
 }
+
+export interface CartAddRequest {
+  sessionId: string;
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface CartItemResponse {
+  id: string;
+  sessionId: string;
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  status: string;
+  createdAt: string;
+  expiresAt: string;
+}

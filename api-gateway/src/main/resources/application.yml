@@ -23,6 +23,11 @@ spring:
           predicates:
             - Path=/api/auth/**
 
+        - id: users-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/users/**
+
         - id: stock-service
           uri: lb://STOCK-SERVICE
           predicates:
@@ -32,6 +37,11 @@ spring:
           uri: lb://VENTA-SERVICE
           predicates:
             - Path=/api/ventas/**
+
+        - id: cart-service
+          uri: lb://VENTA-SERVICE
+          predicates:
+            - Path=/api/cart/**
 
         - id: despacho-service
           uri: lb://DESPACHO-SERVICE

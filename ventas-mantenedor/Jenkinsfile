@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        REGISTRY = 'ocardenasmartinez1984'
+        SERVICE_NAME = 'frontend'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                dir("${SERVICE_NAME}") {
+                    sh "docker build -t $REGISTRY/${SERVICE_NAME}:$BUILD_NUMBER ."
+                    sh "docker tag $REGISTRY/${SERVICE_NAME}:$BUILD_NUMBER $REGISTRY/${SERVICE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh "docker push $REGISTRY/${SERVICE_NAME}:$BUILD_NUMBER"
+                    sh "docker push $REGISTRY/${SERVICE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh "docker compose up -d ${SERVICE_NAME}"
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "${SERVICE_NAME} pipeline completed successfully!"
+        }
+        failure {
+            echo "${SERVICE_NAME} pipeline failed!"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

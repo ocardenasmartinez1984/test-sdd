@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { StockService } from '../../services/stock.service';
 import { VentaService } from '../../services/venta.service';
+import { CartService } from '../../services/cart.service';
 import { Product, CartItem } from '../../models/models';
 import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
 
@@ -200,7 +201,11 @@ export class PosComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly stockService = inject(StockService);
   private readonly ventaService = inject(VentaService);
+  private readonly cartService = inject(CartService);
   private readonly router = inject(Router);
+
+  // --- Session ---
+  private sessionId = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
 
   // --- Category Mapping ---
   readonly categories = [
@@ -357,7 +362,16 @@ export class PosComponent implements OnInit {
     this.lastAdded.set(product.id);
     setTimeout(() => this.lastAdded.set(''), 400);
 
-    this.showToast(`✅ ${product.name} agregado`, false);
+    // Reserve stock via cart API
+    this.cartService.addToCart({
+      sessionId: this.sessionId,
+      productId: product.id,
+      quantity: 1,
+      unitPrice: product.price
+    }).subscribe({
+      next: () => this.showToast(`✅ ${product.name} agregado`, false),
+      error: () => this.showToast('⚠️ Error al reservar stock', true)
+    });
   }
 
   increaseQty(item: CartItem): void {
@@ -370,6 +384,17 @@ export class PosComponent implements OnInit {
     if (target) {
       target.quantity++;
       this.cartItems.set(items);
+
+      // Reserve additional stock via cart API
+      this.cartService.addToCart({
+        sessionId: this.sessionId,
+        productId: item.product.id,
+        quantity: 1,
+        unitPrice: item.product.price
+      }).subscribe({
+        next: () => {},
+        error: () => this.showToast('⚠️ Error al reservar stock', true)
+      });
     }
   }
 
@@ -380,6 +405,7 @@ export class PosComponent implements OnInit {
       target.quantity--;
       if (target.quantity <= 0) {
         this.cartItems.set(items.filter(i => i.product.id !== item.product.id));
+        this.cartService.removeFromCart(this.sessionId, item.product.id).subscribe();
       } else {
         this.cartItems.set(items);
       }
@@ -388,11 +414,13 @@ export class PosComponent implements OnInit {
 
   removeFromCart(item: CartItem): void {
     this.cartItems.set(this.cartItems().filter(i => i.product.id !== item.product.id));
+    this.cartService.removeFromCart(this.sessionId, item.product.id).subscribe();
   }
 
   clearCart(): void {
     this.cartItems.set([]);
     this.customerId = '';
+    this.cartService.clearCart(this.sessionId).subscribe();
   }
 
   // --- Checkout ---
@@ -439,7 +467,11 @@ export class PosComponent implements OnInit {
     } else {
       this.showToast(`⚠️ ${success} procesados, ${errors} con error`, true);
     }
-    this.clearCart();
+    // Clear local cart without calling clearCart API - stock transitions from reserved to sold via venta flow
+    this.cartItems.set([]);
+    this.customerId = '';
+    // Generate new sessionId for the next transaction
+    this.sessionId = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     this.processing.set(false);
     this.loadProducts();
   }

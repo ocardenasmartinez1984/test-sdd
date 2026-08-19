@@ -228,13 +228,27 @@ services:
       - saga-network
     restart: on-failure
 
-  frontend:
+  ventas-mantenedor:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    container_name: saga-frontend
+      context: ./ventas-mantenedor
+      dockerfile: Dockerfile
+    container_name: saga-ventas-mantenedor
     ports:
       - "4200:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: on-failure
+
+  users-mantenedor:
+    build:
+      context: ./users-mantenedor
+      dockerfile: Dockerfile
+    container_name: saga-users-mantenedor
+    ports:
+      - "4400:80"
     depends_on:
       api-gateway:
         condition: service_healthy
