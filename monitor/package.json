@@ -1,0 +1,20 @@
+{
+  "name": "kiro-monitor",
+  "version": "1.0.0",
+  "description": "Aplicación de monitoreo de infraestructura y aplicaciones similar a Dynatrace",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "agent": "node src/agent/collector.js",
+    "dev": "concurrently \"npm run start\" \"npm run agent\"",
+    "test": "node src/test.js"
+  },
+  "dependencies": {
+    "express": "4.18.2",
+    "ws": "8.16.0",
+    "systeminformation": "5.21.22",
+    "cors": "2.8.5",
+    "concurrently": "8.2.2"
+  },
+  "license": "MIT"
+}
