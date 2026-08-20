@@ -4,16 +4,17 @@ pipeline {
     environment {
         JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
-        GRADLE_OPTS = '-Dorg.gradle.daemon=false -Xmx1024m'
+        GRADLE_OPTS = '-Dorg.gradle.daemon=false -Xmx1536m'
         SONAR_URL = 'http://sonarqube:9000'
         REGISTRY = 'ocardenasmartinez1984'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     options {
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 45, unit: 'MINUTES')
         disableConcurrentBuilds()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(logRotator(numToKeepStr: '15'))
+        timestamps()
     }
 
     stages {
@@ -26,14 +27,32 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh './gradlew clean build -x test -x jacocoTestCoverageVerification'
+                sh './gradlew clean build -x test -x jacocoTestCoverageVerification --parallel'
             }
         }
 
         stage('Unit Tests') {
-            steps {
-                sh './gradlew :despacho-service:test :venta-service:test'
-                sh './gradlew :stock-service:test --tests "com.stock.application.*" --tests "com.stock.infrastructure.*" --tests "com.stock.interfaces.*"'
+            parallel {
+                stage('Auth Tests') {
+                    steps {
+                        sh './gradlew :auth-service:test'
+                    }
+                }
+                stage('Stock Tests') {
+                    steps {
+                        sh './gradlew :stock-service:test --tests "com.stock.application.*" --tests "com.stock.infrastructure.*" --tests "com.stock.interfaces.*"'
+                    }
+                }
+                stage('Venta Tests') {
+                    steps {
+                        sh './gradlew :venta-service:test'
+                    }
+                }
+                stage('Despacho Tests') {
+                    steps {
+                        sh './gradlew :despacho-service:test'
+                    }
+                }
             }
             post {
                 always {
@@ -68,9 +87,20 @@ pipeline {
                         }
                     }
                 }
-                stage('JaCoCo Coverage Verification') {
+                stage('JaCoCo Coverage') {
                     steps {
-                        sh './gradlew jacocoTestCoverageVerification || echo "Coverage below threshold"'
+                        sh './gradlew jacocoTestReport jacocoTestCoverageVerification || echo "Coverage below threshold"'
+                    }
+                    post {
+                        always {
+                            publishHTML(target: [
+                                reportName: 'JaCoCo Coverage',
+                                reportDir: 'stock-service/build/reports/jacoco/test/html',
+                                reportFiles: 'index.html',
+                                alwaysLinkToLastBuild: true,
+                                allowMissing: true
+                            ])
+                        }
                     }
                 }
             }
@@ -119,13 +149,19 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh "docker build -f eureka-server/Dockerfile.ci -t ${REGISTRY}/eureka-server:${IMAGE_TAG} -t ${REGISTRY}/eureka-server:latest ."
-                sh "docker build -f api-gateway/Dockerfile.ci -t ${REGISTRY}/api-gateway:${IMAGE_TAG} -t ${REGISTRY}/api-gateway:latest ."
-                sh "docker build -f auth-service/Dockerfile.ci -t ${REGISTRY}/auth-service:${IMAGE_TAG} -t ${REGISTRY}/auth-service:latest ."
-                sh "docker build -f stock-service/Dockerfile.ci -t ${REGISTRY}/stock-service:${IMAGE_TAG} -t ${REGISTRY}/stock-service:latest ."
-                sh "docker build -f venta-service/Dockerfile.ci -t ${REGISTRY}/venta-service:${IMAGE_TAG} -t ${REGISTRY}/venta-service:latest ."
-                sh "docker build -f despacho-service/Dockerfile.ci -t ${REGISTRY}/despacho-service:${IMAGE_TAG} -t ${REGISTRY}/despacho-service:latest ."
-                sh "docker build -f pos-frontend/Dockerfile -t ${REGISTRY}/pos-frontend:${IMAGE_TAG} -t ${REGISTRY}/pos-frontend:latest ."
+                script {
+                    def services = ['eureka-server', 'api-gateway', 'auth-service', 'stock-service', 'venta-service', 'despacho-service']
+                    def builds = [:]
+                    services.each { svc ->
+                        builds[svc] = {
+                            sh "docker build -f ${svc}/Dockerfile.ci -t ${REGISTRY}/${svc}:${IMAGE_TAG} -t ${REGISTRY}/${svc}:latest ."
+                        }
+                    }
+                    parallel builds
+                    sh "docker build -f pos-frontend/Dockerfile -t ${REGISTRY}/pos-frontend:${IMAGE_TAG} -t ${REGISTRY}/pos-frontend:latest ."
+                    sh "docker build -f ventas-mantenedor/Dockerfile -t ${REGISTRY}/ventas-mantenedor:${IMAGE_TAG} -t ${REGISTRY}/ventas-mantenedor:latest ./ventas-mantenedor"
+                    sh "docker build -f users-mantenedor/Dockerfile -t ${REGISTRY}/users-mantenedor:${IMAGE_TAG} -t ${REGISTRY}/users-mantenedor:latest ./users-mantenedor"
+                }
             }
         }
 
@@ -136,20 +172,13 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh "docker push ${REGISTRY}/eureka-server:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/api-gateway:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/auth-service:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/stock-service:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/venta-service:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/despacho-service:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/pos-frontend:${IMAGE_TAG}"
-                    sh "docker push ${REGISTRY}/eureka-server:latest"
-                    sh "docker push ${REGISTRY}/api-gateway:latest"
-                    sh "docker push ${REGISTRY}/auth-service:latest"
-                    sh "docker push ${REGISTRY}/stock-service:latest"
-                    sh "docker push ${REGISTRY}/venta-service:latest"
-                    sh "docker push ${REGISTRY}/despacho-service:latest"
-                    sh "docker push ${REGISTRY}/pos-frontend:latest"
+                    script {
+                        def services = ['eureka-server', 'api-gateway', 'auth-service', 'stock-service', 'venta-service', 'despacho-service', 'pos-frontend', 'ventas-mantenedor', 'users-mantenedor']
+                        services.each { svc ->
+                            sh "docker push ${REGISTRY}/${svc}:${IMAGE_TAG}"
+                            sh "docker push ${REGISTRY}/${svc}:latest"
+                        }
+                    }
                 }
             }
         }
@@ -163,10 +192,16 @@ pipeline {
                 sh 'docker compose up -d'
                 sh '''
                     echo "Waiting for services to be healthy..."
-                    sleep 30
-                    curl -sf http://localhost:8761/actuator/health || echo "Eureka not ready yet"
-                    curl -sf http://localhost:8080/actuator/health || echo "Gateway not ready yet"
-                    echo "Deploy completed!"
+                    for i in $(seq 1 60); do
+                        HEALTHY=$(docker ps --filter health=healthy --format "{{.Names}}" | wc -l)
+                        TOTAL=$(docker ps --format "{{.Names}}" | wc -l)
+                        echo "  [$i/60] Healthy: $HEALTHY / $TOTAL"
+                        if [ "$HEALTHY" -ge 17 ]; then
+                            echo "All core services healthy!"
+                            break
+                        fi
+                        sleep 5
+                    done
                 '''
             }
         }
@@ -178,11 +213,28 @@ pipeline {
             steps {
                 sh '''
                     echo "Running smoke tests..."
-                    curl -sf http://localhost:8080/api/v1/stock || echo "Stock service check failed"
-                    curl -sf http://localhost:8081/actuator/health || echo "Stock health failed"
-                    curl -sf http://localhost:8082/actuator/health || echo "Venta health failed"
-                    curl -sf http://localhost:8083/actuator/health || echo "Despacho health failed"
-                    echo "Smoke tests completed!"
+                    FAILED=0
+                    for endpoint in \
+                        "http://localhost:8761/actuator/health Eureka" \
+                        "http://localhost:8080/actuator/health Gateway" \
+                        "http://localhost:8081/actuator/health Stock" \
+                        "http://localhost:8082/actuator/health Venta" \
+                        "http://localhost:8083/actuator/health Despacho" \
+                        "http://localhost:8084/actuator/health Auth"; do
+                        URL=$(echo $endpoint | awk '{print $1}')
+                        NAME=$(echo $endpoint | awk '{print $2}')
+                        if curl -sf "$URL" > /dev/null 2>&1; then
+                            echo "  ✅ $NAME OK"
+                        else
+                            echo "  ❌ $NAME FAILED"
+                            FAILED=$((FAILED+1))
+                        fi
+                    done
+                    if [ $FAILED -gt 0 ]; then
+                        echo "WARNING: $FAILED service(s) not responding"
+                    else
+                        echo "All smoke tests passed!"
+                    fi
                 '''
             }
         }
@@ -228,6 +280,10 @@ pipeline {
         }
         unstable {
             echo '⚠️ Pipeline completed with warnings'
+        }
+        always {
+            sh 'docker system prune -f --filter "until=24h" || true'
+            cleanWs(cleanWhenNotBuilt: false)
         }
     }
 }
