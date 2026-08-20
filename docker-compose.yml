@@ -18,9 +18,20 @@ services:
       timeout: 2s
       retries: 5
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   mongodb:
-    image: mongo:7.0
+    image: mongo:8.0
     container_name: saga-mongodb
     ports:
       - "27017:27017"
@@ -33,13 +44,24 @@ services:
       - saga-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh --quiet
-      interval: 3s
-      timeout: 2s
-      retries: 5
-      start_period: 5s
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   kafka:
-    image: confluentinc/cp-kafka:7.6.1
+    image: confluentinc/cp-kafka:7.8.0
     container_name: saga-kafka
     ports:
       - "9092:9092"
@@ -53,18 +75,58 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     networks:
       - saga-network
     healthcheck:
       test: kafka-broker-api-versions --bootstrap-server localhost:9092
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: saga-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    networks:
+      - saga-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
       retries: 5
-      start_period: 15s
-    restart: on-failure
+      start_period: 3s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   eureka-server:
     build:
@@ -79,6 +141,7 @@ services:
       DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,7 +157,17 @@ services:
       timeout: 3s
       retries: 10
       start_period: 20s
-    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   api-gateway:
     build:
@@ -110,6 +183,7 @@ services:
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -123,7 +197,17 @@ services:
       timeout: 3s
       retries: 10
       start_period: 20s
-    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   auth-service:
     build:
@@ -138,6 +222,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       postgres:
         condition: service_healthy
@@ -146,12 +231,22 @@ services:
     networks:
       - saga-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      test: ["CMD-SHELL", "curl -s http://localhost:8084/actuator/health | grep -q '\"status\"' || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 20s
-    restart: on-failure
+      start_period: 25s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   stock-service:
     build:
@@ -169,6 +264,7 @@ services:
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -180,7 +276,23 @@ services:
         condition: service_healthy
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8081/actuator/health | grep -q '\"status\"' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 25s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   venta-service:
     build:
@@ -197,6 +309,7 @@ services:
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -206,7 +319,23 @@ services:
         condition: service_healthy
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8082/actuator/health | grep -q '\"status\"' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 25s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   despacho-service:
     build:
@@ -223,6 +352,7 @@ services:
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -232,7 +362,23 @@ services:
         condition: service_healthy
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8083/actuator/health | grep -q '\"status\"' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 25s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   ventas-mantenedor:
     build:
@@ -246,7 +392,23 @@ services:
         condition: service_healthy
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    restart: unless-stopped
 
   users-mantenedor:
     build:
@@ -260,7 +422,23 @@ services:
         condition: service_healthy
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    restart: unless-stopped
 
   pos-frontend:
     build:
@@ -274,7 +452,23 @@ services:
         condition: service_healthy
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    restart: unless-stopped
 
   postgres-sonar:
     image: postgres:16-alpine
@@ -293,9 +487,20 @@ services:
       timeout: 2s
       retries: 5
       start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    restart: unless-stopped
 
   sonarqube:
-    image: sonarqube:lts-community
+    image: sonarqube:10.7-community
     container_name: saga-sonarqube
     ports:
       - "9000:9000"
@@ -312,7 +517,23 @@ services:
       - sonarqube_logs:/opt/sonarqube/logs
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/system/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   jenkins:
     build:
@@ -324,53 +545,60 @@ services:
       - "8888:8080"
       - "50000:50000"
     environment:
-      JAVA_OPTS: "-Xmx1024m"
+      JAVA_OPTS: "-Xmx1024m -Xms512m"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - saga-network
-    restart: on-failure
-
-  # dynatrace-oneagent:
-  #   image: dynatrace/oneagent:latest
-  #   container_name: saga-dynatrace-oneagent
-  #   privileged: true
-  #   pid: host
-  #   network_mode: host
-  #   environment:
-  #     ONEAGENT_INSTALLER_SCRIPT_URL: ${DT_ONEAGENT_URL:-}
-  #     ONEAGENT_INSTALLER_DOWNLOAD_TOKEN: ${DT_PAAS_TOKEN:-}
-  #   volumes:
-  #     - /:/mnt/root
-  #     - dynatrace_oneagent:/opt/dynatrace/oneagent
-  #   restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: saga-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - saga-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 3s
-      timeout: 2s
-      retries: 5
-    restart: on-failure
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   zipkin:
-    image: openzipkin/zipkin:latest
+    image: openzipkin/zipkin:3
     container_name: saga-zipkin
     ports:
       - "9411:9411"
+    environment:
+      STORAGE_TYPE: mem
+      JAVA_OPTS: "-Xms128m -Xmx256m"
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9411/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.54.0
     container_name: saga-prometheus
     ports:
       - "9090:9090"
@@ -379,10 +607,26 @@ services:
       - prometheus_data:/prometheus
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.2.0
     container_name: saga-grafana
     ports:
       - "3001:3000"
@@ -397,7 +641,23 @@ services:
       - prometheus
     networks:
       - saga-network
-    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
 
 volumes:
   postgres_data:
