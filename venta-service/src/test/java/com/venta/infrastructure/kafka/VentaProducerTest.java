@@ -30,7 +30,7 @@ class VentaProducerTest {
                 .quantity(5)
                 .build();
 
-        ventaProducer.sendStockReserve(event);
+        ventaProducer.reserveStock(event);
 
         verify(kafkaTemplate).send("stock-reserve", "order-1", event);
     }
@@ -44,7 +44,7 @@ class VentaProducerTest {
                 .quantity(5)
                 .build();
 
-        ventaProducer.sendStockCompensate(event);
+        ventaProducer.compensateStock(event);
 
         verify(kafkaTemplate).send("stock-compensate", "order-1", event);
     }
@@ -59,7 +59,7 @@ class VentaProducerTest {
                 .customerId("customer-1")
                 .build();
 
-        ventaProducer.sendDespachoRequest(event);
+        ventaProducer.requestDespacho(event);
 
         verify(kafkaTemplate).send("despacho-request", "order-1", event);
     }

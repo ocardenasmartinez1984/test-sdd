@@ -1,6 +1,7 @@
 package com.venta.interfaces.rest;
 
-import com.venta.application.VentaApplicationService;
+import com.venta.application.command.OrderCommandService;
+import com.venta.application.query.OrderQueryService;
 import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -21,14 +21,16 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class VentaControllerTest {
 
     @Mock
-    private VentaApplicationService ventaApplicationService;
+    private OrderCommandService orderCommandService;
+
+    @Mock
+    private OrderQueryService orderQueryService;
 
     @InjectMocks
     private VentaController ventaController;
@@ -52,7 +54,7 @@ class VentaControllerTest {
     @Test
     @DisplayName("Should create venta and return CREATED status")
     void shouldCreateVenta() {
-        when(ventaApplicationService.crearVenta(any(Order.class))).thenReturn(Mono.just(testOrder));
+        when(orderCommandService.crearVenta(any(Order.class))).thenReturn(Mono.just(testOrder));
 
         StepVerifier.create(ventaController.crearVenta(testOrder))
                 .assertNext(response -> {
@@ -66,7 +68,7 @@ class VentaControllerTest {
     @Test
     @DisplayName("Should get venta by id")
     void shouldGetVenta() {
-        when(ventaApplicationService.getVenta("order-1")).thenReturn(Mono.just(testOrder));
+        when(orderQueryService.getVenta("order-1")).thenReturn(Mono.just(testOrder));
 
         StepVerifier.create(ventaController.getVenta("order-1"))
                 .assertNext(response -> {
@@ -80,7 +82,7 @@ class VentaControllerTest {
     @Test
     @DisplayName("Should list all ventas")
     void shouldListVentas() {
-        when(ventaApplicationService.listarVentas()).thenReturn(Flux.just(testOrder));
+        when(orderQueryService.listarVentas()).thenReturn(Flux.just(testOrder));
 
         StepVerifier.create(ventaController.listarVentas())
                 .assertNext(order -> assertThat(order.getId()).isEqualTo("order-1"))
@@ -90,7 +92,7 @@ class VentaControllerTest {
     @Test
     @DisplayName("Should list ventas by customer")
     void shouldListVentasByCustomer() {
-        when(ventaApplicationService.ventasPorCliente("customer-1")).thenReturn(Flux.just(testOrder));
+        when(orderQueryService.ventasPorCliente("customer-1")).thenReturn(Flux.just(testOrder));
 
         StepVerifier.create(ventaController.ventasPorCliente("customer-1"))
                 .assertNext(order -> assertThat(order.getCustomerId()).isEqualTo("customer-1"))
@@ -100,7 +102,7 @@ class VentaControllerTest {
     @Test
     @DisplayName("Should list ventas by status")
     void shouldListVentasByStatus() {
-        when(ventaApplicationService.ventasPorEstado(OrderStatus.PENDING)).thenReturn(Flux.just(testOrder));
+        when(orderQueryService.ventasPorEstado(OrderStatus.PENDING)).thenReturn(Flux.just(testOrder));
 
         StepVerifier.create(ventaController.ventasPorEstado(OrderStatus.PENDING))
                 .assertNext(order -> assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING))
@@ -114,7 +116,7 @@ class VentaControllerTest {
                 .id("order-1")
                 .status(OrderStatus.CANCELLED)
                 .build();
-        when(ventaApplicationService.cancelarVenta("order-1")).thenReturn(Mono.just(cancelledOrder));
+        when(orderCommandService.cancelarVenta("order-1")).thenReturn(Mono.just(cancelledOrder));
 
         StepVerifier.create(ventaController.cancelarVenta("order-1"))
                 .assertNext(response -> {
@@ -131,7 +133,7 @@ class VentaControllerTest {
                 .id("order-1")
                 .status(OrderStatus.COMPLETED)
                 .build();
-        when(ventaApplicationService.actualizarEstado("order-1", OrderStatus.COMPLETED))
+        when(orderCommandService.actualizarEstado("order-1", OrderStatus.COMPLETED))
                 .thenReturn(Mono.just(updatedOrder));
 
         StepVerifier.create(ventaController.actualizarEstado("order-1", OrderStatus.COMPLETED))

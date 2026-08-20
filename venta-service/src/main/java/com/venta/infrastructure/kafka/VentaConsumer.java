@@ -1,7 +1,7 @@
 package com.venta.infrastructure.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.venta.application.VentaApplicationService;
+import com.venta.application.saga.SagaOrchestrator;
 import com.venta.domain.event.DespachoResponseEvent;
 import com.venta.domain.event.StockReserveResponseEvent;
 import com.venta.domain.model.CartItem;
@@ -18,7 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VentaConsumer {
 
-    private final VentaApplicationService ventaApplicationService;
+    private final SagaOrchestrator sagaOrchestrator;
     private final CartRepository cartRepository;
     private final ObjectMapper objectMapper;
 
@@ -42,7 +42,7 @@ public class VentaConsumer {
                     })
                     .switchIfEmpty(
                             // Not a cart item, handle as order
-                            ventaApplicationService.handleStockResponse(event)
+                            sagaOrchestrator.handleStockResponse(event)
                     )
                     .subscribe(
                             unused -> {},
@@ -58,7 +58,7 @@ public class VentaConsumer {
         log.info("Received despacho-response: {}", message);
         try {
             DespachoResponseEvent event = objectMapper.convertValue(message, DespachoResponseEvent.class);
-            ventaApplicationService.handleDespachoResponse(event)
+            sagaOrchestrator.handleDespachoResponse(event)
                     .subscribe(
                             unused -> {},
                             error -> log.error("Error processing despacho-response: {}", error.getMessage(), error)
@@ -73,7 +73,7 @@ public class VentaConsumer {
         log.info("Received despacho-delivered: {}", message);
         try {
             String orderId = (String) message.get("orderId");
-            ventaApplicationService.handleDespachoDelivered(orderId)
+            sagaOrchestrator.handleDespachoDelivered(orderId)
                     .subscribe(
                             unused -> {},
                             error -> log.error("Error processing despacho-delivered: {}", error.getMessage(), error)

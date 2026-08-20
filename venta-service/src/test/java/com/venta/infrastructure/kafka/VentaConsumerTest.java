@@ -1,10 +1,10 @@
 package com.venta.infrastructure.kafka;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.venta.application.VentaApplicationService;
+import com.venta.application.saga.SagaOrchestrator;
 import com.venta.domain.event.DespachoResponseEvent;
 import com.venta.domain.event.StockReserveResponseEvent;
-import org.junit.jupiter.api.BeforeEach;
+import com.venta.domain.repository.CartRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +23,10 @@ import static org.mockito.Mockito.*;
 class VentaConsumerTest {
 
     @Mock
-    private VentaApplicationService ventaApplicationService;
+    private SagaOrchestrator sagaOrchestrator;
+
+    @Mock
+    private CartRepository cartRepository;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -46,12 +49,12 @@ class VentaConsumerTest {
                 .build();
 
         when(objectMapper.convertValue(message, StockReserveResponseEvent.class)).thenReturn(event);
-        when(ventaApplicationService.handleStockResponse(event)).thenReturn(Mono.empty());
+        when(cartRepository.findById("order-1")).thenReturn(Mono.empty());
+        when(sagaOrchestrator.handleStockResponse(event)).thenReturn(Mono.empty());
 
         ventaConsumer.consumeStockReserveResponse(message);
 
         verify(objectMapper).convertValue(message, StockReserveResponseEvent.class);
-        verify(ventaApplicationService).handleStockResponse(event);
     }
 
     @Test
@@ -69,12 +72,12 @@ class VentaConsumerTest {
                 .build();
 
         when(objectMapper.convertValue(message, DespachoResponseEvent.class)).thenReturn(event);
-        when(ventaApplicationService.handleDespachoResponse(event)).thenReturn(Mono.empty());
+        when(sagaOrchestrator.handleDespachoResponse(event)).thenReturn(Mono.empty());
 
         ventaConsumer.consumeDespachoResponse(message);
 
         verify(objectMapper).convertValue(message, DespachoResponseEvent.class);
-        verify(ventaApplicationService).handleDespachoResponse(event);
+        verify(sagaOrchestrator).handleDespachoResponse(event);
     }
 
     @Test
@@ -83,11 +86,11 @@ class VentaConsumerTest {
         Map<String, Object> message = new HashMap<>();
         message.put("orderId", "order-1");
 
-        when(ventaApplicationService.handleDespachoDelivered("order-1")).thenReturn(Mono.empty());
+        when(sagaOrchestrator.handleDespachoDelivered("order-1")).thenReturn(Mono.empty());
 
         ventaConsumer.consumeDespachoDelivered(message);
 
-        verify(ventaApplicationService).handleDespachoDelivered("order-1");
+        verify(sagaOrchestrator).handleDespachoDelivered("order-1");
     }
 
     @Test
@@ -102,7 +105,7 @@ class VentaConsumerTest {
         // Should not throw exception
         ventaConsumer.consumeStockReserveResponse(message);
 
-        verify(ventaApplicationService, never()).handleStockResponse(any());
+        verify(sagaOrchestrator, never()).handleStockResponse(any());
     }
 
     @Test
@@ -117,6 +120,6 @@ class VentaConsumerTest {
         // Should not throw exception
         ventaConsumer.consumeDespachoResponse(message);
 
-        verify(ventaApplicationService, never()).handleDespachoResponse(any());
+        verify(sagaOrchestrator, never()).handleDespachoResponse(any());
     }
 }
