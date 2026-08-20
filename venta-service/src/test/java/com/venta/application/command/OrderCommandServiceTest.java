@@ -4,10 +4,7 @@ import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.port.StockEventPublisher;
 import com.venta.domain.repository.OrderRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -15,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -22,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@Tag("unit")
 @ExtendWith(MockitoExtension.class)
 class OrderCommandServiceTest {
 
@@ -163,6 +162,29 @@ class OrderCommandServiceTest {
                             e.getMessage().contains("Cannot cancel order in status"))
                     .verify();
         }
+
+        @Test
+        @DisplayName("Should cancel order in DISPATCHING and send compensate event")
+        void shouldCancelDispatchingOrderAndSendCompensate() {
+            testOrder.setStatus(OrderStatus.DISPATCHING);
+            Order cancelledOrder = Order.builder()
+                    .id("order-1")
+                    .customerId("customer-1")
+                    .productId("product-1")
+                    .quantity(5)
+                    .status(OrderStatus.CANCELLED)
+                    .build();
+
+            when(orderRepository.findById("order-1")).thenReturn(Mono.just(testOrder));
+            when(orderRepository.save(any(Order.class))).thenReturn(Mono.just(cancelledOrder));
+            doNothing().when(stockEventPublisher).compensateStock(any());
+
+            StepVerifier.create(orderCommandService.cancelarVenta("order-1"))
+                    .assertNext(order -> assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED))
+                    .verifyComplete();
+
+            verify(stockEventPublisher).compensateStock(any());
+        }
     }
 
     @Nested
@@ -183,6 +205,82 @@ class OrderCommandServiceTest {
             StepVerifier.create(orderCommandService.actualizarEstado("order-1", OrderStatus.COMPLETED))
                     .assertNext(order -> assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED))
                     .verifyComplete();
+        }
+    }
+
+    @Nested
+    @DisplayName("CircuitBreaker Fallback Tests")
+    class FallbackTests {
+
+        @Test
+        @DisplayName("crearVentaFallback should return Mono.error with unavailable message")
+        void crearVentaFallbackShouldReturnError() throws Exception {
+            Method fallbackMethod = OrderCommandService.class.getDeclaredMethod(
+                    "crearVentaFallback", Order.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Order> result = (Mono<Order>) fallbackMethod.invoke(
+                    orderCommandService, testOrder, new RuntimeException("Connection refused"));
+
+            StepVerifier.create(result)
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Sales service temporarily unavailable"))
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("cancelarVentaFallback should return Mono.error with unavailable message")
+        void cancelarVentaFallbackShouldReturnError() throws Exception {
+            Method fallbackMethod = OrderCommandService.class.getDeclaredMethod(
+                    "cancelarVentaFallback", String.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Order> result = (Mono<Order>) fallbackMethod.invoke(
+                    orderCommandService, "order-1", new RuntimeException("Connection refused"));
+
+            StepVerifier.create(result)
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Sales service temporarily unavailable"))
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("actualizarEstadoFallback should return Mono.error with unavailable message")
+        void actualizarEstadoFallbackShouldReturnError() throws Exception {
+            Method fallbackMethod = OrderCommandService.class.getDeclaredMethod(
+                    "actualizarEstadoFallback", String.class, OrderStatus.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Order> result = (Mono<Order>) fallbackMethod.invoke(
+                    orderCommandService, "order-1", OrderStatus.COMPLETED, new RuntimeException("Connection refused"));
+
+            StepVerifier.create(result)
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Sales service temporarily unavailable"))
+                    .verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("Edge Case Tests")
+    class EdgeCaseTests {
+
+        @Test
+        @DisplayName("Should handle concurrent cancellation - order already cancelled between findById and save")
+        void shouldHandleConcurrentCancellation() {
+            testOrder.setStatus(OrderStatus.PENDING);
+
+            when(orderRepository.findById("order-1")).thenReturn(Mono.just(testOrder));
+            when(orderRepository.save(any(Order.class)))
+                    .thenReturn(Mono.error(new RuntimeException("Optimistic locking failure")));
+
+            StepVerifier.create(orderCommandService.cancelarVenta("order-1"))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Optimistic locking failure"))
+                    .verify();
         }
     }
 }

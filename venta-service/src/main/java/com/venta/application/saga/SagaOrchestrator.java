@@ -9,6 +9,7 @@ import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.port.DespachoEventPublisher;
 import com.venta.domain.port.StockEventPublisher;
 import com.venta.domain.repository.OrderRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class SagaOrchestrator {
     private final StockEventPublisher stockEventPublisher;
     private final DespachoEventPublisher despachoEventPublisher;
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "handleStockResponseFallback")
     public Mono<Void> handleStockResponse(StockReserveResponseEvent event) {
         return orderRepository.findById(event.getOrderId())
                 .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + event.getOrderId())))
@@ -58,6 +60,7 @@ public class SagaOrchestrator {
                 .then();
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "handleDespachoResponseFallback")
     public Mono<Void> handleDespachoResponse(DespachoResponseEvent event) {
         return orderRepository.findById(event.getOrderId())
                 .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + event.getOrderId())))
@@ -89,6 +92,7 @@ public class SagaOrchestrator {
                 .then();
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "handleDespachoDeliveredFallback")
     public Mono<Void> handleDespachoDelivered(String orderId) {
         return orderRepository.findById(orderId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + orderId)))
@@ -104,5 +108,21 @@ public class SagaOrchestrator {
                     return Mono.just(order);
                 })
                 .then();
+    }
+
+    // Fallback methods
+    private Mono<Void> handleStockResponseFallback(StockReserveResponseEvent event, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - handleStockResponse failed for order: {}. Error: {}", event.getOrderId(), t.getMessage());
+        return Mono.empty();
+    }
+
+    private Mono<Void> handleDespachoResponseFallback(DespachoResponseEvent event, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - handleDespachoResponse failed for order: {}. Error: {}", event.getOrderId(), t.getMessage());
+        return Mono.empty();
+    }
+
+    private Mono<Void> handleDespachoDeliveredFallback(String orderId, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - handleDespachoDelivered failed for order: {}. Error: {}", orderId, t.getMessage());
+        return Mono.empty();
     }
 }

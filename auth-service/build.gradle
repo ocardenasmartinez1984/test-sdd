@@ -9,9 +9,13 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     runtimeOnly 'org.postgresql:postgresql'
 
+    // OpenAPI / Swagger documentation (MVC variant for auth-service)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+
     // Quitar dependencias del parent que no se necesitan
     configurations {
         implementation.exclude group: 'org.springframework.boot', module: 'spring-boot-starter-data-mongodb-reactive'
         implementation.exclude group: 'org.springframework.kafka', module: 'spring-kafka'
+        implementation.exclude group: 'org.springdoc', module: 'springdoc-openapi-starter-webflux-ui'
     }
 }

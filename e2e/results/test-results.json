@@ -1,0 +1,977 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\ocard\\workspaces\\pos-test\\e2e\\playwright.config.ts",
+    "rootDir": "C:/Users/ocard/workspaces/pos-test/e2e/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "results/test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 15000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/ocard/workspaces/pos-test/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "api",
+        "name": "api",
+        "testDir": "C:/Users/ocard/workspaces/pos-test/e2e/tests/api",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "C:/Users/ocard/workspaces/pos-test/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "frontend",
+        "name": "frontend",
+        "testDir": "C:/Users/ocard/workspaces/pos-test/e2e/tests/frontend",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "version": "1.44.0",
+    "workers": 7,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "api\\auth.spec.ts",
+      "file": "api/auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Auth Service E2E",
+          "file": "api/auth.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should login with valid credentials and return JWT token",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-74466823ecaf8c85f790",
+              "file": "api/auth.spec.ts",
+              "line": 6,
+              "column": 7
+            },
+            {
+              "title": "should reject invalid credentials",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-04ee3cefdec8493410e5",
+              "file": "api/auth.spec.ts",
+              "line": 16,
+              "column": 7
+            },
+            {
+              "title": "should validate a valid token",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-2e8d2f551296882a2579",
+              "file": "api/auth.spec.ts",
+              "line": 23,
+              "column": 7
+            },
+            {
+              "title": "should reject expired/invalid token",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "d748ac400d08b85935ef-6cd66e2f426972e7cc88",
+              "file": "api/auth.spec.ts",
+              "line": 35,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "api\\cart.spec.ts",
+      "file": "api/cart.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Cart Service E2E",
+          "file": "api/cart.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should add item to cart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1981448f0b79506fb670-59aa57a971ff1bd0f5e9",
+              "file": "api/cart.spec.ts",
+              "line": 22,
+              "column": 7
+            },
+            {
+              "title": "should get cart items",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1981448f0b79506fb670-8e515fcc2d82bfbe7bce",
+              "file": "api/cart.spec.ts",
+              "line": 36,
+              "column": 7
+            },
+            {
+              "title": "should clear cart",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1981448f0b79506fb670-3423846cb35340bf34a9",
+              "file": "api/cart.spec.ts",
+              "line": 44,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "api\\despacho.spec.ts",
+      "file": "api/despacho.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Despacho Service E2E",
+          "file": "api/despacho.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should list all dispatches",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7cda4a71335e2d0c602f-08d127ab9a0aea0a441d",
+              "file": "api/despacho.spec.ts",
+              "line": 6,
+              "column": 7
+            },
+            {
+              "title": "should filter dispatches by status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7cda4a71335e2d0c602f-ae7dc7d90be525251683",
+              "file": "api/despacho.spec.ts",
+              "line": 13,
+              "column": 7
+            },
+            {
+              "title": "should return 404 for non-existent tracking",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7cda4a71335e2d0c602f-b1de48f2d6f220fc82e0",
+              "file": "api/despacho.spec.ts",
+              "line": 23,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "api\\health.spec.ts",
+      "file": "api/health.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Infrastructure Health Checks E2E",
+          "file": "api/health.spec.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "API Gateway should be healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-7e0d5858d85e28a570f4",
+              "file": "api/health.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Auth Service should be healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-4db3dff7d53780e63367",
+              "file": "api/health.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Stock Service should be healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-ee50c5a2b77ee695a7da",
+              "file": "api/health.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Venta Service should be healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-f7b4e92f2e56e5501c1a",
+              "file": "api/health.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Despacho Service should be healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-a9dcf2ff2f1a29609c74",
+              "file": "api/health.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Eureka Server should be healthy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-189991613c73820923cd",
+              "file": "api/health.spec.ts",
+              "line": 14,
+              "column": 9
+            },
+            {
+              "title": "Stock Service health should show MongoDB and Kafka details",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-be516bc70c24d03d8728",
+              "file": "api/health.spec.ts",
+              "line": 22,
+              "column": 7
+            },
+            {
+              "title": "API Gateway health should show Redis details",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "760d72a3746ac5132f88-6283fc004ea0979d1a33",
+              "file": "api/health.spec.ts",
+              "line": 29,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "api\\saga-flow.spec.ts",
+      "file": "api/saga-flow.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "SAGA Flow E2E - Complete Sales Transaction",
+          "file": "api/saga-flow.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Step 1: Create order (triggers SAGA)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a6ee7171dd2ab3e15c00-9fbf46a92f72adcb125b",
+              "file": "api/saga-flow.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "Step 2: Verify stock was reserved (wait for async)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a6ee7171dd2ab3e15c00-9a483a61c7273934a09a",
+              "file": "api/saga-flow.spec.ts",
+              "line": 41,
+              "column": 7
+            },
+            {
+              "title": "Step 3: Verify stock quantity decreased",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a6ee7171dd2ab3e15c00-cb45ddf1f916ea2a5d24",
+              "file": "api/saga-flow.spec.ts",
+              "line": 52,
+              "column": 7
+            },
+            {
+              "title": "Step 4: Verify dispatch was created",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a6ee7171dd2ab3e15c00-7c9a0ff0928cc536bd02",
+              "file": "api/saga-flow.spec.ts",
+              "line": 60,
+              "column": 7
+            },
+            {
+              "title": "Step 5: Cancel order triggers compensation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a6ee7171dd2ab3e15c00-4fe976f1e6979a8570cd",
+              "file": "api/saga-flow.spec.ts",
+              "line": 70,
+              "column": 7
+            },
+            {
+              "title": "Step 6: Insufficient stock triggers STOCK_FAILED",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a6ee7171dd2ab3e15c00-46f7b4aec765d50c8721",
+              "file": "api/saga-flow.spec.ts",
+              "line": 95,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "api\\stock.spec.ts",
+      "file": "api/stock.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Stock Service E2E",
+          "file": "api/stock.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should create a product",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f17e7e2a03a524674674-78f90723251578960087",
+              "file": "api/stock.spec.ts",
+              "line": 8,
+              "column": 7
+            },
+            {
+              "title": "should get all products",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f17e7e2a03a524674674-6a190b35308146d89999",
+              "file": "api/stock.spec.ts",
+              "line": 25,
+              "column": 7
+            },
+            {
+              "title": "should get product by id",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f17e7e2a03a524674674-6fd46598d3724a900d3d",
+              "file": "api/stock.spec.ts",
+              "line": 32,
+              "column": 7
+            },
+            {
+              "title": "should return 404 for non-existent product",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f17e7e2a03a524674674-af0f8ad89df3e3542006",
+              "file": "api/stock.spec.ts",
+              "line": 46,
+              "column": 7
+            },
+            {
+              "title": "should check available quantity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f17e7e2a03a524674674-3af74b30e919229e72f1",
+              "file": "api/stock.spec.ts",
+              "line": 51,
+              "column": 7
+            },
+            {
+              "title": "should update stock quantity",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api",
+                  "projectName": "api",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f17e7e2a03a524674674-bb3a9942b3a9161fd7d2",
+              "file": "api/stock.spec.ts",
+              "line": 63,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "frontend\\pos.spec.ts",
+      "file": "frontend/pos.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "POS Frontend E2E",
+          "file": "frontend/pos.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load the POS application",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8d72c8cda0dde62ea615-0f45c176cef447435e5a",
+              "file": "frontend/pos.spec.ts",
+              "line": 6,
+              "column": 7
+            },
+            {
+              "title": "should display product catalog",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8d72c8cda0dde62ea615-dd9078e17da2cfe615fd",
+              "file": "frontend/pos.spec.ts",
+              "line": 11,
+              "column": 7
+            },
+            {
+              "title": "should be responsive (mobile viewport)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8d72c8cda0dde62ea615-4f4af8679f4deda14b81",
+              "file": "frontend/pos.spec.ts",
+              "line": 20,
+              "column": 7
+            },
+            {
+              "title": "should load without console errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8d72c8cda0dde62ea615-128916f5d6ffb00dd225",
+              "file": "frontend/pos.spec.ts",
+              "line": 26,
+              "column": 7
+            },
+            {
+              "title": "should have accessible navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8d72c8cda0dde62ea615-58c23831103a96ae22fd",
+              "file": "frontend/pos.spec.ts",
+              "line": 38,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "frontend\\ventas.spec.ts",
+      "file": "frontend/ventas.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Ventas Mantenedor E2E",
+          "file": "frontend/ventas.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should load the ventas management app",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "276118a7f98e0ee3d507-3a1a0a70a40ed08137da",
+              "file": "frontend/ventas.spec.ts",
+              "line": 6,
+              "column": 7
+            },
+            {
+              "title": "should display sales list or login page",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "276118a7f98e0ee3d507-9504a0382c41ed860f65",
+              "file": "frontend/ventas.spec.ts",
+              "line": 13,
+              "column": 7
+            },
+            {
+              "title": "should handle navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "frontend",
+                  "projectName": "frontend",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "276118a7f98e0ee3d507-5a9fff2adb487830923c",
+              "file": "frontend/ventas.spec.ts",
+              "line": 21,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-08-20T20:30:14.294Z",
+    "duration": 249.24699999999984,
+    "expected": 0,
+    "skipped": 38,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

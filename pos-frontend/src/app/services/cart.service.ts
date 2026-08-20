@@ -5,7 +5,7 @@ import { CartAddRequest, CartItemResponse } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
-  private readonly apiUrl = '/api/cart';
+  private readonly apiUrl = '/api/v1/cart';
 
   constructor(private http: HttpClient) {}
 

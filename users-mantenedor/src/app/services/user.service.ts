@@ -5,7 +5,7 @@ import { User, CreateUserRequest, UpdateUserRequest } from '../models/user.model
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
-  private readonly apiUrl = '/api/users';
+  private readonly apiUrl = '/api/v1/users';
 
   constructor(private http: HttpClient) {}
 

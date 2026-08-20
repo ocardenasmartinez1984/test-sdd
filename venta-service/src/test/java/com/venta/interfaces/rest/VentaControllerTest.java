@@ -4,9 +4,7 @@ import com.venta.application.command.OrderCommandService;
 import com.venta.application.query.OrderQueryService;
 import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@Tag("unit")
 @ExtendWith(MockitoExtension.class)
 class VentaControllerTest {
 
@@ -51,96 +50,206 @@ class VentaControllerTest {
                 .build();
     }
 
-    @Test
-    @DisplayName("Should create venta and return CREATED status")
-    void shouldCreateVenta() {
-        when(orderCommandService.crearVenta(any(Order.class))).thenReturn(Mono.just(testOrder));
+    @Nested
+    @DisplayName("Crear Venta Tests")
+    class CrearVentaTests {
 
-        StepVerifier.create(ventaController.crearVenta(testOrder))
-                .assertNext(response -> {
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-                    assertThat(response.getBody()).isNotNull();
-                    assertThat(response.getBody().getId()).isEqualTo("order-1");
-                })
-                .verifyComplete();
+        @Test
+        @DisplayName("Should create venta and return CREATED status")
+        void shouldCreateVenta() {
+            when(orderCommandService.crearVenta(any(Order.class))).thenReturn(Mono.just(testOrder));
+
+            StepVerifier.create(ventaController.crearVenta(testOrder))
+                    .assertNext(response -> {
+                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                        assertThat(response.getBody()).isNotNull();
+                        assertThat(response.getBody().getId()).isEqualTo("order-1");
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should propagate error when service fails to create venta")
+        void shouldPropagateErrorWhenServiceFails() {
+            when(orderCommandService.crearVenta(any(Order.class)))
+                    .thenReturn(Mono.error(new RuntimeException("Sales service temporarily unavailable")));
+
+            StepVerifier.create(ventaController.crearVenta(testOrder))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Sales service temporarily unavailable"))
+                    .verify();
+        }
     }
 
-    @Test
-    @DisplayName("Should get venta by id")
-    void shouldGetVenta() {
-        when(orderQueryService.getVenta("order-1")).thenReturn(Mono.just(testOrder));
+    @Nested
+    @DisplayName("Get Venta Tests")
+    class GetVentaTests {
 
-        StepVerifier.create(ventaController.getVenta("order-1"))
-                .assertNext(response -> {
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                    assertThat(response.getBody()).isNotNull();
-                    assertThat(response.getBody().getId()).isEqualTo("order-1");
-                })
-                .verifyComplete();
+        @Test
+        @DisplayName("Should get venta by id")
+        void shouldGetVenta() {
+            when(orderQueryService.getVenta("order-1")).thenReturn(Mono.just(testOrder));
+
+            StepVerifier.create(ventaController.getVenta("order-1"))
+                    .assertNext(response -> {
+                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                        assertThat(response.getBody()).isNotNull();
+                        assertThat(response.getBody().getId()).isEqualTo("order-1");
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should propagate error when venta not found")
+        void shouldPropagateErrorWhenVentaNotFound() {
+            when(orderQueryService.getVenta("nonexistent"))
+                    .thenReturn(Mono.error(new RuntimeException("Order not found: nonexistent")));
+
+            StepVerifier.create(ventaController.getVenta("nonexistent"))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Order not found"))
+                    .verify();
+        }
     }
 
-    @Test
-    @DisplayName("Should list all ventas")
-    void shouldListVentas() {
-        when(orderQueryService.listarVentas()).thenReturn(Flux.just(testOrder));
+    @Nested
+    @DisplayName("Listar Ventas Tests")
+    class ListarVentasTests {
 
-        StepVerifier.create(ventaController.listarVentas())
-                .assertNext(order -> assertThat(order.getId()).isEqualTo("order-1"))
-                .verifyComplete();
+        @Test
+        @DisplayName("Should list all ventas")
+        void shouldListVentas() {
+            when(orderQueryService.listarVentas()).thenReturn(Flux.just(testOrder));
+
+            StepVerifier.create(ventaController.listarVentas())
+                    .assertNext(order -> assertThat(order.getId()).isEqualTo("order-1"))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should return empty flux when no ventas exist")
+        void shouldReturnEmptyFluxWhenNoVentasExist() {
+            when(orderQueryService.listarVentas()).thenReturn(Flux.empty());
+
+            StepVerifier.create(ventaController.listarVentas())
+                    .verifyComplete();
+        }
     }
 
-    @Test
-    @DisplayName("Should list ventas by customer")
-    void shouldListVentasByCustomer() {
-        when(orderQueryService.ventasPorCliente("customer-1")).thenReturn(Flux.just(testOrder));
+    @Nested
+    @DisplayName("Ventas Por Cliente Tests")
+    class VentasPorClienteTests {
 
-        StepVerifier.create(ventaController.ventasPorCliente("customer-1"))
-                .assertNext(order -> assertThat(order.getCustomerId()).isEqualTo("customer-1"))
-                .verifyComplete();
+        @Test
+        @DisplayName("Should list ventas by customer")
+        void shouldListVentasByCustomer() {
+            when(orderQueryService.ventasPorCliente("customer-1")).thenReturn(Flux.just(testOrder));
+
+            StepVerifier.create(ventaController.ventasPorCliente("customer-1"))
+                    .assertNext(order -> assertThat(order.getCustomerId()).isEqualTo("customer-1"))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should return empty flux when customer has no ventas")
+        void shouldReturnEmptyFluxWhenCustomerHasNoVentas() {
+            when(orderQueryService.ventasPorCliente("unknown")).thenReturn(Flux.empty());
+
+            StepVerifier.create(ventaController.ventasPorCliente("unknown"))
+                    .verifyComplete();
+        }
     }
 
-    @Test
-    @DisplayName("Should list ventas by status")
-    void shouldListVentasByStatus() {
-        when(orderQueryService.ventasPorEstado(OrderStatus.PENDING)).thenReturn(Flux.just(testOrder));
+    @Nested
+    @DisplayName("Ventas Por Estado Tests")
+    class VentasPorEstadoTests {
 
-        StepVerifier.create(ventaController.ventasPorEstado(OrderStatus.PENDING))
-                .assertNext(order -> assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING))
-                .verifyComplete();
+        @Test
+        @DisplayName("Should list ventas by status")
+        void shouldListVentasByStatus() {
+            when(orderQueryService.ventasPorEstado(OrderStatus.PENDING)).thenReturn(Flux.just(testOrder));
+
+            StepVerifier.create(ventaController.ventasPorEstado(OrderStatus.PENDING))
+                    .assertNext(order -> assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING))
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should return empty flux when no ventas with given status")
+        void shouldReturnEmptyFluxWhenNoVentasWithStatus() {
+            when(orderQueryService.ventasPorEstado(OrderStatus.COMPLETED)).thenReturn(Flux.empty());
+
+            StepVerifier.create(ventaController.ventasPorEstado(OrderStatus.COMPLETED))
+                    .verifyComplete();
+        }
     }
 
-    @Test
-    @DisplayName("Should cancel venta")
-    void shouldCancelVenta() {
-        Order cancelledOrder = Order.builder()
-                .id("order-1")
-                .status(OrderStatus.CANCELLED)
-                .build();
-        when(orderCommandService.cancelarVenta("order-1")).thenReturn(Mono.just(cancelledOrder));
+    @Nested
+    @DisplayName("Cancelar Venta Tests")
+    class CancelarVentaTests {
 
-        StepVerifier.create(ventaController.cancelarVenta("order-1"))
-                .assertNext(response -> {
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                    assertThat(response.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
-                })
-                .verifyComplete();
+        @Test
+        @DisplayName("Should cancel venta")
+        void shouldCancelVenta() {
+            Order cancelledOrder = Order.builder()
+                    .id("order-1")
+                    .status(OrderStatus.CANCELLED)
+                    .build();
+            when(orderCommandService.cancelarVenta("order-1")).thenReturn(Mono.just(cancelledOrder));
+
+            StepVerifier.create(ventaController.cancelarVenta("order-1"))
+                    .assertNext(response -> {
+                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                        assertThat(response.getBody().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should propagate error when cancellation fails")
+        void shouldPropagateErrorWhenCancellationFails() {
+            when(orderCommandService.cancelarVenta("order-1"))
+                    .thenReturn(Mono.error(new RuntimeException("Cannot cancel order in status: COMPLETED")));
+
+            StepVerifier.create(ventaController.cancelarVenta("order-1"))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Cannot cancel order in status"))
+                    .verify();
+        }
     }
 
-    @Test
-    @DisplayName("Should update venta status")
-    void shouldUpdateVentaStatus() {
-        Order updatedOrder = Order.builder()
-                .id("order-1")
-                .status(OrderStatus.COMPLETED)
-                .build();
-        when(orderCommandService.actualizarEstado("order-1", OrderStatus.COMPLETED))
-                .thenReturn(Mono.just(updatedOrder));
+    @Nested
+    @DisplayName("Actualizar Estado Tests")
+    class ActualizarEstadoTests {
 
-        StepVerifier.create(ventaController.actualizarEstado("order-1", OrderStatus.COMPLETED))
-                .assertNext(response -> {
-                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                    assertThat(response.getBody().getStatus()).isEqualTo(OrderStatus.COMPLETED);
-                })
-                .verifyComplete();
+        @Test
+        @DisplayName("Should update venta status")
+        void shouldUpdateVentaStatus() {
+            Order updatedOrder = Order.builder()
+                    .id("order-1")
+                    .status(OrderStatus.COMPLETED)
+                    .build();
+            when(orderCommandService.actualizarEstado("order-1", OrderStatus.COMPLETED))
+                    .thenReturn(Mono.just(updatedOrder));
+
+            StepVerifier.create(ventaController.actualizarEstado("order-1", OrderStatus.COMPLETED))
+                    .assertNext(response -> {
+                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                        assertThat(response.getBody().getStatus()).isEqualTo(OrderStatus.COMPLETED);
+                    })
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("Should propagate error when status update fails")
+        void shouldPropagateErrorWhenStatusUpdateFails() {
+            when(orderCommandService.actualizarEstado("nonexistent", OrderStatus.COMPLETED))
+                    .thenReturn(Mono.error(new RuntimeException("Order not found: nonexistent")));
+
+            StepVerifier.create(ventaController.actualizarEstado("nonexistent", OrderStatus.COMPLETED))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Order not found"))
+                    .verify();
+        }
     }
 }

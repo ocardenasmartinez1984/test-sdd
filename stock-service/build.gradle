@@ -2,5 +2,6 @@
 // Participa en el patrón SAGA como participante
 
 dependencies {
-    // Dependencias adicionales específicas del servicio
+    // Redis cache for frequent queries
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 }

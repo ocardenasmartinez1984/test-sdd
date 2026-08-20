@@ -35,8 +35,8 @@ public class StockServiceSimulation extends Simulation {
     ScenarioBuilder createProductScenario = scenario("Stock - Create Products")
             .feed(productFeeder)
             .exec(
-                    http("POST /api/stock")
-                            .post("/api/stock")
+                    http("POST /api/v1/stock")
+                            .post("/api/v1/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -52,8 +52,8 @@ public class StockServiceSimulation extends Simulation {
 
     ScenarioBuilder listProductsScenario = scenario("Stock - List Products")
             .exec(
-                    http("GET /api/stock")
-                            .get("/api/stock")
+                    http("GET /api/v1/stock")
+                            .get("/api/v1/stock")
                             .check(status().is(200))
             )
             .pause(Duration.ofMillis(200), Duration.ofMillis(600));
@@ -61,8 +61,8 @@ public class StockServiceSimulation extends Simulation {
     ScenarioBuilder createAndCheckScenario = scenario("Stock - Create & Check Product")
             .feed(productFeeder)
             .exec(
-                    http("POST /api/stock (create)")
-                            .post("/api/stock")
+                    http("POST /api/v1/stock (create)")
+                            .post("/api/v1/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -76,14 +76,14 @@ public class StockServiceSimulation extends Simulation {
             )
             .pause(Duration.ofMillis(300), Duration.ofMillis(800))
             .exec(
-                    http("GET /api/stock/{id}")
-                            .get("/api/stock/#{productId}")
+                    http("GET /api/v1/stock/{id}")
+                            .get("/api/v1/stock/#{productId}")
                             .check(status().is(200))
             )
             .pause(Duration.ofMillis(100), Duration.ofMillis(300))
             .exec(
-                    http("GET /api/stock/{id}/available")
-                            .get("/api/stock/#{productId}/available")
+                    http("GET /api/v1/stock/{id}/available")
+                            .get("/api/v1/stock/#{productId}/available")
                             .check(status().is(200))
                             .check(jsonPath("$.availableQuantity").exists())
             );

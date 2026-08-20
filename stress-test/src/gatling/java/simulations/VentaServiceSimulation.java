@@ -48,8 +48,8 @@ public class VentaServiceSimulation extends Simulation {
             .feed(orderFeeder)
             // First create a product so we have a valid productId
             .exec(
-                    http("POST /api/stock (setup)")
-                            .post(STOCK_URL + "/api/stock")
+                    http("POST /api/v1/stock (setup)")
+                            .post(STOCK_URL + "/api/v1/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -64,8 +64,8 @@ public class VentaServiceSimulation extends Simulation {
             .pause(Duration.ofMillis(200), Duration.ofMillis(500))
             // Create the order (triggers saga)
             .exec(
-                    http("POST /api/ventas (create order)")
-                            .post(VENTA_URL + "/api/ventas")
+                    http("POST /api/v1/ventas (create order)")
+                            .post(VENTA_URL + "/api/v1/ventas")
                             .body(StringBody("""
                                     {
                                         "customerId": "#{customerId}",
@@ -80,8 +80,8 @@ public class VentaServiceSimulation extends Simulation {
             .pause(Duration.ofSeconds(2), Duration.ofSeconds(4))
             // Check order status after saga completion
             .exec(
-                    http("GET /api/ventas/{id} (check status)")
-                            .get(VENTA_URL + "/api/ventas/#{ventaId}")
+                    http("GET /api/v1/ventas/{id} (check status)")
+                            .get(VENTA_URL + "/api/v1/ventas/#{ventaId}")
                             .check(status().is(200))
             );
 
@@ -90,8 +90,8 @@ public class VentaServiceSimulation extends Simulation {
             .feed(orderFeeder)
             .feed(productFeeder)
             .exec(
-                    http("POST /api/stock (setup)")
-                            .post(STOCK_URL + "/api/stock")
+                    http("POST /api/v1/stock (setup)")
+                            .post(STOCK_URL + "/api/v1/stock")
                             .body(StringBody("""
                                     {
                                         "name": "#{productName}",
@@ -105,8 +105,8 @@ public class VentaServiceSimulation extends Simulation {
             )
             .pause(Duration.ofMillis(100))
             .exec(
-                    http("POST /api/ventas (burst)")
-                            .post(VENTA_URL + "/api/ventas")
+                    http("POST /api/v1/ventas (burst)")
+                            .post(VENTA_URL + "/api/v1/ventas")
                             .body(StringBody("""
                                     {
                                         "customerId": "#{customerId}",
@@ -122,8 +122,8 @@ public class VentaServiceSimulation extends Simulation {
     // List orders scenario
     ScenarioBuilder listOrdersScenario = scenario("Venta - List Orders")
             .exec(
-                    http("GET /api/ventas")
-                            .get(VENTA_URL + "/api/ventas")
+                    http("GET /api/v1/ventas")
+                            .get(VENTA_URL + "/api/v1/ventas")
                             .check(status().is(200))
             )
             .pause(Duration.ofMillis(500), Duration.ofSeconds(1));

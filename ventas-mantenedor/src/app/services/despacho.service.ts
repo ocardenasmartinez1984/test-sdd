@@ -5,7 +5,7 @@ import { Dispatch, DispatchStatus } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class DespachoService {
-  private readonly apiUrl = '/api/despachos';
+  private readonly apiUrl = '/api/v1/despachos';
 
   constructor(private http: HttpClient) {}
 

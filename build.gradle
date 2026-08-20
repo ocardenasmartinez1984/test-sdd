@@ -7,7 +7,7 @@ plugins {
 sonar {
     properties {
         property "sonar.host.url", System.getProperty("sonar.host.url", "http://localhost:9000")
-        property "sonar.token", "sqa_d60fc9b88c974e5f51313fe7d81c296415d113ed"
+        property "sonar.token", System.getenv('SONAR_TOKEN') ?: System.getProperty('sonar.token', '')
         property "sonar.projectKey", "saga-microservices"
         property "sonar.projectName", "Saga Microservices"
         property "sonar.sourceEncoding", "UTF-8"
@@ -43,6 +43,20 @@ subprojects {
         }
     }
 
+    jacocoTestCoverageVerification {
+        violationRules {
+            rule {
+                limit {
+                    minimum = 0.70
+                }
+            }
+        }
+    }
+
+    tasks.named('check') {
+        dependsOn jacocoTestCoverageVerification
+    }
+
     group = 'com'
     version = '1.0.0-SNAPSHOT'
 
@@ -69,18 +83,32 @@ subprojects {
         implementation 'org.springframework.boot:spring-boot-starter-validation'
         implementation 'org.springframework.boot:spring-boot-starter-actuator'
         implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+        implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+
+        // OpenAPI / Swagger documentation
+        implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0'
 
         // Dynatrace monitoring via Micrometer
         implementation 'io.micrometer:micrometer-registry-dynatrace:1.13.2'
+        implementation 'io.micrometer:micrometer-registry-prometheus:1.13.2'
 
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
         testCompileOnly 'org.projectlombok:lombok'
         testAnnotationProcessor 'org.projectlombok:lombok'
 
+        // Distributed tracing with Micrometer + Zipkin
+        implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+        implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.springframework.kafka:spring-kafka-test'
         testImplementation 'io.projectreactor:reactor-test'
+        testImplementation 'org.testcontainers:testcontainers:1.19.8'
+        testImplementation 'org.testcontainers:junit-jupiter:1.19.8'
+        testImplementation 'org.testcontainers:mongodb:1.19.8'
+        testImplementation 'org.testcontainers:kafka:1.19.8'
+        testImplementation 'org.testcontainers:postgresql:1.19.8'
     }
 
     tasks.named('test') {

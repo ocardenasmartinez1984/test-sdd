@@ -4,6 +4,7 @@ import com.venta.domain.event.DespachoRequestEvent;
 import com.venta.domain.event.StockReserveEvent;
 import com.venta.domain.port.DespachoEventPublisher;
 import com.venta.domain.port.StockEventPublisher;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,20 +22,36 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
     private static final String DESPACHO_REQUEST_TOPIC = "despacho-request";
 
     @Override
+    @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "reserveStockFallback")
     public void reserveStock(StockReserveEvent event) {
         log.info("Sending stock-reserve event: {}", event);
         kafkaTemplate.send(STOCK_RESERVE_TOPIC, event.getOrderId(), event);
     }
 
     @Override
+    @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "compensateStockFallback")
     public void compensateStock(StockReserveEvent event) {
         log.info("Sending stock-compensate event: {}", event);
         kafkaTemplate.send(STOCK_COMPENSATE_TOPIC, event.getOrderId(), event);
     }
 
     @Override
+    @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "requestDespachoFallback")
     public void requestDespacho(DespachoRequestEvent event) {
         log.info("Sending despacho-request event: {}", event);
         kafkaTemplate.send(DESPACHO_REQUEST_TOPIC, event.getOrderId(), event);
+    }
+
+    // Fallback methods
+    private void reserveStockFallback(StockReserveEvent event, Throwable t) {
+        log.error("CircuitBreaker OPEN - Failed to send stock-reserve for order: {}. Error: {}", event.getOrderId(), t.getMessage());
+    }
+
+    private void compensateStockFallback(StockReserveEvent event, Throwable t) {
+        log.error("CircuitBreaker OPEN - Failed to send stock-compensate for order: {}. Error: {}", event.getOrderId(), t.getMessage());
+    }
+
+    private void requestDespachoFallback(DespachoRequestEvent event, Throwable t) {
+        log.error("CircuitBreaker OPEN - Failed to send despacho-request for order: {}. Error: {}", event.getOrderId(), t.getMessage());
     }
 }

@@ -19,8 +19,8 @@ public class AuthServiceSimulation extends Simulation {
 
     ScenarioBuilder loginScenario = scenario("Auth - Login")
             .exec(
-                    http("POST /api/auth/login")
-                            .post("/api/auth/login")
+                    http("POST /api/v1/auth/login")
+                            .post("/api/v1/auth/login")
                             .body(StringBody("{\"username\":\"admin\",\"password\":\"admin123\"}"))
                             .check(status().is(200))
                             .check(jsonPath("$.token").saveAs("authToken"))
@@ -29,24 +29,24 @@ public class AuthServiceSimulation extends Simulation {
 
     ScenarioBuilder loginAndValidateScenario = scenario("Auth - Login & Validate Token")
             .exec(
-                    http("POST /api/auth/login")
-                            .post("/api/auth/login")
+                    http("POST /api/v1/auth/login")
+                            .post("/api/v1/auth/login")
                             .body(StringBody("{\"username\":\"admin\",\"password\":\"admin123\"}"))
                             .check(status().is(200))
                             .check(jsonPath("$.token").saveAs("authToken"))
             )
             .pause(Duration.ofMillis(200), Duration.ofMillis(800))
             .exec(
-                    http("GET /api/auth/validate")
-                            .get("/api/auth/validate")
+                    http("GET /api/v1/auth/validate")
+                            .get("/api/v1/auth/validate")
                             .header("Authorization", "Bearer #{authToken}")
                             .check(status().is(200))
             );
 
     ScenarioBuilder invalidLoginScenario = scenario("Auth - Invalid Login (error handling)")
             .exec(
-                    http("POST /api/auth/login (invalid)")
-                            .post("/api/auth/login")
+                    http("POST /api/v1/auth/login (invalid)")
+                            .post("/api/v1/auth/login")
                             .body(StringBody("{\"username\":\"invalid\",\"password\":\"wrong\"}"))
                             .check(status().in(401, 403))
             )

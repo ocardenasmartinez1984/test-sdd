@@ -4,6 +4,7 @@ import com.venta.domain.event.StockReserveEvent;
 import com.venta.domain.model.CartItem;
 import com.venta.domain.port.StockEventPublisher;
 import com.venta.domain.repository.CartRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class CartService {
     private final CartRepository cartRepository;
     private final StockEventPublisher stockEventPublisher;
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "addToCartFallback")
     public Mono<CartItem> addToCart(String sessionId, String productId, int quantity, double unitPrice) {
         return cartRepository.findBySessionIdAndProductId(sessionId, productId)
                 .flatMap(existingItem -> {
@@ -51,6 +53,7 @@ public class CartService {
                 });
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "removeFromCartFallback")
     public Mono<Void> removeFromCart(String sessionId, String productId) {
         return cartRepository.findBySessionIdAndProductId(sessionId, productId)
                 .flatMap(cartItem -> {
@@ -68,10 +71,12 @@ public class CartService {
                 });
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "getCartFallback")
     public Flux<CartItem> getCart(String sessionId) {
         return cartRepository.findBySessionIdAndStatus(sessionId, CartItem.STATUS_RESERVED);
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "clearCartFallback")
     public Mono<Void> clearCart(String sessionId) {
         return cartRepository.findBySessionId(sessionId)
                 .filter(item -> CartItem.STATUS_RESERVED.equals(item.getStatus()))
@@ -86,5 +91,26 @@ public class CartService {
                 })
                 .then(cartRepository.deleteAll(cartRepository.findBySessionId(sessionId)))
                 .then();
+    }
+
+    // Fallback methods
+    private Mono<CartItem> addToCartFallback(String sessionId, String productId, int quantity, double unitPrice, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - addToCart failed. Error: {}", t.getMessage());
+        return Mono.error(new RuntimeException("Cart service temporarily unavailable. Please try again later."));
+    }
+
+    private Mono<Void> removeFromCartFallback(String sessionId, String productId, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - removeFromCart failed. Error: {}", t.getMessage());
+        return Mono.error(new RuntimeException("Cart service temporarily unavailable. Please try again later."));
+    }
+
+    private Flux<CartItem> getCartFallback(String sessionId, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - getCart failed. Error: {}", t.getMessage());
+        return Flux.empty();
+    }
+
+    private Mono<Void> clearCartFallback(String sessionId, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - clearCart failed. Error: {}", t.getMessage());
+        return Mono.error(new RuntimeException("Cart service temporarily unavailable. Please try again later."));
     }
 }

@@ -7,10 +7,7 @@ import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.port.DespachoEventPublisher;
 import com.venta.domain.port.StockEventPublisher;
 import com.venta.domain.repository.OrderRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -24,6 +21,7 @@ import java.time.LocalDateTime;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@Tag("unit")
 @ExtendWith(MockitoExtension.class)
 class SagaOrchestratorTest {
 
@@ -111,6 +109,26 @@ class SagaOrchestratorTest {
 
             verify(despachoEventPublisher, never()).requestDespacho(any());
         }
+
+        @Test
+        @DisplayName("Should return error when order not found")
+        void shouldReturnErrorWhenOrderNotFound() {
+            StockReserveResponseEvent event = StockReserveResponseEvent.builder()
+                    .orderId("nonexistent")
+                    .productId("product-1")
+                    .success(true)
+                    .build();
+
+            when(orderRepository.findById("nonexistent")).thenReturn(Mono.empty());
+
+            StepVerifier.create(sagaOrchestrator.handleStockResponse(event))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Order not found: nonexistent"))
+                    .verify();
+
+            verify(orderRepository, never()).save(any(Order.class));
+            verify(despachoEventPublisher, never()).requestDespacho(any());
+        }
     }
 
     @Nested
@@ -167,6 +185,26 @@ class SagaOrchestratorTest {
 
             verify(stockEventPublisher).compensateStock(any());
         }
+
+        @Test
+        @DisplayName("Should return error when order not found")
+        void shouldReturnErrorWhenOrderNotFound() {
+            DespachoResponseEvent event = DespachoResponseEvent.builder()
+                    .orderId("nonexistent")
+                    .success(true)
+                    .trackingNumber("TRK-99999999")
+                    .build();
+
+            when(orderRepository.findById("nonexistent")).thenReturn(Mono.empty());
+
+            StepVerifier.create(sagaOrchestrator.handleDespachoResponse(event))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Order not found: nonexistent"))
+                    .verify();
+
+            verify(orderRepository, never()).save(any(Order.class));
+            verify(stockEventPublisher, never()).compensateStock(any());
+        }
     }
 
     @Nested
@@ -202,6 +240,103 @@ class SagaOrchestratorTest {
                     .verifyComplete();
 
             verify(orderRepository, never()).save(any(Order.class));
+        }
+
+        @Test
+        @DisplayName("Should return error when order not found")
+        void shouldReturnErrorWhenOrderNotFound() {
+            when(orderRepository.findById("nonexistent")).thenReturn(Mono.empty());
+
+            StepVerifier.create(sagaOrchestrator.handleDespachoDelivered("nonexistent"))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Order not found: nonexistent"))
+                    .verify();
+
+            verify(orderRepository, never()).save(any(Order.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Concurrent Saga Events Tests")
+    class ConcurrentSagaEventsTests {
+
+        @Test
+        @DisplayName("Should handle concurrent stock response - save conflict")
+        void shouldHandleConcurrentStockResponseSaveConflict() {
+            StockReserveResponseEvent event = StockReserveResponseEvent.builder()
+                    .orderId("order-1")
+                    .productId("product-1")
+                    .success(true)
+                    .build();
+
+            when(orderRepository.findById("order-1")).thenReturn(Mono.just(testOrder));
+            when(orderRepository.save(any(Order.class)))
+                    .thenReturn(Mono.error(new RuntimeException("Concurrent modification")));
+
+            StepVerifier.create(sagaOrchestrator.handleStockResponse(event))
+                    .expectErrorMatches(e -> e instanceof RuntimeException &&
+                            e.getMessage().contains("Concurrent modification"))
+                    .verify();
+
+            verify(despachoEventPublisher, never()).requestDespacho(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("CircuitBreaker Fallback Tests")
+    class FallbackTests {
+
+        @Test
+        @DisplayName("handleStockResponseFallback should return Mono.empty")
+        void handleStockResponseFallbackShouldReturnEmpty() throws Exception {
+            var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
+                    "handleStockResponseFallback", StockReserveResponseEvent.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            StockReserveResponseEvent event = StockReserveResponseEvent.builder()
+                    .orderId("order-1")
+                    .build();
+
+            @SuppressWarnings("unchecked")
+            Mono<Void> result = (Mono<Void>) fallbackMethod.invoke(
+                    sagaOrchestrator, event, new RuntimeException("DB down"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("handleDespachoResponseFallback should return Mono.empty")
+        void handleDespachoResponseFallbackShouldReturnEmpty() throws Exception {
+            var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
+                    "handleDespachoResponseFallback", DespachoResponseEvent.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            DespachoResponseEvent event = DespachoResponseEvent.builder()
+                    .orderId("order-1")
+                    .build();
+
+            @SuppressWarnings("unchecked")
+            Mono<Void> result = (Mono<Void>) fallbackMethod.invoke(
+                    sagaOrchestrator, event, new RuntimeException("DB down"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("handleDespachoDeliveredFallback should return Mono.empty")
+        void handleDespachoDeliveredFallbackShouldReturnEmpty() throws Exception {
+            var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
+                    "handleDespachoDeliveredFallback", String.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Void> result = (Mono<Void>) fallbackMethod.invoke(
+                    sagaOrchestrator, "order-1", new RuntimeException("DB down"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
         }
     }
 }

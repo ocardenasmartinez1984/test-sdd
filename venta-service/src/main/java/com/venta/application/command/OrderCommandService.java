@@ -5,6 +5,7 @@ import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.port.StockEventPublisher;
 import com.venta.domain.repository.OrderRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class OrderCommandService {
     private final OrderRepository orderRepository;
     private final StockEventPublisher stockEventPublisher;
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "crearVentaFallback")
     public Mono<Order> crearVenta(Order order) {
         order.setStatus(OrderStatus.PENDING);
         order.setCreatedAt(LocalDateTime.now());
@@ -40,6 +42,7 @@ public class OrderCommandService {
                 });
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "cancelarVentaFallback")
     public Mono<Order> cancelarVenta(String orderId) {
         return orderRepository.findById(orderId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + orderId)))
@@ -68,6 +71,7 @@ public class OrderCommandService {
                 });
     }
 
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "actualizarEstadoFallback")
     public Mono<Order> actualizarEstado(String orderId, OrderStatus nuevoEstado) {
         return orderRepository.findById(orderId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + orderId)))
@@ -77,5 +81,21 @@ public class OrderCommandService {
                     return orderRepository.save(order);
                 })
                 .doOnSuccess(saved -> log.info("Order {} status updated to: {}", orderId, nuevoEstado));
+    }
+
+    // Fallback methods
+    private Mono<Order> crearVentaFallback(Order order, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - crearVenta failed. Error: {}", t.getMessage());
+        return Mono.error(new RuntimeException("Sales service temporarily unavailable. Please try again later."));
+    }
+
+    private Mono<Order> cancelarVentaFallback(String orderId, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - cancelarVenta failed for order: {}. Error: {}", orderId, t.getMessage());
+        return Mono.error(new RuntimeException("Sales service temporarily unavailable. Please try again later."));
+    }
+
+    private Mono<Order> actualizarEstadoFallback(String orderId, OrderStatus nuevoEstado, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - actualizarEstado failed for order: {}. Error: {}", orderId, t.getMessage());
+        return Mono.error(new RuntimeException("Sales service temporarily unavailable. Please try again later."));
     }
 }

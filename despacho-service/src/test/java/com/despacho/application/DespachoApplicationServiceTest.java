@@ -7,6 +7,7 @@ import com.despacho.domain.repository.DispatchRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,6 +18,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@Tag("unit")
 @ExtendWith(MockitoExtension.class)
 class DespachoApplicationServiceTest {
 
@@ -186,6 +189,73 @@ class DespachoApplicationServiceTest {
             StepVerifier.create(despachoApplicationService.actualizarEstado("nonexistent", DispatchStatus.ENVIADO))
                     .verifyComplete();
         }
+
+        @Test
+        @DisplayName("Should handle multiple state transitions PREPARANDO -> ENVIADO -> ENTREGADO")
+        void shouldHandleMultipleStateTransitions() {
+            Dispatch preparandoDispatch = Dispatch.builder()
+                    .id("dispatch-1")
+                    .orderId("order-1")
+                    .status(DispatchStatus.PREPARANDO)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            Dispatch enviadoDispatch = Dispatch.builder()
+                    .id("dispatch-1")
+                    .orderId("order-1")
+                    .status(DispatchStatus.ENVIADO)
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            Dispatch entregadoDispatch = Dispatch.builder()
+                    .id("dispatch-1")
+                    .orderId("order-1")
+                    .status(DispatchStatus.ENTREGADO)
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            // First transition: PREPARANDO -> ENVIADO
+            when(dispatchRepository.findById("dispatch-1")).thenReturn(Mono.just(preparandoDispatch));
+            when(dispatchRepository.save(any(Dispatch.class))).thenReturn(Mono.just(enviadoDispatch));
+
+            StepVerifier.create(despachoApplicationService.actualizarEstado("dispatch-1", DispatchStatus.ENVIADO))
+                    .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENVIADO))
+                    .verifyComplete();
+
+            verify(kafkaTemplate, never()).send(eq("despacho-delivered"), anyString(), any());
+
+            // Second transition: ENVIADO -> ENTREGADO
+            when(dispatchRepository.findById("dispatch-1")).thenReturn(Mono.just(enviadoDispatch));
+            when(dispatchRepository.save(any(Dispatch.class))).thenReturn(Mono.just(entregadoDispatch));
+
+            StepVerifier.create(despachoApplicationService.actualizarEstado("dispatch-1", DispatchStatus.ENTREGADO))
+                    .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENTREGADO))
+                    .verifyComplete();
+
+            verify(kafkaTemplate).send(eq("despacho-delivered"), eq("order-1"), any());
+        }
+
+        @Test
+        @DisplayName("Should handle notifyDelivered when Kafka send throws exception")
+        void shouldHandleNotifyDeliveredWhenKafkaThrowsException() {
+            Dispatch entregadoDispatch = Dispatch.builder()
+                    .id("dispatch-1")
+                    .orderId("order-1")
+                    .status(DispatchStatus.ENTREGADO)
+                    .build();
+
+            when(dispatchRepository.findById("dispatch-1")).thenReturn(Mono.just(testDispatch));
+            when(dispatchRepository.save(any(Dispatch.class))).thenReturn(Mono.just(entregadoDispatch));
+            when(kafkaTemplate.send(eq("despacho-delivered"), eq("order-1"), any()))
+                    .thenThrow(new RuntimeException("Kafka broker unavailable"));
+
+            StepVerifier.create(despachoApplicationService.actualizarEstado("dispatch-1", DispatchStatus.ENTREGADO))
+                    .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENTREGADO))
+                    .verifyComplete();
+
+            verify(kafkaTemplate).send(eq("despacho-delivered"), eq("order-1"), any());
+        }
     }
 
     @Nested
@@ -242,6 +312,130 @@ class DespachoApplicationServiceTest {
 
             StepVerifier.create(despachoApplicationService.buscarPorTracking("TRK-NONEXIST"))
                     .verifyComplete();
+        }
+    }
+
+    @Nested
+    @DisplayName("CircuitBreaker Fallback Tests")
+    class CircuitBreakerFallbackTests {
+
+        @Test
+        @DisplayName("crearDespachoFallback should return Mono.error with correct message")
+        void crearDespachoFallbackShouldReturnMonoError() throws Exception {
+            DespachoRequestEvent request = DespachoRequestEvent.builder()
+                    .orderId("order-1")
+                    .productId("product-1")
+                    .quantity(5)
+                    .customerId("customer-1")
+                    .build();
+
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "crearDespachoFallback", DespachoRequestEvent.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Dispatch> result = (Mono<Dispatch>) fallbackMethod.invoke(
+                    despachoApplicationService, request, new RuntimeException("DB connection failed"));
+
+            StepVerifier.create(result)
+                    .expectErrorMatches(throwable ->
+                            throwable instanceof RuntimeException &&
+                            throwable.getMessage().equals("Dispatch service temporarily unavailable"))
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("actualizarEstadoFallback should return Mono.error with correct message")
+        void actualizarEstadoFallbackShouldReturnMonoError() throws Exception {
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "actualizarEstadoFallback", String.class, DispatchStatus.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Dispatch> result = (Mono<Dispatch>) fallbackMethod.invoke(
+                    despachoApplicationService, "dispatch-1", DispatchStatus.ENVIADO,
+                    new RuntimeException("DB timeout"));
+
+            StepVerifier.create(result)
+                    .expectErrorMatches(throwable ->
+                            throwable instanceof RuntimeException &&
+                            throwable.getMessage().equals("Dispatch service temporarily unavailable"))
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("buscarPorTrackingFallback should return Mono.empty")
+        void buscarPorTrackingFallbackShouldReturnMonoEmpty() throws Exception {
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "buscarPorTrackingFallback", String.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Dispatch> result = (Mono<Dispatch>) fallbackMethod.invoke(
+                    despachoApplicationService, "TRK-12345678", new RuntimeException("DB error"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("buscarPorOrdenFallback should return Mono.empty")
+        void buscarPorOrdenFallbackShouldReturnMonoEmpty() throws Exception {
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "buscarPorOrdenFallback", String.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Mono<Dispatch> result = (Mono<Dispatch>) fallbackMethod.invoke(
+                    despachoApplicationService, "order-1", new RuntimeException("DB error"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("listarPorEstadoFallback should return Flux.empty")
+        void listarPorEstadoFallbackShouldReturnFluxEmpty() throws Exception {
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "listarPorEstadoFallback", DispatchStatus.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Flux<Dispatch> result = (Flux<Dispatch>) fallbackMethod.invoke(
+                    despachoApplicationService, DispatchStatus.PREPARANDO, new RuntimeException("DB error"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("listarTodosFallback should return Flux.empty")
+        void listarTodosFallbackShouldReturnFluxEmpty() throws Exception {
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "listarTodosFallback", Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Flux<Dispatch> result = (Flux<Dispatch>) fallbackMethod.invoke(
+                    despachoApplicationService, new RuntimeException("DB error"));
+
+            StepVerifier.create(result)
+                    .verifyComplete();
+        }
+
+        @Test
+        @DisplayName("notifyDeliveredFallback should not throw and handle gracefully")
+        void notifyDeliveredFallbackShouldHandleGracefully() throws Exception {
+            Method fallbackMethod = DespachoApplicationService.class.getDeclaredMethod(
+                    "notifyDeliveredFallback", String.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            // Should not throw exception - fallback just logs
+            fallbackMethod.invoke(despachoApplicationService, "order-1",
+                    new RuntimeException("Kafka unavailable"));
+
+            // No exception means fallback handled gracefully
+            verifyNoInteractions(kafkaTemplate);
         }
     }
 }

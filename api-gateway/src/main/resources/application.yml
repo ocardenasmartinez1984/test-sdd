@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
@@ -21,35 +25,61 @@ spring:
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/api/auth/**
+            - Path=/api/v1/auth/**
 
         - id: users-service
           uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/api/users/**
+            - Path=/api/v1/users/**
 
         - id: stock-service
           uri: lb://STOCK-SERVICE
           predicates:
-            - Path=/api/stock/**
+            - Path=/api/v1/stock/**
 
         - id: venta-service
           uri: lb://VENTA-SERVICE
           predicates:
-            - Path=/api/ventas/**
+            - Path=/api/v1/ventas/**
 
         - id: cart-service
           uri: lb://VENTA-SERVICE
           predicates:
-            - Path=/api/cart/**
+            - Path=/api/v1/cart/**
 
         - id: despacho-service
           uri: lb://DESPACHO-SERVICE
           predicates:
-            - Path=/api/despachos/**
+            - Path=/api/v1/despachos/**
+
+        - id: stock-service-api-docs
+          uri: lb://STOCK-SERVICE
+          predicates:
+            - Path=/stock-service/api-docs/**
+
+        - id: venta-service-api-docs
+          uri: lb://VENTA-SERVICE
+          predicates:
+            - Path=/venta-service/api-docs/**
+
+        - id: despacho-service-api-docs
+          uri: lb://DESPACHO-SERVICE
+          predicates:
+            - Path=/despacho-service/api-docs/**
+
+        - id: auth-service-api-docs
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/auth-service/api-docs/**
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 20
+            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.requestedTokens: 1
+            key-resolver: '#{@ipKeyResolver}'
 
   main:
     web-application-type: reactive
@@ -62,10 +92,20 @@ eureka:
     prefer-ip-address: true
 
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
   endpoints:
     web:
       exposure:
-        include: health,info,gateway,metrics,prometheus
+        include: health,info,gateway,metrics,prometheus,tracing
   metrics:
     export:
       dynatrace:
@@ -82,3 +122,18 @@ management:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Stock Service
+        url: /stock-service/api-docs
+      - name: Venta Service
+        url: /venta-service/api-docs
+      - name: Despacho Service
+        url: /despacho-service/api-docs
+      - name: Auth Service
+        url: /auth-service/api-docs

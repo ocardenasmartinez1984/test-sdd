@@ -16,7 +16,7 @@ export const authGuard: CanActivateFn = () => {
     return false;
   }
 
-  return http.get<boolean>(`/api/auth/validate`, { params: { token } }).pipe(
+  return http.get<boolean>(`/api/v1/auth/validate`, { params: { token } }).pipe(
     map(isValid => {
       if (isValid) {
         return true;

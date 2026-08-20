@@ -5,7 +5,7 @@ import { Order, OrderCreateRequest, OrderStatus } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class VentaService {
-  private readonly apiUrl = '/api/ventas';
+  private readonly apiUrl = '/api/v1/ventas';
 
   constructor(private http: HttpClient) {}
 

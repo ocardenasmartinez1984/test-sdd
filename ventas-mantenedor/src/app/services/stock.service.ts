@@ -5,7 +5,7 @@ import { Product } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class StockService {
-  private readonly apiUrl = '/api/stock';
+  private readonly apiUrl = '/api/v1/stock';
 
   constructor(private http: HttpClient) {}
 
