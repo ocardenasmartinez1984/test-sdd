@@ -63,20 +63,27 @@ import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
               class="product-card"
               [class.added]="lastAdded() === product.id"
               (click)="addToCart(product)">
-              <div class="product-icon" [ngClass]="'cat-' + getCategory(product)">
-                {{ getCategoryIcon(product) }}
+              <div class="product-card-top">
+                <div class="product-icon" [ngClass]="'cat-' + getCategory(product)">
+                  {{ getCategoryIcon(product) }}
+                </div>
+                <span class="product-category-tag">{{ getCategoryLabel(product) }}</span>
               </div>
-              <span class="product-category-tag">{{ getCategoryLabel(product) }}</span>
               <div class="product-name">{{ product.name }}</div>
-              <div class="product-sku">{{ product.sku }}</div>
-              <div class="product-price">\{{ product.price | currency:'USD' }}</div>
-              <div class="product-stock" [class.low]="getAvailable(product) <= 3">
-                <span style="font-size:13px">📦</span>
-                {{ getAvailable(product) }} disponibles
+              <div class="product-sku">SKU: {{ product.sku }}</div>
+              <div class="product-card-bottom">
+                <div class="product-price">\{{ product.price | currency:'USD' }}</div>
+                <div class="product-stock" [class.low]="getAvailable(product) <= 3">
+                  📦 {{ getAvailable(product) }} disp.
+                </div>
               </div>
               @if (getAvailable(product) <= 0) {
                 <div class="out-of-stock">⛔ SIN STOCK</div>
               }
+              <div class="product-add-hint">
+                <span class="material-icons">add_shopping_cart</span>
+                Agregar
+              </div>
             </div>
           } @empty {
             <div style="grid-column: 1/-1; text-align:center; padding:80px; color:var(--text-light)">
