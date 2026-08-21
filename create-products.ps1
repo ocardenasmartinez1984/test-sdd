@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Continue"
-$url = "http://localhost:8081/api/stock"
+$url = "http://localhost:8080/api/v1/stock"
 
 $products = @(
     '{"sku":"LAPTOP-001","name":"Laptop HP ProBook 450","quantity":50,"price":899.99}',

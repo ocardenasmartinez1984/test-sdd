@@ -30,9 +30,21 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Pre-install Gradle 8.9 (avoids download on every build)
+RUN wget -O /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.9-bin.zip && \
+    unzip -q /tmp/gradle.zip -d /opt && \
+    ln -s /opt/gradle-8.9/bin/gradle /usr/local/bin/gradle && \
+    rm /tmp/gradle.zip
+
+# Pre-populate Gradle wrapper dist so ./gradlew doesn't download it
+RUN mkdir -p /var/jenkins_home/.gradle/wrapper/dists/gradle-8.9-bin && \
+    cp /tmp/gradle.zip /var/jenkins_home/.gradle/wrapper/dists/gradle-8.9-bin/ 2>/dev/null || true
+
 # Make Java 21 the default JDK
 ENV JAVA_HOME=/usr/lib/jvm/temurin-21-jdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV GRADLE_USER_HOME=/var/jenkins_home/.gradle
+ENV GRADLE_OPTS="-Dorg.gradle.daemon=true -Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Xmx2048m"
 
 # Add jenkins user to docker group
 RUN groupadd -f docker && usermod -aG docker jenkins
