@@ -20,15 +20,16 @@ public class StockConsumer {
     private final StockProducer stockProducer;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "stock-reserve", groupId = "stock-service-group")
+    @KafkaListener(topics = "saga.stock.reserve-command", groupId = "stock-service-group")
     public void handleStockReserve(Map<String, Object> message) {
-        log.info("Received stock-reserve event: {}", message);
+        log.info("Received saga.stock.reserve-command event: {}", message);
 
         StockReserveEvent event = objectMapper.convertValue(message, StockReserveEvent.class);
 
         stockApplicationService.reserve(event.getOrderId(), event.getProductId(), event.getQuantity())
                 .subscribe(success -> {
                     StockReserveResponseEvent response = StockReserveResponseEvent.builder()
+                            .sagaId(event.getSagaId())
                             .orderId(event.getOrderId())
                             .productId(event.getProductId())
                             .success(success)
@@ -39,9 +40,9 @@ public class StockConsumer {
                 }, error -> log.error("Error processing stock-reserve for order {}: {}", event.getOrderId(), error.getMessage()));
     }
 
-    @KafkaListener(topics = "stock-compensate", groupId = "stock-service-group")
+    @KafkaListener(topics = "saga.stock.compensate-command", groupId = "stock-service-group")
     public void handleStockCompensate(Map<String, Object> message) {
-        log.info("Received stock-compensate event: {}", message);
+        log.info("Received saga.stock.compensate-command event: {}", message);
 
         StockReserveEvent event = objectMapper.convertValue(message, StockReserveEvent.class);
 

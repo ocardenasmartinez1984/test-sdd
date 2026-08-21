@@ -130,8 +130,10 @@ services:
 
   eureka-server:
     build:
-      context: .
-      dockerfile: eureka-server/Dockerfile
+      context: ./eureka-server
+      dockerfile: Dockerfile
+      additional_contexts:
+        gradle-root: .
     container_name: saga-eureka-server
     ports:
       - "8761:8761"
@@ -142,13 +144,6 @@ services:
       DYNATRACE_URI: ${DYNATRACE_URI:-}
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -171,8 +166,10 @@ services:
 
   api-gateway:
     build:
-      context: .
-      dockerfile: api-gateway/Dockerfile
+      context: ./api-gateway
+      dockerfile: Dockerfile
+      additional_contexts:
+        gradle-root: .
     container_name: saga-api-gateway
     ports:
       - "8080:8080"
@@ -184,11 +181,6 @@ services:
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -211,8 +203,10 @@ services:
 
   auth-service:
     build:
-      context: .
-      dockerfile: auth-service/Dockerfile
+      context: ./auth-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        gradle-root: .
     container_name: saga-auth-service
     ports:
       - "8084:8084"
@@ -223,11 +217,6 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -250,8 +239,10 @@ services:
 
   stock-service:
     build:
-      context: .
-      dockerfile: stock-service/Dockerfile
+      context: ./stock-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        gradle-root: .
     container_name: saga-stock-service
     ports:
       - "8081:8081"
@@ -265,15 +256,6 @@ services:
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -296,8 +278,10 @@ services:
 
   venta-service:
     build:
-      context: .
-      dockerfile: venta-service/Dockerfile
+      context: ./venta-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        gradle-root: .
     container_name: saga-venta-service
     ports:
       - "8082:8082"
@@ -310,13 +294,6 @@ services:
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -339,8 +316,10 @@ services:
 
   despacho-service:
     build:
-      context: .
-      dockerfile: despacho-service/Dockerfile
+      context: ./despacho-service
+      dockerfile: Dockerfile
+      additional_contexts:
+        gradle-root: .
     container_name: saga-despacho-service
     ports:
       - "8083:8083"
@@ -353,13 +332,6 @@ services:
       DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -387,9 +359,6 @@ services:
     container_name: saga-ventas-mantenedor
     ports:
       - "4200:80"
-    depends_on:
-      api-gateway:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -417,9 +386,6 @@ services:
     container_name: saga-users-mantenedor
     ports:
       - "4400:80"
-    depends_on:
-      api-gateway:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -442,14 +408,11 @@ services:
 
   pos-frontend:
     build:
-      context: .
-      dockerfile: pos-frontend/Dockerfile
+      context: ./pos-frontend
+      dockerfile: Dockerfile
     container_name: saga-pos-frontend
     ports:
       - "4300:80"
-    depends_on:
-      api-gateway:
-        condition: service_healthy
     networks:
       - saga-network
     healthcheck:
@@ -508,9 +471,6 @@ services:
       SONAR_JDBC_URL: jdbc:postgresql://postgres-sonar:5432/sonarqube
       SONAR_JDBC_USERNAME: ${SONAR_DB_USER}
       SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD}
-    depends_on:
-      postgres-sonar:
-        condition: service_healthy
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions
@@ -639,8 +599,6 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
       - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
     networks:
       - saga-network
     healthcheck:

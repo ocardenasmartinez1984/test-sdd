@@ -39,6 +39,9 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": {"buildTarget": "saga-frontend:build:production"},
             "development": {"buildTarget": "saga-frontend:build:development"}

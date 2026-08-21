@@ -28,8 +28,9 @@ spring:
 
 kafka:
   topics:
-    despacho-request: despacho-request-topic
-    despacho-response: despacho-response-topic
+    despacho-command: saga.despacho.create-command
+    despacho-reply: saga.despacho.create-reply
+    despacho-delivered: saga.despacho.delivered
 
 management:
   tracing:

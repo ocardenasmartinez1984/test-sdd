@@ -1,14 +1,21 @@
 # Stage 1: Build
 FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
-COPY gradle/ gradle/
-COPY gradlew .
-COPY gradlew.bat .
-COPY build.gradle .
-COPY settings.gradle .
-COPY gradle.properties .
-COPY auth-service/ auth-service/
-RUN mkdir -p eureka-server api-gateway stock-service venta-service despacho-service stress-test
+
+# Copy gradle files from additional context (project root)
+COPY --from=gradle-root gradle/ gradle/
+COPY --from=gradle-root gradlew .
+COPY --from=gradle-root gradlew.bat .
+COPY --from=gradle-root build.gradle .
+COPY --from=gradle-root settings.gradle .
+COPY --from=gradle-root gradle.properties .
+
+# Copy service source (from primary context)
+COPY . auth-service/
+
+# Create empty dirs for other subprojects referenced in settings.gradle
+RUN mkdir -p eureka-server api-gateway stock-service venta-service despacho-service saga-orchestrator-service stress-test
+
 RUN chmod +x gradlew && ./gradlew :auth-service:bootJar --no-daemon
 
 # Stage 2: Run

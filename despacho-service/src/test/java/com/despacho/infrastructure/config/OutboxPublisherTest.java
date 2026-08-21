@@ -59,7 +59,7 @@ class OutboxPublisherTest {
                     .id("event-1")
                     .aggregateId("order-1")
                     .eventType("DESPACHO_CREATED")
-                    .topic("despacho-response")
+                    .topic("saga.despacho.create-reply")
                     .payload("{\"orderId\":\"order-1\",\"success\":true}")
                     .status(OutboxEvent.STATUS_PENDING)
                     .retryCount(0)
@@ -73,7 +73,7 @@ class OutboxPublisherTest {
 
             outboxPublisher.publishPendingEvents();
 
-            verify(kafkaTemplate).send("despacho-response", "order-1",
+            verify(kafkaTemplate).send("saga.despacho.create-reply", "order-1",
                     "{\"orderId\":\"order-1\",\"success\":true}");
 
             ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
@@ -91,7 +91,7 @@ class OutboxPublisherTest {
                     .id("event-1")
                     .aggregateId("order-1")
                     .eventType("DESPACHO_CREATED")
-                    .topic("despacho-response")
+                    .topic("saga.despacho.create-reply")
                     .payload("{\"orderId\":\"order-1\"}")
                     .status(OutboxEvent.STATUS_PENDING)
                     .retryCount(0)
@@ -122,7 +122,7 @@ class OutboxPublisherTest {
                     .id("event-1")
                     .aggregateId("order-1")
                     .eventType("DESPACHO_CREATED")
-                    .topic("despacho-response")
+                    .topic("saga.despacho.create-reply")
                     .payload("{\"orderId\":\"order-1\"}")
                     .status(OutboxEvent.STATUS_PENDING)
                     .retryCount(4) // Next retry will be 5

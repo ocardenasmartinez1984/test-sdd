@@ -31,9 +31,9 @@ spring:
 
 kafka:
   topics:
-    stock-reserve: stock-reserve-topic
-    stock-reserve-response: stock-reserve-response-topic
-    stock-compensate: stock-compensate-topic
+    stock-reserve: saga.stock.reserve-command
+    stock-reserve-response: saga.stock.reserve-reply
+    stock-compensate: saga.stock.compensate-command
 
 management:
   tracing:

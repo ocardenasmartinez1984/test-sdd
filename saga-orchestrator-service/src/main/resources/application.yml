@@ -1,0 +1,126 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: saga-orchestrator-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/saga_orchestrator_db
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: saga-orchestrator-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: java.util.LinkedHashMap
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    listener:
+      ack-mode: RECORD
+
+kafka:
+  topics:
+    order-created: saga.order.created
+    stock-reserve-command: saga.stock.reserve-command
+    stock-reserve-reply: saga.stock.reserve-reply
+    stock-compensate-command: saga.stock.compensate-command
+    despacho-create-command: saga.despacho.create-command
+    despacho-create-reply: saga.despacho.create-reply
+    order-status-update: saga.order.status-update
+    despacho-delivered: saga.despacho.delivered
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,tracing
+  metrics:
+    export:
+      dynatrace:
+        enabled: ${DYNATRACE_ENABLED:false}
+        uri: ${DYNATRACE_URI:}
+        api-token: ${DYNATRACE_API_TOKEN:}
+        v2:
+          metric-key-prefix: pos
+          enrich-with-dynatrace-metadata: true
+    tags:
+      application: pos-system
+      service: saga-orchestrator-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+      kafkaProducer:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+      mongoDB:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        sliding-window-type: COUNT_BASED
+  retry:
+    instances:
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+      kafkaProducer:
+        max-attempts: 3
+        wait-duration: 1000ms
+      mongoDB:
+        max-attempts: 3
+        wait-duration: 500ms
+  timelimiter:
+    instances:
+      default:
+        timeout-duration: 5s
+      kafkaProducer:
+        timeout-duration: 10s
+      mongoDB:
+        timeout-duration: 5s

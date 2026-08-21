@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DespachoResponseEvent {
 
+    private String sagaId;
+
     private String orderId;
 
     private Boolean success;

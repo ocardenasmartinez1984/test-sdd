@@ -41,7 +41,7 @@ class OutboxPublisherTest {
                 .id("event-1")
                 .aggregateId("product-1")
                 .eventType("STOCK_RESERVED")
-                .topic("stock-reserve-response")
+                .topic("saga.stock.reserve-reply")
                 .payload("{\"orderId\":\"order-1\",\"productId\":\"product-1\",\"success\":true}")
                 .status(OutboxEvent.STATUS_PENDING)
                 .retryCount(0)
@@ -62,7 +62,7 @@ class OutboxPublisherTest {
 
             outboxPublisher.publishPendingEvents();
 
-            verify(kafkaTemplate).send("stock-reserve-response", "product-1", pendingEvent.getPayload());
+            verify(kafkaTemplate).send("saga.stock.reserve-reply", "product-1", pendingEvent.getPayload());
 
             ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
             verify(outboxRepository).save(captor.capture());
@@ -90,7 +90,7 @@ class OutboxPublisherTest {
                     .id("event-2")
                     .aggregateId("product-2")
                     .eventType("STOCK_RELEASED")
-                    .topic("stock-compensate-response")
+                    .topic("saga.stock.compensate-reply")
                     .payload("{\"orderId\":\"order-2\"}")
                     .status(OutboxEvent.STATUS_PENDING)
                     .retryCount(0)
@@ -103,8 +103,8 @@ class OutboxPublisherTest {
 
             outboxPublisher.publishPendingEvents();
 
-            verify(kafkaTemplate).send("stock-reserve-response", "product-1", pendingEvent.getPayload());
-            verify(kafkaTemplate).send("stock-compensate-response", "product-2", event2.getPayload());
+            verify(kafkaTemplate).send("saga.stock.reserve-reply", "product-1", pendingEvent.getPayload());
+            verify(kafkaTemplate).send("saga.stock.compensate-reply", "product-2", event2.getPayload());
         }
     }
 

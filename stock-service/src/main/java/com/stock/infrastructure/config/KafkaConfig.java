@@ -10,7 +10,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic stockReserveTopic() {
-        return TopicBuilder.name("stock-reserve")
+        return TopicBuilder.name("saga.stock.reserve-command")
                 .partitions(3)
                 .replicas(1)
                 .build();
@@ -18,7 +18,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic stockCompensateTopic() {
-        return TopicBuilder.name("stock-compensate")
+        return TopicBuilder.name("saga.stock.compensate-command")
                 .partitions(3)
                 .replicas(1)
                 .build();
@@ -26,7 +26,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic stockReserveResponseTopic() {
-        return TopicBuilder.name("stock-reserve-response")
+        return TopicBuilder.name("saga.stock.reserve-reply")
                 .partitions(3)
                 .replicas(1)
                 .build();

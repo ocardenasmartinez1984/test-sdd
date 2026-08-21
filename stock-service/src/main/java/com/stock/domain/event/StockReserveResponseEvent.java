@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StockReserveResponseEvent {
 
+    private String sagaId;
+
     private String orderId;
 
     private String productId;

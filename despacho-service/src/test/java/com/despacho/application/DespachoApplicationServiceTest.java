@@ -159,7 +159,7 @@ class DespachoApplicationServiceTest {
                     .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENTREGADO))
                     .verifyComplete();
 
-            verify(kafkaTemplate).send(eq("despacho-delivered"), eq("order-1"), any());
+            verify(kafkaTemplate).send(eq("saga.despacho.delivered"), eq("order-1"), any());
         }
 
         @Test
@@ -178,7 +178,7 @@ class DespachoApplicationServiceTest {
                     .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENVIADO))
                     .verifyComplete();
 
-            verify(kafkaTemplate, never()).send(eq("despacho-delivered"), anyString(), any());
+            verify(kafkaTemplate, never()).send(eq("saga.despacho.delivered"), anyString(), any());
         }
 
         @Test
@@ -223,7 +223,7 @@ class DespachoApplicationServiceTest {
                     .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENVIADO))
                     .verifyComplete();
 
-            verify(kafkaTemplate, never()).send(eq("despacho-delivered"), anyString(), any());
+            verify(kafkaTemplate, never()).send(eq("saga.despacho.delivered"), anyString(), any());
 
             // Second transition: ENVIADO -> ENTREGADO
             when(dispatchRepository.findById("dispatch-1")).thenReturn(Mono.just(enviadoDispatch));
@@ -233,7 +233,7 @@ class DespachoApplicationServiceTest {
                     .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENTREGADO))
                     .verifyComplete();
 
-            verify(kafkaTemplate).send(eq("despacho-delivered"), eq("order-1"), any());
+            verify(kafkaTemplate).send(eq("saga.despacho.delivered"), eq("order-1"), any());
         }
 
         @Test
@@ -247,14 +247,14 @@ class DespachoApplicationServiceTest {
 
             when(dispatchRepository.findById("dispatch-1")).thenReturn(Mono.just(testDispatch));
             when(dispatchRepository.save(any(Dispatch.class))).thenReturn(Mono.just(entregadoDispatch));
-            when(kafkaTemplate.send(eq("despacho-delivered"), eq("order-1"), any()))
+            when(kafkaTemplate.send(eq("saga.despacho.delivered"), eq("order-1"), any()))
                     .thenThrow(new RuntimeException("Kafka broker unavailable"));
 
             StepVerifier.create(despachoApplicationService.actualizarEstado("dispatch-1", DispatchStatus.ENTREGADO))
                     .assertNext(dispatch -> assertThat(dispatch.getStatus()).isEqualTo(DispatchStatus.ENTREGADO))
                     .verifyComplete();
 
-            verify(kafkaTemplate).send(eq("despacho-delivered"), eq("order-1"), any());
+            verify(kafkaTemplate).send(eq("saga.despacho.delivered"), eq("order-1"), any());
         }
     }
 

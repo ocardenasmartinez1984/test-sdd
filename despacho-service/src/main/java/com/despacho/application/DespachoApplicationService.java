@@ -64,7 +64,7 @@ public class DespachoApplicationService {
     private void notifyDelivered(String orderId) {
         try {
             java.util.Map<String, String> event = java.util.Map.of("orderId", orderId);
-            kafkaTemplate.send("despacho-delivered", orderId, event);
+            kafkaTemplate.send("saga.despacho.delivered", orderId, event);
             log.info("Notificación de entrega enviada para orden: {}", orderId);
         } catch (Exception e) {
             log.error("Error enviando notificación de entrega: {}", e.getMessage(), e);

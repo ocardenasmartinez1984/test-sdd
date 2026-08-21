@@ -41,7 +41,7 @@ class DespachoProducerTest {
 
             despachoProducer.sendDespachoResponse(event);
 
-            verify(kafkaTemplate).send("despacho-response", "order-1", event);
+            verify(kafkaTemplate).send("saga.despacho.create-reply", "order-1", event);
         }
 
         @Test
@@ -55,7 +55,7 @@ class DespachoProducerTest {
 
             despachoProducer.sendDespachoResponse(event);
 
-            verify(kafkaTemplate).send("despacho-response", "order-1", event);
+            verify(kafkaTemplate).send("saga.despacho.create-reply", "order-1", event);
         }
 
         @Test
@@ -67,13 +67,13 @@ class DespachoProducerTest {
                     .trackingNumber("TRK-12345678")
                     .build();
 
-            when(kafkaTemplate.send("despacho-response", "order-1", event))
+            when(kafkaTemplate.send("saga.despacho.create-reply", "order-1", event))
                     .thenThrow(new RuntimeException("Kafka broker unavailable"));
 
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
                     despachoProducer.sendDespachoResponse(event));
 
-            verify(kafkaTemplate).send("despacho-response", "order-1", event);
+            verify(kafkaTemplate).send("saga.despacho.create-reply", "order-1", event);
         }
     }
 

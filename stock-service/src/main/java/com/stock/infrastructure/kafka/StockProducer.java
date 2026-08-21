@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StockProducer {
 
-    private static final String TOPIC_STOCK_RESERVE_RESPONSE = "stock-reserve-response";
+    private static final String TOPIC_STOCK_RESERVE_RESPONSE = "saga.stock.reserve-reply";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

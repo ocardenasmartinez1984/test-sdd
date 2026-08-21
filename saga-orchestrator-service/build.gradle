@@ -1,0 +1,6 @@
+// Saga Orchestrator Service - Independent SAGA orchestration microservice
+// Coordinates the distributed transaction flow between Stock and Despacho services
+
+dependencies {
+    // Uses common dependencies from parent build.gradle
+}

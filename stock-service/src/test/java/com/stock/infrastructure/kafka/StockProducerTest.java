@@ -44,7 +44,7 @@ class StockProducerTest {
 
             stockProducer.sendReserveResponse(event);
 
-            verify(kafkaTemplate).send("stock-reserve-response", "order-1", event);
+            verify(kafkaTemplate).send("saga.stock.reserve-reply", "order-1", event);
         }
 
         @Test
@@ -59,7 +59,7 @@ class StockProducerTest {
 
             stockProducer.sendReserveResponse(event);
 
-            verify(kafkaTemplate).send("stock-reserve-response", "order-1", event);
+            verify(kafkaTemplate).send("saga.stock.reserve-reply", "order-1", event);
         }
 
         @Test

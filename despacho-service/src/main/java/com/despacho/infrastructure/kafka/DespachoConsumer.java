@@ -20,9 +20,9 @@ public class DespachoConsumer {
     private final DespachoProducer despachoProducer;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "despacho-request", groupId = "despacho-group")
+    @KafkaListener(topics = "saga.despacho.create-command", groupId = "despacho-group")
     public void consumeDespachoRequest(Map<String, Object> message) {
-        log.info("Mensaje recibido en despacho-request: {}", message);
+        log.info("Mensaje recibido en saga.despacho.create-command: {}", message);
 
         try {
             DespachoRequestEvent request = objectMapper.convertValue(message, DespachoRequestEvent.class);
@@ -31,6 +31,7 @@ public class DespachoConsumer {
                     .subscribe(
                             dispatch -> {
                                 DespachoResponseEvent response = DespachoResponseEvent.builder()
+                                        .sagaId(request.getSagaId())
                                         .orderId(dispatch.getOrderId())
                                         .success(true)
                                         .trackingNumber(dispatch.getTrackingNumber())
@@ -41,11 +42,12 @@ public class DespachoConsumer {
                                 log.info("Despacho procesado exitosamente para orden: {}", dispatch.getOrderId());
                             },
                             error -> {
-                                log.error("Error procesando despacho-request: {}", error.getMessage(), error);
+                                log.error("Error procesando saga.despacho.create-command: {}", error.getMessage(), error);
 
                                 String orderId = request.getOrderId() != null ? request.getOrderId() : "UNKNOWN";
 
                                 DespachoResponseEvent response = DespachoResponseEvent.builder()
+                                        .sagaId(request.getSagaId())
                                         .orderId(orderId)
                                         .success(false)
                                         .trackingNumber(null)
@@ -57,11 +59,13 @@ public class DespachoConsumer {
                     );
 
         } catch (Exception e) {
-            log.error("Error procesando despacho-request: {}", e.getMessage(), e);
+            log.error("Error procesando saga.despacho.create-command: {}", e.getMessage(), e);
 
             String orderId = message.get("orderId") != null ? message.get("orderId").toString() : "UNKNOWN";
+            String sagaId = message.get("sagaId") != null ? message.get("sagaId").toString() : null;
 
             DespachoResponseEvent response = DespachoResponseEvent.builder()
+                    .sagaId(sagaId)
                     .orderId(orderId)
                     .success(false)
                     .trackingNumber(null)
