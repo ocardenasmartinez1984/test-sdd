@@ -546,9 +546,11 @@ services:
       - "50000:50000"
     environment:
       JAVA_OPTS: "-Xmx1024m -Xms512m"
+      GRADLE_USER_HOME: "/var/jenkins_home/.gradle"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
+      - gradle_cache:/var/jenkins_home/.gradle
     networks:
       - saga-network
     healthcheck:
@@ -663,6 +665,7 @@ volumes:
   postgres_data:
   mongodb_data:
   jenkins_home:
+  gradle_cache:
   sonarqube_data:
   sonarqube_extensions:
   sonarqube_logs:

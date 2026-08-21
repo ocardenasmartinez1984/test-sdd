@@ -4,7 +4,8 @@ pipeline {
     environment {
         JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
-        GRADLE_OPTS = '-Dorg.gradle.daemon=false -Xmx1536m'
+        GRADLE_OPTS = '-Dorg.gradle.daemon=true -Dorg.gradle.caching=true -Xmx2048m'
+        GRADLE_USER_HOME = '/var/jenkins_home/.gradle'
         SONAR_URL = 'http://sonarqube:9000'
         REGISTRY = 'ocardenasmartinez1984'
         IMAGE_TAG = "${BUILD_NUMBER}"
@@ -27,32 +28,13 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh './gradlew clean build -x test -x jacocoTestCoverageVerification --parallel'
+                sh './gradlew clean build -x test -x jacocoTestCoverageVerification --parallel --build-cache --configuration-cache'
             }
         }
 
         stage('Unit Tests') {
-            parallel {
-                stage('Auth Tests') {
-                    steps {
-                        sh './gradlew :auth-service:test'
-                    }
-                }
-                stage('Stock Tests') {
-                    steps {
-                        sh './gradlew :stock-service:test --tests "com.stock.application.*" --tests "com.stock.infrastructure.*" --tests "com.stock.interfaces.*"'
-                    }
-                }
-                stage('Venta Tests') {
-                    steps {
-                        sh './gradlew :venta-service:test'
-                    }
-                }
-                stage('Despacho Tests') {
-                    steps {
-                        sh './gradlew :despacho-service:test'
-                    }
-                }
+            steps {
+                sh './gradlew test --parallel --build-cache -x :stress-test:test'
             }
             post {
                 always {
