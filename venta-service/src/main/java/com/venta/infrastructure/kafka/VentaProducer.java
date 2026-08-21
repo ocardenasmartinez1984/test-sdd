@@ -17,9 +17,9 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    private static final String STOCK_RESERVE_TOPIC = "stock-reserve";
-    private static final String STOCK_COMPENSATE_TOPIC = "stock-compensate";
-    private static final String DESPACHO_REQUEST_TOPIC = "despacho-request";
+    private static final String STOCK_RESERVE_TOPIC = "saga.stock.reserve-command";
+    private static final String STOCK_COMPENSATE_TOPIC = "saga.stock.compensate-command";
+    private static final String DESPACHO_REQUEST_TOPIC = "saga.despacho.create-command";
 
     @Override
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "reserveStockFallback")

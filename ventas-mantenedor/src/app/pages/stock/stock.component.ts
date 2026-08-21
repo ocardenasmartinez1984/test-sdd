@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StockService } from '../../services/stock.service';
@@ -124,7 +124,7 @@ import { Product } from '../../models/models';
     .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
   `]
 })
-export class StockComponent implements OnInit {
+export class StockComponent implements OnInit, OnDestroy {
   products = signal<Product[]>([]);
   showModal = signal(false);
   editing = signal(false);
@@ -132,10 +132,18 @@ export class StockComponent implements OnInit {
   isError = signal(false);
   editingId = '';
   form: Product = { sku: '', name: '', quantity: 0, price: 0 };
+  private pollInterval: any;
 
   constructor(private stockService: StockService) {}
 
-  ngOnInit() { this.loadProducts(); }
+  ngOnInit() {
+    this.loadProducts();
+    this.pollInterval = setInterval(() => this.loadProducts(), 5000);
+  }
+
+  ngOnDestroy() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+  }
 
   totalStock() { return this.products().reduce((sum, p) => sum + p.quantity, 0); }
   totalReserved() { return this.products().reduce((sum, p) => sum + (p.reservedQuantity || 0), 0); }

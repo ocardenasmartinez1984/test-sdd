@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VentaService } from '../../services/venta.service';
@@ -461,7 +461,7 @@ import { Order, OrderCreateRequest, OrderStatus, Product } from '../../models/mo
     }
   `]
 })
-export class VentasComponent implements OnInit {
+export class VentasComponent implements OnInit, OnDestroy {
 
   // --- Dependencies (Dependency Inversion) ---
   private readonly ventaService = inject(VentaService);
@@ -490,8 +490,15 @@ export class VentasComponent implements OnInit {
 
   // --- Lifecycle ---
 
+  private pollInterval: any;
+
   ngOnInit(): void {
     this.loadOrders();
+    this.pollInterval = setInterval(() => this.loadOrders(), 5000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
   // --- Data Loading (Single Responsibility: only fetches and sets state) ---

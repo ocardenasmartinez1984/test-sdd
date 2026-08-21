@@ -289,10 +289,11 @@ import { Dispatch, DispatchStatus } from '../../models/models';
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: nowrap;
     }
     .status-select {
       width: auto;
-      min-width: 120px;
+      min-width: 130px;
       padding: 6px 10px;
       font-size: 12px;
       border-radius: 8px;

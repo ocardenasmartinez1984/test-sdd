@@ -104,31 +104,50 @@ body {
   overflow: hidden;
   position: relative;
   z-index: 1;
+  width: 100%;
 }
 
 .pos-sidebar {
-  width: 420px;
-  background: var(--bg-sidebar);
+  width: 380px;
+  background: rgba(14, 14, 28, 0.95);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  position: relative;
-  z-index: 1;
-  backdrop-filter: blur(20px);
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  backdrop-filter: blur(24px);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  pointer-events: none;
 }
 
-/* Glowing line on sidebar border */
+.pos-sidebar.cart-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Glowing border on floating cart */
 .pos-sidebar::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  background: linear-gradient(180deg, var(--primary), var(--secondary), var(--primary));
-  background-size: 100% 200%;
+  inset: -1px;
+  border-radius: var(--radius);
+  padding: 1px;
+  background: linear-gradient(180deg, var(--primary), transparent 40%, transparent 60%, var(--secondary));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.4;
   animation: borderGlow 4s ease-in-out infinite;
-  opacity: 0.5;
+  pointer-events: none;
 }
 
 @keyframes borderGlow {
@@ -506,6 +525,92 @@ body {
 
 .product-card:hover .product-add-hint {
   transform: translateY(0);
+}
+
+/* ==================== CART TOGGLE BUTTON ==================== */
+.cart-toggle-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #7c3aed);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 101;
+  box-shadow: 0 6px 25px var(--primary-glow), 0 0 40px rgba(99, 102, 241, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cart-toggle-btn .material-icons {
+  font-size: 28px;
+}
+
+.cart-toggle-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 35px var(--primary-glow), 0 0 50px rgba(99, 102, 241, 0.3);
+}
+
+.cart-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.cart-toggle-btn.has-items {
+  animation: cartBtnPulse 2s ease-in-out infinite;
+}
+
+@keyframes cartBtnPulse {
+  0%, 100% { box-shadow: 0 6px 25px var(--primary-glow); }
+  50% { box-shadow: 0 6px 35px var(--primary-glow), 0 0 50px rgba(99, 102, 241, 0.3); }
+}
+
+.cart-toggle-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  animation: badgePop 0.4s var(--bounce);
+}
+
+/* Cart close button */
+.cart-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.cart-close-btn .material-icons {
+  font-size: 20px;
+}
+
+.cart-close-btn:hover {
+  background: var(--danger-light);
+  border-color: var(--danger);
+  color: var(--danger);
+  transform: rotate(90deg);
 }
 
 /* ==================== CART SIDEBAR ==================== */

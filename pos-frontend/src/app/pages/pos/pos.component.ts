@@ -7,12 +7,11 @@ import { StockService } from '../../services/stock.service';
 import { VentaService } from '../../services/venta.service';
 import { CartService } from '../../services/cart.service';
 import { Product, CartItem } from '../../models/models';
-import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
 
 @Component({
   selector: 'app-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChatbotComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <!-- Toast -->
     @if (toast()) {
@@ -94,8 +93,16 @@ import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
         </div>
       </div>
 
-      <!-- Carrito -->
-      <div class="pos-sidebar">
+      <!-- Floating Cart Toggle Button -->
+      <button class="cart-toggle-btn" (click)="toggleCart()" [class.has-items]="cartItems().length > 0">
+        <span class="material-icons">{{ cartOpen() ? 'close' : 'shopping_cart' }}</span>
+        @if (cartItems().length > 0 && !cartOpen()) {
+          <span class="cart-toggle-badge">{{ cartTotalItems() }}</span>
+        }
+      </button>
+
+      <!-- Carrito Flotante -->
+      <div class="pos-sidebar" [class.cart-open]="cartOpen()">
         <div class="cart-header">
           <h2>
             <span class="material-icons">shopping_cart</span>
@@ -104,6 +111,9 @@ import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
               <span class="cart-badge">{{ cartTotalItems() }}</span>
             }
           </h2>
+          <button class="cart-close-btn" (click)="toggleCart()">
+            <span class="material-icons">close</span>
+          </button>
         </div>
 
         @if (cartItems().length > 0) {
@@ -163,7 +173,6 @@ import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
     </div>
 
     <!-- Chatbot -->
-    <app-chatbot />
   `,
   styles: [`
     .category-bar {
@@ -265,6 +274,7 @@ export class PosComponent implements OnInit {
   readonly processing = signal(false);
   readonly lastAdded = signal<string>('');
   readonly selectedCategory = signal<string>('all');
+  readonly cartOpen = signal(false);
 
   searchTerm = '';
   customerId = '';
@@ -365,7 +375,15 @@ export class PosComponent implements OnInit {
 
     this.cartItems.set(items);
 
-    // Trigger card animation
+    // Update local reserved quantity so UI reflects immediately
+    const updatedProducts = this.products().map(p =>
+      p.id === product.id ? { ...p, reservedQuantity: (p.reservedQuantity || 0) + 1 } : p
+    );
+    this.products.set(updatedProducts);
+    this.filterProducts();
+
+    // Open cart and trigger card animation
+    this.cartOpen.set(true);
     this.lastAdded.set(product.id);
     setTimeout(() => this.lastAdded.set(''), 400);
 
@@ -376,8 +394,16 @@ export class PosComponent implements OnInit {
       quantity: 1,
       unitPrice: product.price
     }).subscribe({
-      next: () => this.showToast(`✅ ${product.name} agregado`, false),
-      error: () => this.showToast('⚠️ Error al reservar stock', true)
+      next: () => this.showToast(`✅ ${product.name} reservado`, false),
+      error: () => {
+        // Revert local reservation on error
+        const revertProducts = this.products().map(p =>
+          p.id === product.id ? { ...p, reservedQuantity: (p.reservedQuantity || 1) - 1 } : p
+        );
+        this.products.set(revertProducts);
+        this.filterProducts();
+        this.showToast('⚠️ Error al reservar stock', true);
+      }
     });
   }
 
@@ -391,6 +417,13 @@ export class PosComponent implements OnInit {
     if (target) {
       target.quantity++;
       this.cartItems.set(items);
+
+      // Update local reservation
+      const updatedProducts = this.products().map(p =>
+        p.id === item.product.id ? { ...p, reservedQuantity: (p.reservedQuantity || 0) + 1 } : p
+      );
+      this.products.set(updatedProducts);
+      this.filterProducts();
 
       // Reserve additional stock via cart API
       this.cartService.addToCart({
@@ -410,6 +443,14 @@ export class PosComponent implements OnInit {
     const target = items.find(i => i.product.id === item.product.id);
     if (target) {
       target.quantity--;
+
+      // Release local reservation
+      const updatedProducts = this.products().map(p =>
+        p.id === item.product.id ? { ...p, reservedQuantity: Math.max(0, (p.reservedQuantity || 1) - 1) } : p
+      );
+      this.products.set(updatedProducts);
+      this.filterProducts();
+
       if (target.quantity <= 0) {
         this.cartItems.set(items.filter(i => i.product.id !== item.product.id));
         this.cartService.removeFromCart(this.sessionId, item.product.id).subscribe();
@@ -420,6 +461,13 @@ export class PosComponent implements OnInit {
   }
 
   removeFromCart(item: CartItem): void {
+    // Release all reserved quantity for this item
+    const updatedProducts = this.products().map(p =>
+      p.id === item.product.id ? { ...p, reservedQuantity: Math.max(0, (p.reservedQuantity || 0) - item.quantity) } : p
+    );
+    this.products.set(updatedProducts);
+    this.filterProducts();
+
     this.cartItems.set(this.cartItems().filter(i => i.product.id !== item.product.id));
     this.cartService.removeFromCart(this.sessionId, item.product.id).subscribe();
   }
@@ -481,6 +529,12 @@ export class PosComponent implements OnInit {
     this.sessionId = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     this.processing.set(false);
     this.loadProducts();
+  }
+
+  // --- Cart Toggle ---
+
+  toggleCart(): void {
+    this.cartOpen.set(!this.cartOpen());
   }
 
   // --- Auth ---
