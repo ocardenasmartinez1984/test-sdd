@@ -1,4 +1,4 @@
-﻿services:
+services:
   postgres:
     image: postgres:16-alpine
     container_name: saga-postgres
@@ -155,8 +155,8 @@
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
+          memory: 768M
+          cpus: "2.0"
     logging:
       driver: json-file
       options:
@@ -192,8 +192,8 @@
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
+          memory: 768M
+          cpus: "2.0"
     logging:
       driver: json-file
       options:
@@ -230,8 +230,8 @@
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
+          memory: 768M
+          cpus: "2.0"
     logging:
       driver: json-file
       options:
@@ -269,8 +269,8 @@
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
+          memory: 768M
+          cpus: "2.0"
     logging:
       driver: json-file
       options:
@@ -307,8 +307,8 @@
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
+          memory: 768M
+          cpus: "2.0"
     logging:
       driver: json-file
       options:
@@ -345,8 +345,8 @@
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "0.5"
+          memory: 768M
+          cpus: "2.0"
     logging:
       driver: json-file
       options:

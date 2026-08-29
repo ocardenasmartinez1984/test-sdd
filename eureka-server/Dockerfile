@@ -28,4 +28,5 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=builder /app/eureka-server/build/libs/*.jar app.jar
 EXPOSE 8761
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar app.jar"]

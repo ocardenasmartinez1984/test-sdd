@@ -14,6 +14,6 @@ while IFS= read -r -d '' f; do
       echo "  -> stripped"
     fi
   fi
-done < <(find . -name "*.java" -type f -print0)
+done < <(find . \( -name "*.java" -o -name "*.yml" -o -name "*.yaml" -o -name "*.properties" \) -type f -print0)
 
 echo "Total files with BOM: $found"

@@ -4,11 +4,14 @@ pipeline {
     environment {
         JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
-        GRADLE_OPTS = '-Dorg.gradle.daemon=true -Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.configureondemand=true -Xmx2048m'
+        GRADLE_OPTS = '-Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.configureondemand=true -Xmx2048m'
         GRADLE_USER_HOME = '/var/jenkins_home/.gradle'
         SONAR_URL = 'http://sonarqube:9000'
         REGISTRY = 'ocardenasmartinez1984'
         IMAGE_TAG = "${BUILD_NUMBER}"
+        // Enable BuildKit so Docker builds reuse the shared Gradle/npm cache mounts.
+        DOCKER_BUILDKIT = '1'
+        COMPOSE_DOCKER_CLI_BUILD = '1'
     }
 
     options {
@@ -79,11 +82,28 @@ pipeline {
                 }
                 sh '''
                     docker compose down --remove-orphans || true
+                    # Profiles keep heavy tooling (jenkins/sonar/prometheus/grafana/zipkin)
+                    # out of the deploy; only the 13 essential containers come up.
                     docker compose up -d
-                    echo "Waiting for services..."
-                    sleep 40
-                    curl -sf http://localhost:8761/actuator/health > /dev/null && echo "✅ Eureka OK" || echo "❌ Eureka FAIL"
-                    curl -sf http://localhost:8080/actuator/health > /dev/null && echo "✅ Gateway OK" || echo "❌ Gateway FAIL"
+
+                    echo "Waiting for services to become healthy..."
+                    # Poll the gateway health endpoint instead of a fixed sleep.
+                    ok=0
+                    for i in $(seq 1 40); do
+                        if curl -sf http://localhost:8080/actuator/health > /dev/null; then
+                            ok=1; break
+                        fi
+                        sleep 5
+                    done
+
+                    if [ "$ok" != "1" ]; then
+                        echo "❌ Gateway did not become healthy in time"
+                        docker compose ps
+                        exit 1
+                    fi
+
+                    curl -sf http://localhost:8761/actuator/health > /dev/null && echo "✅ Eureka OK" || { echo "❌ Eureka FAIL"; exit 1; }
+                    curl -sf http://localhost:8080/actuator/health > /dev/null && echo "✅ Gateway OK" || { echo "❌ Gateway FAIL"; exit 1; }
                 '''
             }
         }

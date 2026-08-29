@@ -196,6 +196,58 @@ REDIS_PORT=6379
 DYNATRACE_ENABLED=false
 DYNATRACE_URI=
 DYNATRACE_API_TOKEN=
+
+# Distributed tracing (optional). Default 0.0 = tracing off so services don't
+# waste time exporting spans when Zipkin isn't running. Set to a value between
+# 0.0 and 1.0 (e.g. 1.0 to sample everything) and start Zipkin with the
+# `tracing` (or `tooling`) profile to collect traces.
+TRACING_SAMPLING=0.0
+```
+
+## Performance & Startup Optimizations
+
+The stack is tuned for fast, reliable local startup. Key optimizations:
+
+### Compose profiles (lighter default stack)
+Heavy tooling is behind Compose profiles and does **not** start by default, so a
+normal run brings up only the 13 essential containers (infra + 6 Java services +
+3 frontends) instead of 19:
+
+| Profile      | Services                                             |
+|--------------|------------------------------------------------------|
+| _(default)_  | postgres, mongodb, kafka, redis, eureka, api-gateway, auth, stock, venta, despacho, and the 3 frontends |
+| `tooling`    | everything below (jenkins, sonarqube, prometheus, grafana, zipkin) |
+| `monitoring` | prometheus, grafana                                  |
+| `sonar`      | sonarqube + its postgres                             |
+| `ci`         | jenkins                                              |
+| `tracing`    | zipkin                                               |
+
+### CPU limits sized for JVM startup
+Spring Boot startup is CPU-bound (JIT, class loading, classpath scanning). The
+6 Java services are given `2.0` CPUs / `768M` each in `docker-compose.yml`.
+Dropping this back to `0.5` CPU roughly **doubles** startup time (~36s → ~80s
+per service), so keep at least 1–2 CPUs per JVM if you tune these values.
+
+### Shared BuildKit caches
+- Java Dockerfiles share a Gradle cache mount (`/root/.gradle`), so dependencies
+  are downloaded once across all 6 service builds.
+- Angular Dockerfiles use `npm ci` with a shared npm cache mount (`/root/.npm`).
+
+Always build with BuildKit enabled (`start-stack.ps1` sets this automatically;
+manual builds need `DOCKER_BUILDKIT=1`).
+
+### JVM entrypoint tuning
+Each Java service entrypoint applies `JAVA_OPTS` (heap limits) and
+`-Djava.security.egd=file:/dev/./urandom` to avoid blocking on low entropy.
+
+### UTF-8 BOM guard
+`javac` rejects source files that begin with a UTF-8 BOM (`\ufeff`), which some
+Windows editors add invisibly. Use `strip-bom.sh` to detect/remove BOMs from
+`.java`, `.yml`, `.yaml`, and `.properties` files:
+
+```bash
+bash strip-bom.sh          # report files that have a BOM
+bash strip-bom.sh --fix    # strip the BOM in place
 ```
 
 ## Development Setup
