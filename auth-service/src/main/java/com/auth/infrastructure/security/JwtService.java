@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret:DefaultSecretKeyThatShouldBeAtLeast256BitsLongForHS256Algorithm}")
+    @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration:86400000}")

@@ -1,4 +1,4 @@
-services:
+﻿services:
   postgres:
     image: postgres:16-alpine
     container_name: saga-postgres
@@ -216,6 +216,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       ZIPKIN_URL: http://zipkin:9411/api/v2/spans
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
       JAVA_OPTS: "-Xms256m -Xmx512m"
     networks:
       - saga-network
@@ -436,6 +438,7 @@ services:
   postgres-sonar:
     image: postgres:16-alpine
     container_name: saga-postgres-sonar
+    profiles: ["tooling", "sonar"]
     environment:
       POSTGRES_DB: sonarqube
       POSTGRES_USER: ${SONAR_DB_USER}
@@ -465,6 +468,7 @@ services:
   sonarqube:
     image: sonarqube:10.7-community
     container_name: saga-sonarqube
+    profiles: ["tooling", "sonar"]
     ports:
       - "9000:9000"
     environment:
@@ -500,6 +504,7 @@ services:
       context: .
       dockerfile: jenkins/Dockerfile
     container_name: saga-jenkins
+    profiles: ["tooling", "ci"]
     user: root
     ports:
       - "8888:8080"
@@ -534,6 +539,7 @@ services:
   zipkin:
     image: openzipkin/zipkin:3
     container_name: saga-zipkin
+    profiles: ["tooling", "tracing"]
     ports:
       - "9411:9411"
     environment:
@@ -562,6 +568,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.54.0
     container_name: saga-prometheus
+    profiles: ["tooling", "monitoring"]
     ports:
       - "9090:9090"
     volumes:
@@ -590,6 +597,7 @@ services:
   grafana:
     image: grafana/grafana:11.2.0
     container_name: saga-grafana
+    profiles: ["tooling", "monitoring"]
     ports:
       - "3001:3000"
     environment:

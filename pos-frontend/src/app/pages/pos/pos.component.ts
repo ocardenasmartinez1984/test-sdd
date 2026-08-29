@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,11 +7,13 @@ import { StockService } from '../../services/stock.service';
 import { VentaService } from '../../services/venta.service';
 import { CartService } from '../../services/cart.service';
 import { Product, CartItem } from '../../models/models';
+import { CategoryIconComponent } from '../../components/category-icon/category-icon.component';
+import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
 
 @Component({
   selector: 'app-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CategoryIconComponent, ChatbotComponent],
   template: `
     <!-- Toast -->
     @if (toast()) {
@@ -24,7 +26,12 @@ import { Product, CartItem } from '../../models/models';
       <!-- Catálogo -->
       <div class="pos-catalog">
         <div class="pos-header">
-          <h1><span>⚡</span> POS Terminal</h1>
+          <h1>
+            <span class="logo-icon">
+              <app-category-icon category="cargador" [size]="32"></app-category-icon>
+            </span>
+            POS Terminal
+          </h1>
           <div class="search-box">
             <span class="material-icons">search</span>
             <input
@@ -34,7 +41,10 @@ import { Product, CartItem } from '../../models/models';
           </div>
           <div class="user-bar">
             <span class="user-name">{{ authService.currentUser()?.fullName }}</span>
-            <button class="btn-logout" (click)="logout()">⏻ Salir</button>
+            <button class="btn-logout" (click)="logout()">
+              <span class="material-icons" style="font-size:16px;vertical-align:middle">power_settings_new</span>
+              Salir
+            </button>
           </div>
         </div>
 
@@ -44,14 +54,16 @@ import { Product, CartItem } from '../../models/models';
             class="category-chip"
             [class.active]="selectedCategory() === 'all'"
             (click)="selectCategory('all')">
-            🏪 Todos
+            <span class="chip-icon"><app-category-icon category="default" [size]="18"></app-category-icon></span>
+            <span>Todos</span>
           </button>
           @for (cat of categories; track cat.id) {
             <button
               class="category-chip"
               [class.active]="selectedCategory() === cat.id"
               (click)="selectCategory(cat.id)">
-              {{ cat.icon }} {{ cat.label }}
+              <span class="chip-icon"><app-category-icon [category]="cat.id" [size]="18"></app-category-icon></span>
+              <span>{{ cat.label }}</span>
             </button>
           }
         </div>
@@ -64,20 +76,24 @@ import { Product, CartItem } from '../../models/models';
               (click)="addToCart(product)">
               <div class="product-card-top">
                 <div class="product-icon" [ngClass]="'cat-' + getCategory(product)">
-                  {{ getCategoryIcon(product) }}
+                  <app-category-icon [category]="getCategory(product)" [size]="48"></app-category-icon>
                 </div>
                 <span class="product-category-tag">{{ getCategoryLabel(product) }}</span>
               </div>
               <div class="product-name">{{ product.name }}</div>
               <div class="product-sku">SKU: {{ product.sku }}</div>
               <div class="product-card-bottom">
-                <div class="product-price">\{{ product.price | currency:'USD' }}</div>
+                <div class="product-price">{{ product.price | currency:'USD' }}</div>
                 <div class="product-stock" [class.low]="getAvailable(product) <= 3">
-                  📦 {{ getAvailable(product) }} disp.
+                  <span class="material-icons" style="font-size:14px">inventory_2</span>
+                  {{ getAvailable(product) }} disp.
                 </div>
               </div>
               @if (getAvailable(product) <= 0) {
-                <div class="out-of-stock">⛔ SIN STOCK</div>
+                <div class="out-of-stock">
+                  <span class="material-icons" style="font-size:32px;display:block;margin-bottom:8px">block</span>
+                  SIN STOCK
+                </div>
               }
               <div class="product-add-hint">
                 <span class="material-icons">add_shopping_cart</span>
@@ -85,8 +101,10 @@ import { Product, CartItem } from '../../models/models';
               </div>
             </div>
           } @empty {
-            <div style="grid-column: 1/-1; text-align:center; padding:80px; color:var(--text-light)">
-              <div style="font-size:48px; margin-bottom:16px; opacity:0.3">🔍</div>
+            <div class="empty-state">
+              <div class="empty-icon">
+                <app-category-icon category="default" [size]="64"></app-category-icon>
+              </div>
               <p>No se encontraron productos</p>
             </div>
           }
@@ -120,8 +138,11 @@ import { Product, CartItem } from '../../models/models';
           <div class="cart-items">
             @for (item of cartItems(); track item.product.id) {
               <div class="cart-item">
+                <div class="cart-item-thumb" [ngClass]="'cat-' + getCategory(item.product)">
+                  <app-category-icon [category]="getCategory(item.product)" [size]="32"></app-category-icon>
+                </div>
                 <div class="cart-item-info">
-                  <div class="cart-item-name">{{ getCategoryIcon(item.product) }} {{ item.product.name }}</div>
+                  <div class="cart-item-name">{{ item.product.name }}</div>
                   <div class="cart-item-price">{{ item.product.price | currency:'USD' }} c/u</div>
                 </div>
                 <div class="cart-item-qty">
@@ -130,7 +151,9 @@ import { Product, CartItem } from '../../models/models';
                   <button (click)="increaseQty(item)">+</button>
                 </div>
                 <div class="cart-item-total">{{ item.product.price * item.quantity | currency:'USD' }}</div>
-                <button class="cart-item-remove" (click)="removeFromCart(item)">✕</button>
+                <button class="cart-item-remove" (click)="removeFromCart(item)">
+                  <span class="material-icons" style="font-size:16px">close</span>
+                </button>
               </div>
             }
           </div>
@@ -147,25 +170,33 @@ import { Product, CartItem } from '../../models/models';
               </div>
             </div>
             <div class="cart-customer">
+              <span class="material-icons customer-icon">person</span>
               <input
                 [(ngModel)]="customerId"
-                placeholder="🧑 ID del cliente (ej: cliente-001)">
+                placeholder="ID del cliente (ej: cliente-001)">
             </div>
             <button
               class="btn-checkout"
               (click)="checkout()"
               [disabled]="processing() || !customerId.trim()">
               @if (processing()) {
-                ⏳ Procesando...
+                <span class="spinner"></span>
+                Procesando...
               } @else {
-                💳 Cobrar {{ cartTotal() | currency:'USD' }}
+                <span class="material-icons">credit_card</span>
+                Cobrar {{ cartTotal() | currency:'USD' }}
               }
             </button>
-            <button class="btn-clear" (click)="clearCart()">🗑️ Vaciar carrito</button>
+            <button class="btn-clear" (click)="clearCart()">
+              <span class="material-icons" style="font-size:16px;vertical-align:middle">delete_sweep</span>
+              Vaciar carrito
+            </button>
           </div>
         } @else {
           <div class="cart-empty">
-            <span class="material-icons">add_shopping_cart</span>
+            <div class="cart-empty-icon">
+              <span class="material-icons">add_shopping_cart</span>
+            </div>
             <p>Selecciona productos del catálogo</p>
           </div>
         }
@@ -173,6 +204,7 @@ import { Product, CartItem } from '../../models/models';
     </div>
 
     <!-- Chatbot -->
+    <app-chatbot></app-chatbot>
   `,
   styles: [`
     .category-bar {
@@ -221,7 +253,16 @@ export class PosComponent implements OnInit {
   private readonly router = inject(Router);
 
   // --- Session ---
-  private sessionId = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+  private sessionId = this.getOrCreateSessionId();
+
+  private getOrCreateSessionId(): string {
+    let id = localStorage.getItem('pos_session_id');
+    if (!id) {
+      id = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+      localStorage.setItem('pos_session_id', id);
+    }
+    return id;
+  }
 
   // --- Category Mapping ---
   readonly categories = [
@@ -324,8 +365,39 @@ export class PosComponent implements OnInit {
       next: (products) => {
         this.products.set(products);
         this.filterProducts();
+        this.syncCartFromServer();
       },
       error: () => this.showToast('❌ Error al cargar productos', true)
+    });
+  }
+
+  syncCartFromServer(): void {
+    const savedSessionId = localStorage.getItem('pos_session_id');
+    if (!savedSessionId) return;
+
+    this.cartService.getCart(savedSessionId).subscribe({
+      next: (serverItems) => {
+        const catalog = this.products();
+        const localCartItems: CartItem[] = [];
+
+        serverItems.forEach(item => {
+          const product = catalog.find(p => p.id === item.productId);
+          if (product) {
+            localCartItems.push({
+              product,
+              quantity: item.quantity
+            });
+            product.reservedQuantity = (product.reservedQuantity || 0) + item.quantity;
+          }
+        });
+
+        if (localCartItems.length > 0) {
+          this.cartItems.set(localCartItems);
+          this.filterProducts();
+          this.cartOpen.set(true);
+        }
+      },
+      error: (err) => console.warn('No se pudo sincronizar el carrito:', err)
     });
   }
 
@@ -473,6 +545,17 @@ export class PosComponent implements OnInit {
   }
 
   clearCart(): void {
+    const items = this.cartItems();
+    const updatedProducts = this.products().map(p => {
+      const cartItem = items.find(i => i.product.id === p.id);
+      if (cartItem) {
+        return { ...p, reservedQuantity: Math.max(0, (p.reservedQuantity || 0) - cartItem.quantity) };
+      }
+      return p;
+    });
+    this.products.set(updatedProducts);
+    this.filterProducts();
+
     this.cartItems.set([]);
     this.customerId = '';
     this.cartService.clearCart(this.sessionId).subscribe();
@@ -527,8 +610,41 @@ export class PosComponent implements OnInit {
     this.customerId = '';
     // Generate new sessionId for the next transaction
     this.sessionId = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+    localStorage.setItem('pos_session_id', this.sessionId);
     this.processing.set(false);
     this.loadProducts();
+  }
+
+  // --- Keyboard Shortcuts ---
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    // F2 to focus search box
+    if (event.key === 'F2') {
+      event.preventDefault();
+      const searchInput = document.querySelector('.search-box input') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+    // Ctrl + Enter to process checkout (Cobrar)
+    if (event.ctrlKey && event.key === 'Enter') {
+      event.preventDefault();
+      if (this.cartItems().length > 0 && this.customerId.trim() && !this.processing()) {
+        this.checkout();
+      }
+    }
+    // Escape to clear cart or unfocus
+    if (event.key === 'Escape') {
+      const activeEl = document.activeElement as HTMLElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'BUTTON')) {
+        activeEl.blur();
+      } else if (this.cartItems().length > 0) {
+        if (confirm('¿Vaciar el carrito de compra?')) {
+          this.clearCart();
+        }
+      }
+    }
   }
 
   // --- Cart Toggle ---

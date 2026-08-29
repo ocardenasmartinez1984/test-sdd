@@ -91,13 +91,53 @@ Venta Service ──► Stock Reserve (Kafka) ──► Stock Service
 # Clone the repository
 git clone <repository-url>
 cd pos-test
-
-# Start all services with Docker Compose
-docker-compose up --build
-
-# Or start only infrastructure
-docker-compose up postgres mongodb kafka zookeeper eureka-server
 ```
+
+### Recommended: phased startup (Windows / PowerShell)
+
+Starting all 19 containers at once (6 JVMs + Kafka + SonarQube + Jenkins) can
+overwhelm the machine. Use the phased startup script, which brings the stack up
+by layers and waits for each phase to become healthy:
+
+```powershell
+# Essential stack only (uses prebuilt images, starts in seconds)
+./start-stack.ps1
+
+# Rebuild images first (fast thanks to shared BuildKit Gradle/npm cache)
+./start-stack.ps1 -Build
+
+# Also start CI/CD + monitoring tools (Jenkins, SonarQube, Prometheus, Grafana)
+./start-stack.ps1 -Tooling
+
+# Tear everything down
+./start-stack.ps1 -Down
+```
+
+### Manual startup with Docker Compose
+
+The heavy tooling services (Jenkins, SonarQube, Prometheus, Grafana, Zipkin) are
+behind Compose **profiles** and do **not** start by default:
+
+```bash
+# Enable BuildKit for the shared build caches
+export DOCKER_BUILDKIT=1        # PowerShell: $env:DOCKER_BUILDKIT=1
+
+# Essential stack (no tooling)
+docker compose up -d
+
+# Include tooling when you need it
+docker compose --profile tooling up -d
+
+# Only specific profiles
+docker compose --profile monitoring up -d   # Prometheus + Grafana
+docker compose --profile sonar up -d        # SonarQube + its Postgres
+docker compose --profile ci up -d           # Jenkins
+docker compose --profile tracing up -d      # Zipkin
+```
+
+> **Note:** The Java service Dockerfiles share a Gradle cache and the Angular
+> Dockerfiles share an npm cache via BuildKit cache mounts, so rebuilds only
+> download dependencies once. Always run with `DOCKER_BUILDKIT=1`.
 
 Wait for all health checks to pass, then access:
 - **POS Frontend**: http://localhost:4300
