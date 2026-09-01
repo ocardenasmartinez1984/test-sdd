@@ -1,5 +1,6 @@
 package com.venta.application.query;
 
+import com.venta.domain.exception.OrderNotFoundException;
 import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.repository.OrderRepository;
@@ -20,7 +21,7 @@ public class OrderQueryService {
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "getVentaFallback")
     public Mono<Order> getVenta(String orderId) {
         return orderRepository.findById(orderId)
-                .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + orderId)));
+                .switchIfEmpty(Mono.error(new OrderNotFoundException(orderId)));
     }
 
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "listarVentasFallback")
@@ -40,6 +41,11 @@ public class OrderQueryService {
 
     // Fallback methods
     private Mono<Order> getVentaFallback(String orderId, Throwable t) {
+        // A missing order is a legitimate 404, not a circuit-breaker outage:
+        // repropagate it instead of masking it as "service unavailable".
+        if (t instanceof OrderNotFoundException) {
+            return Mono.error(t);
+        }
         log.error("CircuitBreaker OPEN [mongoDB] - getVenta failed for order: {}. Error: {}", orderId, t.getMessage());
         return Mono.error(new RuntimeException("Sales service temporarily unavailable. Please try again later."));
     }

@@ -1,6 +1,8 @@
 package com.venta.application.command;
 
 import com.venta.domain.event.StockReserveEvent;
+import com.venta.domain.exception.InvalidOrderStateException;
+import com.venta.domain.exception.OrderNotFoundException;
 import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.port.StockEventPublisher;
@@ -45,10 +47,10 @@ public class OrderCommandService {
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "cancelarVentaFallback")
     public Mono<Order> cancelarVenta(String orderId) {
         return orderRepository.findById(orderId)
-                .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + orderId)))
+                .switchIfEmpty(Mono.error(new OrderNotFoundException(orderId)))
                 .flatMap(order -> {
                     if (order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.CANCELLED) {
-                        return Mono.error(new RuntimeException("Cannot cancel order in status: " + order.getStatus()));
+                        return Mono.error(new InvalidOrderStateException("Cannot cancel order in status: " + order.getStatus()));
                     }
 
                     OrderStatus previousStatus = order.getStatus();
@@ -74,7 +76,7 @@ public class OrderCommandService {
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "actualizarEstadoFallback")
     public Mono<Order> actualizarEstado(String orderId, OrderStatus nuevoEstado) {
         return orderRepository.findById(orderId)
-                .switchIfEmpty(Mono.error(new RuntimeException("Order not found: " + orderId)))
+                .switchIfEmpty(Mono.error(new OrderNotFoundException(orderId)))
                 .flatMap(order -> {
                     order.setStatus(nuevoEstado);
                     order.setUpdatedAt(LocalDateTime.now());

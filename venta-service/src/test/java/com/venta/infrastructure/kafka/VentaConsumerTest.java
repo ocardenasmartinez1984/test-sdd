@@ -63,7 +63,7 @@ class VentaConsumerTest {
         }
 
         @Test
-        @DisplayName("Should handle exception in stock reserve response gracefully")
+        @DisplayName("Should PROPAGATE conversion exception so Kafka can retry/DLQ")
         void shouldHandleExceptionInStockReserveResponse() {
             Map<String, Object> message = new HashMap<>();
             message.put("orderId", "order-1");
@@ -71,22 +71,24 @@ class VentaConsumerTest {
             when(objectMapper.convertValue(message, StockReserveResponseEvent.class))
                     .thenThrow(new IllegalArgumentException("Invalid message"));
 
-            // Should not throw exception
-            ventaConsumer.consumeStockReserveResponse(message);
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    IllegalArgumentException.class,
+                    () -> ventaConsumer.consumeStockReserveResponse(message));
 
             verify(sagaOrchestrator, never()).handleStockResponse(any());
         }
 
         @Test
-        @DisplayName("Should handle empty message map gracefully")
+        @DisplayName("Should PROPAGATE on empty message map so Kafka can retry/DLQ")
         void shouldHandleEmptyMessageMap() {
             Map<String, Object> emptyMessage = Collections.emptyMap();
 
             when(objectMapper.convertValue(emptyMessage, StockReserveResponseEvent.class))
                     .thenThrow(new IllegalArgumentException("Cannot convert empty map"));
 
-            // Should not throw exception
-            ventaConsumer.consumeStockReserveResponse(emptyMessage);
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    IllegalArgumentException.class,
+                    () -> ventaConsumer.consumeStockReserveResponse(emptyMessage));
 
             verify(sagaOrchestrator, never()).handleStockResponse(any());
         }
@@ -99,14 +101,14 @@ class VentaConsumerTest {
             // Missing orderId, productId, success
 
             StockReserveResponseEvent incompleteEvent = StockReserveResponseEvent.builder()
-                    .orderId(null)
+                    .orderId("order-x")
                     .productId(null)
                     .success(null)
                     .build();
 
             when(objectMapper.convertValue(incompleteMessage, StockReserveResponseEvent.class))
                     .thenReturn(incompleteEvent);
-            when(cartRepository.findById(anyString())).thenReturn(Mono.empty());
+            when(cartRepository.findById("order-x")).thenReturn(Mono.empty());
             when(sagaOrchestrator.handleStockResponse(incompleteEvent)).thenReturn(Mono.empty());
 
             // Should not throw exception
@@ -144,7 +146,7 @@ class VentaConsumerTest {
         }
 
         @Test
-        @DisplayName("Should handle exception in despacho response gracefully")
+        @DisplayName("Should PROPAGATE conversion exception so Kafka can retry/DLQ")
         void shouldHandleExceptionInDespachoResponse() {
             Map<String, Object> message = new HashMap<>();
             message.put("orderId", "order-1");
@@ -152,22 +154,24 @@ class VentaConsumerTest {
             when(objectMapper.convertValue(message, DespachoResponseEvent.class))
                     .thenThrow(new IllegalArgumentException("Invalid message"));
 
-            // Should not throw exception
-            ventaConsumer.consumeDespachoResponse(message);
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    IllegalArgumentException.class,
+                    () -> ventaConsumer.consumeDespachoResponse(message));
 
             verify(sagaOrchestrator, never()).handleDespachoResponse(any());
         }
 
         @Test
-        @DisplayName("Should handle empty message map for despacho response gracefully")
+        @DisplayName("Should PROPAGATE on empty message map so Kafka can retry/DLQ")
         void shouldHandleEmptyMessageMapForDespachoResponse() {
             Map<String, Object> emptyMessage = Collections.emptyMap();
 
             when(objectMapper.convertValue(emptyMessage, DespachoResponseEvent.class))
                     .thenThrow(new IllegalArgumentException("Cannot convert empty map"));
 
-            // Should not throw exception
-            ventaConsumer.consumeDespachoResponse(emptyMessage);
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    IllegalArgumentException.class,
+                    () -> ventaConsumer.consumeDespachoResponse(emptyMessage));
 
             verify(sagaOrchestrator, never()).handleDespachoResponse(any());
         }

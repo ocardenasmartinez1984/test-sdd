@@ -34,6 +34,14 @@ kafka:
     despacho-request: despacho-request-topic
     despacho-response: despacho-response-topic
 
+# SAGA stuck-order reconciler. An order that has not changed for longer than
+# `stuck-after` while sitting in an intermediate status is re-driven every
+# `interval-ms`. Values accept ISO-8601 durations / milliseconds respectively.
+saga:
+  reconciler:
+    stuck-after: PT2M
+    interval-ms: 60000
+
 management:
   tracing:
     sampling:

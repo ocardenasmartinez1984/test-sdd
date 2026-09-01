@@ -2,6 +2,7 @@ package com.venta.application.saga;
 
 import com.venta.domain.event.DespachoResponseEvent;
 import com.venta.domain.event.StockReserveResponseEvent;
+import com.venta.domain.exception.OrderNotFoundException;
 import com.venta.domain.model.Order;
 import com.venta.domain.model.Order.OrderStatus;
 import com.venta.domain.port.DespachoEventPublisher;
@@ -287,8 +288,8 @@ class SagaOrchestratorTest {
     class FallbackTests {
 
         @Test
-        @DisplayName("handleStockResponseFallback should return Mono.empty")
-        void handleStockResponseFallbackShouldReturnEmpty() throws Exception {
+        @DisplayName("handleStockResponseFallback should PROPAGATE a transient error for retry/DLQ")
+        void handleStockResponseFallbackShouldPropagateTransient() throws Exception {
             var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
                     "handleStockResponseFallback", StockReserveResponseEvent.class, Throwable.class);
             fallbackMethod.setAccessible(true);
@@ -302,12 +303,13 @@ class SagaOrchestratorTest {
                     sagaOrchestrator, event, new RuntimeException("DB down"));
 
             StepVerifier.create(result)
-                    .verifyComplete();
+                    .expectErrorMatches(e -> e instanceof RuntimeException && e.getMessage().contains("DB down"))
+                    .verify();
         }
 
         @Test
-        @DisplayName("handleDespachoResponseFallback should return Mono.empty")
-        void handleDespachoResponseFallbackShouldReturnEmpty() throws Exception {
+        @DisplayName("handleDespachoResponseFallback should PROPAGATE a transient error for retry/DLQ")
+        void handleDespachoResponseFallbackShouldPropagateTransient() throws Exception {
             var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
                     "handleDespachoResponseFallback", DespachoResponseEvent.class, Throwable.class);
             fallbackMethod.setAccessible(true);
@@ -321,12 +323,13 @@ class SagaOrchestratorTest {
                     sagaOrchestrator, event, new RuntimeException("DB down"));
 
             StepVerifier.create(result)
-                    .verifyComplete();
+                    .expectErrorMatches(e -> e instanceof RuntimeException && e.getMessage().contains("DB down"))
+                    .verify();
         }
 
         @Test
-        @DisplayName("handleDespachoDeliveredFallback should return Mono.empty")
-        void handleDespachoDeliveredFallbackShouldReturnEmpty() throws Exception {
+        @DisplayName("handleDespachoDeliveredFallback should PROPAGATE a transient error for retry/DLQ")
+        void handleDespachoDeliveredFallbackShouldPropagateTransient() throws Exception {
             var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
                     "handleDespachoDeliveredFallback", String.class, Throwable.class);
             fallbackMethod.setAccessible(true);
@@ -336,7 +339,26 @@ class SagaOrchestratorTest {
                     sagaOrchestrator, "order-1", new RuntimeException("DB down"));
 
             StepVerifier.create(result)
-                    .verifyComplete();
+                    .expectErrorMatches(e -> e instanceof RuntimeException && e.getMessage().contains("DB down"))
+                    .verify();
+        }
+
+        @Test
+        @DisplayName("fallback should COMPLETE EMPTY for a terminal OrderNotFoundException")
+        void fallbackShouldCompleteEmptyForOrderNotFound() throws Exception {
+            var fallbackMethod = SagaOrchestrator.class.getDeclaredMethod(
+                    "handleStockResponseFallback", StockReserveResponseEvent.class, Throwable.class);
+            fallbackMethod.setAccessible(true);
+
+            StockReserveResponseEvent event = StockReserveResponseEvent.builder()
+                    .orderId("order-1")
+                    .build();
+
+            @SuppressWarnings("unchecked")
+            Mono<Void> result = (Mono<Void>) fallbackMethod.invoke(
+                    sagaOrchestrator, event, new OrderNotFoundException("order-1"));
+
+            StepVerifier.create(result).verifyComplete();
         }
     }
 }

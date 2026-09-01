@@ -8,14 +8,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @Tag("unit")
@@ -31,74 +34,74 @@ class OutboxPublisherTest {
     @InjectMocks
     private OutboxPublisher outboxPublisher;
 
+    private static OutboxEvent pending(String id, String topic, String aggregateId, int retryCount) {
+        return OutboxEvent.builder()
+                .id(id)
+                .aggregateId(aggregateId)
+                .eventType("STOCK_RESERVE")
+                .topic(topic)
+                .payload("{\"orderId\":\"" + aggregateId + "\"}")
+                .status(OutboxEvent.STATUS_PENDING)
+                .retryCount(retryCount)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    /** A completed send future, as KafkaTemplate returns on a successful ack. */
+    @SuppressWarnings("unchecked")
+    private CompletableFuture<SendResult<String, Object>> ackedFuture() {
+        return CompletableFuture.completedFuture((SendResult<String, Object>) mock(SendResult.class));
+    }
+
+    private CompletableFuture<SendResult<String, Object>> failedFuture(String message) {
+        CompletableFuture<SendResult<String, Object>> future = new CompletableFuture<>();
+        future.completeExceptionally(new RuntimeException(message));
+        return future;
+    }
+
     @Nested
     @DisplayName("Publish Pending Events Tests")
     class PublishPendingEventsTests {
 
         @Test
-        @DisplayName("Should publish pending event and mark as SENT")
+        @DisplayName("Should publish pending event and mark as SENT once Kafka acks")
         void shouldPublishPendingEventAndMarkAsSent() {
-            OutboxEvent pendingEvent = OutboxEvent.builder()
-                    .id("event-1")
-                    .aggregateId("order-1")
-                    .eventType("STOCK_RESERVE")
-                    .topic("stock-reserve")
-                    .payload("{\"orderId\":\"order-1\"}")
-                    .status(OutboxEvent.STATUS_PENDING)
-                    .retryCount(0)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            OutboxEvent sentEvent = OutboxEvent.builder()
-                    .id("event-1")
-                    .aggregateId("order-1")
-                    .eventType("STOCK_RESERVE")
-                    .topic("stock-reserve")
-                    .payload("{\"orderId\":\"order-1\"}")
-                    .status(OutboxEvent.STATUS_SENT)
-                    .retryCount(0)
-                    .createdAt(pendingEvent.getCreatedAt())
-                    .processedAt(LocalDateTime.now())
-                    .build();
+            OutboxEvent event = pending("event-1", "stock-reserve", "order-1", 0);
 
             when(outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxEvent.STATUS_PENDING))
-                    .thenReturn(Flux.just(pendingEvent));
-            when(kafkaTemplate.send("stock-reserve", "order-1", "{\"orderId\":\"order-1\"}"))
-                    .thenReturn(null);
-            when(outboxRepository.save(any(OutboxEvent.class))).thenReturn(Mono.just(sentEvent));
+                    .thenReturn(Flux.just(event));
+            when(kafkaTemplate.send("stock-reserve", "order-1", event.getPayload()))
+                    .thenReturn(ackedFuture());
+            when(outboxRepository.save(any(OutboxEvent.class)))
+                    .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
-            outboxPublisher.publishPendingEvents();
+            StepVerifier.create(outboxPublisher.drainPendingEvents()).verifyComplete();
 
-            verify(kafkaTemplate).send("stock-reserve", "order-1", "{\"orderId\":\"order-1\"}");
-            verify(outboxRepository).save(any(OutboxEvent.class));
+            verify(kafkaTemplate).send("stock-reserve", "order-1", event.getPayload());
+            verify(outboxRepository).save(argThat(saved -> {
+                assertThat(saved.getStatus()).isEqualTo(OutboxEvent.STATUS_SENT);
+                assertThat(saved.getProcessedAt()).isNotNull();
+                return true;
+            }));
         }
 
         @Test
-        @DisplayName("Should increment retry count on kafka send failure")
-        void shouldIncrementRetryCountOnFailure() {
-            OutboxEvent pendingEvent = OutboxEvent.builder()
-                    .id("event-1")
-                    .aggregateId("order-1")
-                    .eventType("STOCK_RESERVE")
-                    .topic("stock-reserve")
-                    .payload("{\"orderId\":\"order-1\"}")
-                    .status(OutboxEvent.STATUS_PENDING)
-                    .retryCount(0)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        @DisplayName("Should NOT mark as SENT when Kafka delivery future fails")
+        void shouldIncrementRetryWhenKafkaFutureFails() {
+            OutboxEvent event = pending("event-1", "stock-reserve", "order-1", 0);
 
             when(outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxEvent.STATUS_PENDING))
-                    .thenReturn(Flux.just(pendingEvent));
-            when(kafkaTemplate.send("stock-reserve", "order-1", "{\"orderId\":\"order-1\"}"))
-                    .thenThrow(new RuntimeException("Kafka unavailable"));
+                    .thenReturn(Flux.just(event));
+            when(kafkaTemplate.send("stock-reserve", "order-1", event.getPayload()))
+                    .thenReturn(failedFuture("Kafka unavailable"));
             when(outboxRepository.save(any(OutboxEvent.class)))
-                    .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+                    .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
-            outboxPublisher.publishPendingEvents();
+            StepVerifier.create(outboxPublisher.drainPendingEvents()).verifyComplete();
 
-            verify(outboxRepository).save(argThat(event -> {
-                assertThat(event.getRetryCount()).isEqualTo(1);
-                assertThat(event.getStatus()).isEqualTo(OutboxEvent.STATUS_PENDING);
+            verify(outboxRepository).save(argThat(saved -> {
+                assertThat(saved.getRetryCount()).isEqualTo(1);
+                assertThat(saved.getStatus()).isEqualTo(OutboxEvent.STATUS_PENDING);
                 return true;
             }));
         }
@@ -106,29 +109,20 @@ class OutboxPublisherTest {
         @Test
         @DisplayName("Should mark event as FAILED after max retries")
         void shouldMarkAsFailedAfterMaxRetries() {
-            OutboxEvent pendingEvent = OutboxEvent.builder()
-                    .id("event-1")
-                    .aggregateId("order-1")
-                    .eventType("STOCK_RESERVE")
-                    .topic("stock-reserve")
-                    .payload("{\"orderId\":\"order-1\"}")
-                    .status(OutboxEvent.STATUS_PENDING)
-                    .retryCount(4) // Will become 5 after increment, hitting the max
-                    .createdAt(LocalDateTime.now())
-                    .build();
+            OutboxEvent event = pending("event-1", "stock-reserve", "order-1", OutboxPublisher.MAX_RETRIES - 1);
 
             when(outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxEvent.STATUS_PENDING))
-                    .thenReturn(Flux.just(pendingEvent));
-            when(kafkaTemplate.send("stock-reserve", "order-1", "{\"orderId\":\"order-1\"}"))
-                    .thenThrow(new RuntimeException("Kafka unavailable"));
+                    .thenReturn(Flux.just(event));
+            when(kafkaTemplate.send("stock-reserve", "order-1", event.getPayload()))
+                    .thenReturn(failedFuture("Kafka unavailable"));
             when(outboxRepository.save(any(OutboxEvent.class)))
-                    .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+                    .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
-            outboxPublisher.publishPendingEvents();
+            StepVerifier.create(outboxPublisher.drainPendingEvents()).verifyComplete();
 
-            verify(outboxRepository).save(argThat(event -> {
-                assertThat(event.getRetryCount()).isEqualTo(5);
-                assertThat(event.getStatus()).isEqualTo(OutboxEvent.STATUS_FAILED);
+            verify(outboxRepository).save(argThat(saved -> {
+                assertThat(saved.getRetryCount()).isEqualTo(OutboxPublisher.MAX_RETRIES);
+                assertThat(saved.getStatus()).isEqualTo(OutboxEvent.STATUS_FAILED);
                 return true;
             }));
         }
@@ -139,47 +133,31 @@ class OutboxPublisherTest {
             when(outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxEvent.STATUS_PENDING))
                     .thenReturn(Flux.empty());
 
-            outboxPublisher.publishPendingEvents();
+            StepVerifier.create(outboxPublisher.drainPendingEvents()).verifyComplete();
 
             verify(kafkaTemplate, never()).send(anyString(), anyString(), any());
             verify(outboxRepository, never()).save(any(OutboxEvent.class));
         }
 
         @Test
-        @DisplayName("Should process multiple pending events")
+        @DisplayName("Should process multiple pending events in order")
         void shouldProcessMultiplePendingEvents() {
-            OutboxEvent event1 = OutboxEvent.builder()
-                    .id("event-1")
-                    .aggregateId("order-1")
-                    .eventType("STOCK_RESERVE")
-                    .topic("stock-reserve")
-                    .payload("{\"orderId\":\"order-1\"}")
-                    .status(OutboxEvent.STATUS_PENDING)
-                    .retryCount(0)
-                    .createdAt(LocalDateTime.now().minusSeconds(2))
-                    .build();
-
-            OutboxEvent event2 = OutboxEvent.builder()
-                    .id("event-2")
-                    .aggregateId("order-2")
-                    .eventType("DESPACHO_REQUEST")
-                    .topic("despacho-request")
-                    .payload("{\"orderId\":\"order-2\"}")
-                    .status(OutboxEvent.STATUS_PENDING)
-                    .retryCount(0)
-                    .createdAt(LocalDateTime.now().minusSeconds(1))
-                    .build();
+            OutboxEvent event1 = pending("event-1", "stock-reserve", "order-1", 0);
+            OutboxEvent event2 = pending("event-2", "despacho-request", "order-2", 0);
 
             when(outboxRepository.findByStatusOrderByCreatedAtAsc(OutboxEvent.STATUS_PENDING))
                     .thenReturn(Flux.just(event1, event2));
-            when(kafkaTemplate.send(anyString(), anyString(), any())).thenReturn(null);
+            when(kafkaTemplate.send("stock-reserve", "order-1", event1.getPayload()))
+                    .thenReturn(ackedFuture());
+            when(kafkaTemplate.send("despacho-request", "order-2", event2.getPayload()))
+                    .thenReturn(ackedFuture());
             when(outboxRepository.save(any(OutboxEvent.class)))
-                    .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+                    .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
-            outboxPublisher.publishPendingEvents();
+            StepVerifier.create(outboxPublisher.drainPendingEvents()).verifyComplete();
 
-            verify(kafkaTemplate).send("stock-reserve", "order-1", "{\"orderId\":\"order-1\"}");
-            verify(kafkaTemplate).send("despacho-request", "order-2", "{\"orderId\":\"order-2\"}");
+            verify(kafkaTemplate).send("stock-reserve", "order-1", event1.getPayload());
+            verify(kafkaTemplate).send("despacho-request", "order-2", event2.getPayload());
             verify(outboxRepository, times(2)).save(any(OutboxEvent.class));
         }
     }

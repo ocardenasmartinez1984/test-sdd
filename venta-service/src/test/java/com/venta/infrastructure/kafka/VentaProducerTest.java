@@ -39,7 +39,7 @@ class VentaProducerTest {
 
             ventaProducer.reserveStock(event);
 
-            verify(kafkaTemplate).send("stock-reserve", "order-1", event);
+            verify(kafkaTemplate).send("saga.stock.reserve-command", "order-1", event);
         }
 
         @Test
@@ -51,7 +51,7 @@ class VentaProducerTest {
                     .quantity(5)
                     .build();
 
-            when(kafkaTemplate.send("stock-reserve", "order-1", event))
+            when(kafkaTemplate.send("saga.stock.reserve-command", "order-1", event))
                     .thenThrow(new RuntimeException("Kafka broker unavailable"));
 
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
@@ -74,7 +74,7 @@ class VentaProducerTest {
 
             ventaProducer.compensateStock(event);
 
-            verify(kafkaTemplate).send("stock-compensate", "order-1", event);
+            verify(kafkaTemplate).send("saga.stock.compensate-command", "order-1", event);
         }
 
         @Test
@@ -86,7 +86,7 @@ class VentaProducerTest {
                     .quantity(5)
                     .build();
 
-            when(kafkaTemplate.send("stock-compensate", "order-1", event))
+            when(kafkaTemplate.send("saga.stock.compensate-command", "order-1", event))
                     .thenThrow(new RuntimeException("Kafka broker unavailable"));
 
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
@@ -110,7 +110,7 @@ class VentaProducerTest {
 
             ventaProducer.requestDespacho(event);
 
-            verify(kafkaTemplate).send("despacho-request", "order-1", event);
+            verify(kafkaTemplate).send("saga.despacho.create-command", "order-1", event);
         }
 
         @Test
@@ -123,7 +123,7 @@ class VentaProducerTest {
                     .customerId("customer-1")
                     .build();
 
-            when(kafkaTemplate.send("despacho-request", "order-1", event))
+            when(kafkaTemplate.send("saga.despacho.create-command", "order-1", event))
                     .thenThrow(new RuntimeException("Kafka broker unavailable"));
 
             org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
