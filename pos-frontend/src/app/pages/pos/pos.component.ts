@@ -144,22 +144,26 @@ import { CategoryIconComponent } from '../../components/category-icon/category-i
           <div class="cart-items">
             @for (item of cartItems(); track item.product.id) {
               <div class="cart-item">
-                <div class="cart-item-thumb" [ngClass]="'cat-' + getCategory(item.product)">
-                  <app-category-icon [category]="getCategory(item.product)" [size]="32"></app-category-icon>
+                <div class="cart-item-main">
+                  <div class="cart-item-thumb" [ngClass]="'cat-' + getCategory(item.product)">
+                    <app-category-icon [category]="getCategory(item.product)" [size]="24"></app-category-icon>
+                  </div>
+                  <div class="cart-item-info">
+                    <div class="cart-item-name">{{ item.product.name }}</div>
+                    <div class="cart-item-price">{{ item.product.price | currency:'USD' }} c/u</div>
+                  </div>
+                  <button class="cart-item-remove" (click)="removeFromCart(item)">
+                    <span class="material-icons" style="font-size:16px">close</span>
+                  </button>
                 </div>
-                <div class="cart-item-info">
-                  <div class="cart-item-name">{{ item.product.name }}</div>
-                  <div class="cart-item-price">{{ item.product.price | currency:'USD' }} c/u</div>
+                <div class="cart-item-actions">
+                  <div class="cart-item-qty">
+                    <button (click)="decreaseQty(item)">−</button>
+                    <span>{{ item.quantity }}</span>
+                    <button (click)="increaseQty(item)">+</button>
+                  </div>
+                  <div class="cart-item-total">{{ item.product.price * item.quantity | currency:'USD' }}</div>
                 </div>
-                <div class="cart-item-qty">
-                  <button (click)="decreaseQty(item)">−</button>
-                  <span>{{ item.quantity }}</span>
-                  <button (click)="increaseQty(item)">+</button>
-                </div>
-                <div class="cart-item-total">{{ item.product.price * item.quantity | currency:'USD' }}</div>
-                <button class="cart-item-remove" (click)="removeFromCart(item)">
-                  <span class="material-icons" style="font-size:16px">close</span>
-                </button>
               </div>
             }
           </div>

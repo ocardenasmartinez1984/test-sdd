@@ -694,11 +694,35 @@ body {
 
 .cart-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--border);
   animation: slideInRight 0.4s var(--bounce);
+}
+
+.cart-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-item-thumb {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 52px;
 }
 
 @keyframes slideInRight {
@@ -786,6 +810,8 @@ body {
 .cart-item-remove {
   width: 28px;
   height: 28px;
+  flex-shrink: 0;
+  margin-left: auto;
   border-radius: 8px;
   border: none;
   background: var(--danger-light);
