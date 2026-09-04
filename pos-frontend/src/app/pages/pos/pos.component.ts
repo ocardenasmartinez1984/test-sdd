@@ -75,7 +75,7 @@ import { CategoryIconComponent } from '../../components/category-icon/category-i
               (click)="addToCart(product)">
               <div class="product-card-top">
                 <div class="product-icon" [ngClass]="'cat-' + getCategory(product)">
-                  <app-category-icon [category]="getCategory(product)" [size]="48"></app-category-icon>
+                  <app-category-icon [category]="getCategory(product)" [size]="32"></app-category-icon>
                 </div>
                 <span class="product-category-tag">{{ getCategoryLabel(product) }}</span>
               </div>
@@ -100,12 +100,19 @@ import { CategoryIconComponent } from '../../components/category-icon/category-i
               </div>
             </div>
           } @empty {
-            <div class="empty-state">
-              <div class="empty-icon">
-                <app-category-icon category="default" [size]="64"></app-category-icon>
+            @if (loading()) {
+              <div class="empty-state">
+                <span class="catalog-spinner"></span>
+                <p>Cargando productos...</p>
               </div>
-              <p>No se encontraron productos</p>
-            </div>
+            } @else {
+              <div class="empty-state">
+                <div class="empty-icon">
+                  <app-category-icon category="default" [size]="64"></app-category-icon>
+                </div>
+                <p>No se encontraron productos</p>
+              </div>
+            }
           }
         </div>
       </div>
@@ -312,6 +319,7 @@ export class PosComponent implements OnInit {
   readonly lastAdded = signal<string>('');
   readonly selectedCategory = signal<string>('all');
   readonly cartOpen = signal(false);
+  readonly loading = signal(true);
 
   searchTerm = '';
   customerId = '';
@@ -362,8 +370,12 @@ export class PosComponent implements OnInit {
         this.products.set(products);
         this.filterProducts();
         this.syncCartFromServer();
+        this.loading.set(false);
       },
-      error: () => this.showToast('❌ Error al cargar productos', true)
+      error: () => {
+        this.loading.set(false);
+        this.showToast('❌ Error al cargar productos', true);
+      }
     });
   }
 
