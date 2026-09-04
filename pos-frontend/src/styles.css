@@ -299,16 +299,16 @@ body {
   background: linear-gradient(145deg, var(--bg-card), rgba(26, 26, 50, 0.8));
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 32px;
+  padding: 20px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   position: relative;
   overflow: hidden;
   animation: cardFadeIn 0.5s ease backwards;
-  min-height: 240px;
+  min-height: 220px;
 }
 
 /* Stagger animation for cards */
@@ -455,7 +455,7 @@ body {
 }
 
 .product-card .product-price {
-  font-size: 34px;
+  font-size: 24px;
   font-weight: 800;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;

@@ -53,7 +53,7 @@ import { CategoryIconComponent } from '../../components/category-icon/category-i
             class="category-chip"
             [class.active]="selectedCategory() === 'all'"
             (click)="selectCategory('all')">
-            <span class="chip-icon"><app-category-icon category="default" [size]="18"></app-category-icon></span>
+            <span class="chip-icon"><app-category-icon category="default" [size]="15"></app-category-icon></span>
             <span>Todos</span>
           </button>
           @for (cat of categories; track cat.id) {
@@ -61,7 +61,7 @@ import { CategoryIconComponent } from '../../components/category-icon/category-i
               class="category-chip"
               [class.active]="selectedCategory() === cat.id"
               (click)="selectCategory(cat.id)">
-              <span class="chip-icon"><app-category-icon [category]="cat.id" [size]="18"></app-category-icon></span>
+              <span class="chip-icon"><app-category-icon [category]="cat.id" [size]="15"></app-category-icon></span>
               <span>{{ cat.label }}</span>
             </button>
           }
