@@ -326,7 +326,18 @@ export class PosComponent implements OnInit {
   readonly loading = signal(true);
 
   searchTerm = '';
-  customerId = '';
+
+  // Customer id is persisted so it survives page reloads / cart sync.
+  private _customerId = localStorage.getItem('pos_customer_id') ?? '';
+  get customerId(): string { return this._customerId; }
+  set customerId(value: string) {
+    this._customerId = value;
+    if (value) {
+      localStorage.setItem('pos_customer_id', value);
+    } else {
+      localStorage.removeItem('pos_customer_id');
+    }
+  }
 
   // --- Computed ---
   readonly cartTotal = computed(() =>
@@ -399,7 +410,10 @@ export class PosComponent implements OnInit {
               product,
               quantity: item.quantity
             });
-            product.reservedQuantity = (product.reservedQuantity || 0) + item.quantity;
+            // NOTE: product.reservedQuantity already comes from the stock
+            // service and includes this session's reservations, so we must
+            // NOT add item.quantity again here (that double-counted the
+            // available stock).
           }
         });
 
