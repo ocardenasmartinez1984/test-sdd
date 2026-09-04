@@ -8,12 +8,11 @@ import { VentaService } from '../../services/venta.service';
 import { CartService } from '../../services/cart.service';
 import { Product, CartItem } from '../../models/models';
 import { CategoryIconComponent } from '../../components/category-icon/category-icon.component';
-import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
 
 @Component({
   selector: 'app-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule, CategoryIconComponent, ChatbotComponent],
+  imports: [CommonModule, FormsModule, CategoryIconComponent],
   template: `
     <!-- Toast -->
     @if (toast()) {
@@ -202,9 +201,6 @@ import { ChatbotComponent } from '../../components/chatbot/chatbot.component';
         }
       </div>
     </div>
-
-    <!-- Chatbot -->
-    <app-chatbot></app-chatbot>
   `,
   styles: [`
     .category-bar {

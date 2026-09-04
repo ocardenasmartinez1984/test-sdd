@@ -1,4 +1,4 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, HostBinding, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 /**
@@ -654,6 +654,11 @@ import { CommonModule } from '@angular/common';
 export class CategoryIconComponent {
   @Input() category: string = 'default';
   @Input() size: number = 48;
+
+  // Apply the requested size to the host element so the SVG (width/height:100%)
+  // is constrained instead of expanding to its intrinsic size.
+  @HostBinding('style.width.px') get hostWidth(): number { return this.size; }
+  @HostBinding('style.height.px') get hostHeight(): number { return this.size; }
 
   // Stable unique id per instance to keep SVG <defs> isolated
   readonly uid = Math.random().toString(36).slice(2, 9);
