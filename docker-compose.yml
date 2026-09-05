@@ -140,9 +140,6 @@ services:
     environment:
       EUREKA_INSTANCE_HOSTNAME: eureka-server
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
-      DYNATRACE_URI: ${DYNATRACE_URI:-}
-      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
       JAVA_OPTS: "-Xms256m -Xmx512m"
     networks:
       - saga-network
@@ -176,10 +173,6 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       REDIS_HOST: redis
-      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
-      DYNATRACE_URI: ${DYNATRACE_URI:-}
-      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
     networks:
       - saga-network
@@ -215,7 +208,6 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       JAVA_OPTS: "-Xms256m -Xmx512m"
@@ -253,10 +245,6 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       REDIS_HOST: redis
-      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
-      DYNATRACE_URI: ${DYNATRACE_URI:-}
-      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
     networks:
       - saga-network
@@ -291,10 +279,6 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/venta_db?authSource=admin
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
-      DYNATRACE_URI: ${DYNATRACE_URI:-}
-      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
     networks:
       - saga-network
@@ -329,10 +313,6 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/despacho_db?authSource=admin
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      DYNATRACE_ENABLED: ${DYNATRACE_ENABLED:-false}
-      DYNATRACE_URI: ${DYNATRACE_URI:-}
-      DYNATRACE_API_TOKEN: ${DYNATRACE_API_TOKEN:-}
-      ZIPKIN_URL: http://zipkin:9411/api/v2/spans
       JAVA_OPTS: "-Xms256m -Xmx512m"
     networks:
       - saga-network
@@ -536,97 +516,6 @@ services:
         max-file: "3"
     restart: unless-stopped
 
-  zipkin:
-    image: openzipkin/zipkin:3
-    container_name: saga-zipkin
-    profiles: ["tooling", "tracing"]
-    ports:
-      - "9411:9411"
-    environment:
-      STORAGE_TYPE: mem
-      JAVA_OPTS: "-Xms128m -Xmx256m"
-    networks:
-      - saga-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:9411/health || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.5"
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    restart: unless-stopped
-
-  prometheus:
-    image: prom/prometheus:v2.54.0
-    container_name: saga-prometheus
-    profiles: ["tooling", "monitoring"]
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    networks:
-      - saga-network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: "0.5"
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:11.2.0
-    container_name: saga-grafana
-    profiles: ["tooling", "monitoring"]
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
-      - grafana_data:/var/lib/grafana
-    networks:
-      - saga-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    restart: unless-stopped
-
 volumes:
   postgres_data:
   mongodb_data:
@@ -636,9 +525,6 @@ volumes:
   sonarqube_extensions:
   sonarqube_logs:
   postgres_sonar_data:
-  dynatrace_oneagent:
-  prometheus_data:
-  grafana_data:
 
 networks:
   saga-network:

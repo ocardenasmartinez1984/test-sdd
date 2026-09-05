@@ -6,13 +6,13 @@
 # healthy before continuing. This avoids overwhelming the machine by starting
 # 14+ containers (6 JVMs + Kafka + databases) simultaneously.
 #
-# Heavy tooling (Jenkins, SonarQube, Prometheus, Grafana, Zipkin) sits behind
+# Heavy tooling (Jenkins, SonarQube) sits behind
 # Docker Compose profiles and does NOT start by default. Use --tooling to add it.
 #
 # Usage:
 #   ./start-stack.sh            Start the essential stack (prebuilt images)
 #   ./start-stack.sh --build    Rebuild images first (shared BuildKit cache)
-#   ./start-stack.sh --tooling   Also start Jenkins/SonarQube/Prometheus/Grafana/Zipkin
+#   ./start-stack.sh --tooling   Also start Jenkins/SonarQube
 #   ./start-stack.sh --down      Stop and remove all containers (incl. profiles)
 #   ./start-stack.sh --help      Show this help
 #
@@ -131,7 +131,7 @@ wait_healthy 180 pos-frontend ventas-mantenedor users-mantenedor
 
 # --- Optional tooling ---
 if [ "$TOOLING" -eq 1 ]; then
-  echo -e "\n${C_YELLOW}[Extra] Tooling: jenkins, sonarqube, prometheus, grafana, zipkin${C_RESET}"
+  echo -e "\n${C_YELLOW}[Extra] Tooling: jenkins, sonarqube${C_RESET}"
   compose --profile tooling up -d
 fi
 
@@ -145,10 +145,7 @@ echo -e "${C_CYAN}
 
 if [ "$TOOLING" -eq 1 ]; then
   echo -e "${C_CYAN}  Jenkins             http://localhost:8888
-  SonarQube           http://localhost:9000
-  Prometheus          http://localhost:9090
-  Grafana             http://localhost:3001
-  Zipkin              http://localhost:9411${C_RESET}"
+  SonarQube           http://localhost:9000${C_RESET}"
 fi
 
 echo -e "${C_GREY}\nStatus:    ${COMPOSE[*]} ps"

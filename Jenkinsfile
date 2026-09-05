@@ -82,8 +82,8 @@ pipeline {
                 }
                 sh '''
                     docker compose down --remove-orphans || true
-                    # Profiles keep heavy tooling (jenkins/sonar/prometheus/grafana/zipkin)
-                    # out of the deploy; only the 13 essential containers come up.
+                    # Profiles keep heavy tooling (jenkins/sonar) out of the deploy;
+                    # only the essential containers come up.
                     docker compose up -d
 
                     echo "Waiting for services to become healthy..."

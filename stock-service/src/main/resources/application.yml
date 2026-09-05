@@ -36,12 +36,6 @@ kafka:
     stock-compensate: saga.stock.compensate-command
 
 management:
-  tracing:
-    sampling:
-      probability: ${TRACING_SAMPLING:0.0}
-  zipkin:
-    tracing:
-      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
   endpoint:
     health:
       show-details: always
@@ -49,19 +43,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,circuitbreakers,tracing
-  metrics:
-    export:
-      dynatrace:
-        enabled: ${DYNATRACE_ENABLED:false}
-        uri: ${DYNATRACE_URI:}
-        api-token: ${DYNATRACE_API_TOKEN:}
-        v2:
-          metric-key-prefix: pos
-          enrich-with-dynatrace-metadata: true
-    tags:
-      application: pos-system
-      service: stock-service
+        include: health,info,metrics,circuitbreakers
 
 eureka:
   client:

@@ -7,7 +7,7 @@
     antes de continuar. Esto evita saturar la máquina al arrancar 14+ contenedores
     (6 JVMs + Kafka + bases de datos) simultáneamente.
 
-    Las herramientas pesadas (Jenkins, SonarQube, Prometheus, Grafana) están detrás
+    Las herramientas pesadas (Jenkins, SonarQube) están detrás
     de perfiles de Docker Compose y NO arrancan por defecto. Usa -Tooling para incluirlas.
 
 .PARAMETER Build
@@ -15,7 +15,7 @@
     compartida, así que las reconstrucciones son mucho más rápidas que la primera vez.
 
 .PARAMETER Tooling
-    Incluye también las herramientas de CI/CD y monitoreo (perfil "tooling").
+    Incluye también las herramientas de CI/CD (perfil "tooling").
 
 .PARAMETER Down
     Detiene y elimina todos los contenedores del stack (incluye perfiles).
@@ -30,7 +30,7 @@
 
 .EXAMPLE
     ./start-stack.ps1 -Tooling
-    Arranca el stack esencial + Jenkins/SonarQube/Prometheus/Grafana.
+    Arranca el stack esencial + Jenkins/SonarQube.
 
 .EXAMPLE
     ./start-stack.ps1 -Down
@@ -132,7 +132,7 @@ Wait-Healthy -Services @("pos-frontend", "ventas-mantenedor", "users-mantenedor"
 
 # --- Tooling opcional ---
 if ($Tooling) {
-    Write-Host "`n[Extra] Tooling: jenkins, sonarqube, prometheus, grafana, zipkin" -ForegroundColor Yellow
+    Write-Host "`n[Extra] Tooling: jenkins, sonarqube" -ForegroundColor Yellow
     $toolingArgs = @("--profile", "tooling", "up", "-d")
     Invoke-Compose @toolingArgs
 }
@@ -151,9 +151,6 @@ if ($Tooling) {
     Write-Host @"
   Jenkins             http://localhost:8888
   SonarQube           http://localhost:9000
-  Prometheus          http://localhost:9090
-  Grafana             http://localhost:3001
-  Zipkin              http://localhost:9411
 "@ -ForegroundColor DarkCyan
 }
 

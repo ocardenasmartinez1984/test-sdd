@@ -88,18 +88,10 @@ subprojects {
         // OpenAPI / Swagger documentation
         implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.5.0'
 
-        // Dynatrace monitoring via Micrometer
-        implementation 'io.micrometer:micrometer-registry-dynatrace:1.13.2'
-        implementation 'io.micrometer:micrometer-registry-prometheus:1.13.2'
-
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
         testCompileOnly 'org.projectlombok:lombok'
         testAnnotationProcessor 'org.projectlombok:lombok'
-
-        // Distributed tracing with Micrometer + Zipkin
-        implementation 'io.micrometer:micrometer-tracing-bridge-brave'
-        implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.springframework.kafka:spring-kafka-test'

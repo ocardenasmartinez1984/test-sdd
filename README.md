@@ -41,10 +41,10 @@ A cloud-native Point of Sale (POS) system built with microservices architecture 
 │  │  Kafka  │  │ MongoDB │  │PostgreSQL│  │ Redis │  │  Eureka (:8761)  │  │
 │  │  :9092  │  │ :27017  │  │  :5432   │  │ :6379 │  │ Service Discovery│  │
 │  └─────────┘  └─────────┘  └──────────┘  └───────┘  └──────────────────┘  │
-│  ┌──────────┐  ┌──────────────┐  ┌──────────┐                              │
-│  │ Zipkin   │  │  SonarQube   │  │ Jenkins  │                              │
-│  │ :9411    │  │    :9000     │  │  :8888   │                              │
-│  └──────────┘  └──────────────┘  └──────────┘                              │
+│  ┌──────────────┐  ┌──────────┐                                            │
+│  │  SonarQube   │  │ Jenkins  │                                            │
+│  │    :9000     │  │  :8888   │                                            │
+│  └──────────────┘  └──────────┘                                            │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,14 +75,12 @@ Venta Service ──► Stock Reserve (Kafka) ──► Stock Service
 | Containerization | Docker, Kubernetes                          |
 | CI/CD          | Jenkins, SonarQube, JaCoCo                    |
 | Testing        | JUnit 5, Testcontainers, Gatling              |
-| Monitoring     | Micrometer, Dynatrace, Custom Node.js Monitor |
-| Tracing        | Zipkin                                        |
 
 ## Prerequisites
 
 - **Java 21** (JDK)
 - **Docker** & Docker Compose
-- **Node.js 18+** (for frontends and monitor)
+- **Node.js 18+** (for frontends)
 - **Gradle 8.9+** (wrapper included)
 
 ## Quick Start
@@ -106,7 +104,7 @@ by layers and waits for each phase to become healthy:
 # Rebuild images first (fast thanks to shared BuildKit Gradle/npm cache)
 ./start-stack.ps1 -Build
 
-# Also start CI/CD + monitoring tools (Jenkins, SonarQube, Prometheus, Grafana)
+# Also start CI/CD tools (Jenkins, SonarQube)
 ./start-stack.ps1 -Tooling
 
 # Tear everything down
@@ -115,7 +113,7 @@ by layers and waits for each phase to become healthy:
 
 ### Manual startup with Docker Compose
 
-The heavy tooling services (Jenkins, SonarQube, Prometheus, Grafana, Zipkin) are
+The heavy tooling services (Jenkins, SonarQube) are
 behind Compose **profiles** and do **not** start by default:
 
 ```bash
@@ -129,10 +127,8 @@ docker compose up -d
 docker compose --profile tooling up -d
 
 # Only specific profiles
-docker compose --profile monitoring up -d   # Prometheus + Grafana
 docker compose --profile sonar up -d        # SonarQube + its Postgres
 docker compose --profile ci up -d           # Jenkins
-docker compose --profile tracing up -d      # Zipkin
 ```
 
 > **Note:** The Java service Dockerfiles share a Gradle cache and the Angular
@@ -165,7 +161,7 @@ Wait for all health checks to pass, then access:
 | Redis               | 6379  | Cache (gateway rate limiting)        |
 | SonarQube           | 9000  | Code quality                         |
 | Jenkins             | 8888  | CI/CD                                |
-| Zipkin              | 9411  | Distributed tracing                  |
+| Jenkins             | 8888  | CI/CD                                |
 
 ## Environment Variables
 
@@ -191,17 +187,6 @@ JWT_EXPIRATION=86400000
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
-
-# Dynatrace (optional)
-DYNATRACE_ENABLED=false
-DYNATRACE_URI=
-DYNATRACE_API_TOKEN=
-
-# Distributed tracing (optional). Default 0.0 = tracing off so services don't
-# waste time exporting spans when Zipkin isn't running. Set to a value between
-# 0.0 and 1.0 (e.g. 1.0 to sample everything) and start Zipkin with the
-# `tracing` (or `tooling`) profile to collect traces.
-TRACING_SAMPLING=0.0
 ```
 
 ## Performance & Startup Optimizations
@@ -211,16 +196,14 @@ The stack is tuned for fast, reliable local startup. Key optimizations:
 ### Compose profiles (lighter default stack)
 Heavy tooling is behind Compose profiles and does **not** start by default, so a
 normal run brings up only the 13 essential containers (infra + 6 Java services +
-3 frontends) instead of 19:
+3 frontends):
 
 | Profile      | Services                                             |
 |--------------|------------------------------------------------------|
 | _(default)_  | postgres, mongodb, kafka, redis, eureka, api-gateway, auth, stock, venta, despacho, and the 3 frontends |
-| `tooling`    | everything below (jenkins, sonarqube, prometheus, grafana, zipkin) |
-| `monitoring` | prometheus, grafana                                  |
+| `tooling`    | everything below (jenkins, sonarqube) |
 | `sonar`      | sonarqube + its postgres                             |
 | `ci`         | jenkins                                              |
-| `tracing`    | zipkin                                               |
 
 ### CPU limits sized for JVM startup
 Spring Boot startup is CPU-bound (JIT, class loading, classpath scanning). The
@@ -378,27 +361,7 @@ Manifests are applied in order:
 5. `04-microservices.yaml` - All backend services
 6. `05-frontend.yaml` - Frontend deployments
 
-## Monitoring
-
-### Custom Monitor Dashboard
-
-A real-time monitoring dashboard built with Node.js:
-
-```bash
-cd monitor
-npm install
-npm start
-```
-
-Or with Docker:
-```bash
-cd monitor
-docker-compose up
-```
-
-See [monitor/README.md](monitor/README.md) for details.
-
-### Health Checks
+## Health Checks
 
 All services expose health endpoints via Spring Actuator:
 ```
@@ -406,10 +369,6 @@ GET http://localhost:<port>/actuator/health
 GET http://localhost:<port>/actuator/info
 GET http://localhost:<port>/actuator/metrics
 ```
-
-### Metrics
-
-Services export metrics via Micrometer with optional Dynatrace integration. Set `DYNATRACE_ENABLED=true` and configure `DYNATRACE_URI` and `DYNATRACE_API_TOKEN` to enable.
 
 ## Project Structure
 
@@ -425,7 +384,6 @@ pos-test/
 ├── ventas-mantenedor/    # Angular Sales Management UI
 ├── users-mantenedor/     # Angular User Management UI
 ├── frontend/             # Shared frontend (legacy)
-├── monitor/              # Node.js monitoring dashboard
 ├── stress-test/          # Gatling stress tests
 ├── k8s/                  # Kubernetes manifests
 ├── jenkins/              # Jenkins Dockerfile
