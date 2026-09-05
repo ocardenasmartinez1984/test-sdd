@@ -41,15 +41,22 @@ public class StockApplicationService {
     public Mono<Boolean> reserve(String orderId, String productId, int quantity) {
         return productRepository.findById(productId)
                 .flatMap(product -> {
+                    int alreadyReserved = product.getReservedByOrder().getOrDefault(orderId, 0);
+                    int delta = quantity - alreadyReserved;
+                    if (delta == 0) {
+                        log.info("Reserve unchanged: order {} already reserves {} of product {} (idempotent)", orderId, quantity, productId);
+                        return Mono.just(true);
+                    }
                     int available = product.getQuantity() - product.getReservedQuantity();
-                    if (available < quantity) {
-                        log.warn("Reserve failed: insufficient stock for product {}. Available: {}, Requested: {}", productId, available, quantity);
+                    if (delta > available) {
+                        log.warn("Reserve failed: insufficient stock for product {}. Available: {}, Additional requested: {}", productId, available, delta);
                         return Mono.just(false);
                     }
-                    product.setReservedQuantity(product.getReservedQuantity() + quantity);
+                    product.setReservedQuantity(product.getReservedQuantity() + delta);
+                    product.getReservedByOrder().put(orderId, quantity);
                     return productRepository.save(product)
                             .flatMap(saved -> productCacheService.evictProduct(productId).thenReturn(saved))
-                            .doOnSuccess(saved -> log.info("Reserved {} units of product {} for order {}", quantity, productId, orderId))
+                            .doOnSuccess(saved -> log.info("Reserved {} units (delta {}) of product {} for order {}", quantity, delta, productId, orderId))
                             .thenReturn(true);
                 })
                 .switchIfEmpty(Mono.defer(() -> {
@@ -62,11 +69,17 @@ public class StockApplicationService {
     public Mono<Void> release(String orderId, String productId, int quantity) {
         return productRepository.findById(productId)
                 .flatMap(product -> {
-                    int newReserved = Math.max(0, product.getReservedQuantity() - quantity);
+                    Integer reserved = product.getReservedByOrder().get(orderId);
+                    if (reserved == null) {
+                        log.info("Release skipped: order {} has no active reservation on product {} (idempotent)", orderId, productId);
+                        return Mono.empty();
+                    }
+                    int newReserved = Math.max(0, product.getReservedQuantity() - reserved);
                     product.setReservedQuantity(newReserved);
+                    product.getReservedByOrder().remove(orderId);
                     return productRepository.save(product)
                             .flatMap(saved -> productCacheService.evictProduct(productId).thenReturn(saved))
-                            .doOnSuccess(saved -> log.info("Released {} units of product {} for order {}", quantity, productId, orderId));
+                            .doOnSuccess(saved -> log.info("Released {} units of product {} for order {}", reserved, productId, orderId));
                 })
                 .then();
     }
@@ -75,11 +88,17 @@ public class StockApplicationService {
     public Mono<Void> confirmDispatch(String orderId, String productId, int quantity) {
         return productRepository.findById(productId)
                 .flatMap(product -> {
-                    product.setQuantity(product.getQuantity() - quantity);
-                    product.setReservedQuantity(product.getReservedQuantity() - quantity);
+                    Integer reserved = product.getReservedByOrder().get(orderId);
+                    if (reserved == null) {
+                        log.info("Confirm dispatch skipped: order {} has no active reservation on product {} (idempotent)", orderId, productId);
+                        return Mono.empty();
+                    }
+                    product.setQuantity(product.getQuantity() - reserved);
+                    product.setReservedQuantity(Math.max(0, product.getReservedQuantity() - reserved));
+                    product.getReservedByOrder().remove(orderId);
                     return productRepository.save(product)
                             .flatMap(saved -> productCacheService.evictProduct(productId).thenReturn(saved))
-                            .doOnSuccess(saved -> log.info("Confirmed dispatch of {} units of product {} for order {}", quantity, productId, orderId));
+                            .doOnSuccess(saved -> log.info("Confirmed dispatch of {} units of product {} for order {}", reserved, productId, orderId));
                 })
                 .then();
     }

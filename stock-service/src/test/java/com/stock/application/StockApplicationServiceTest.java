@@ -45,6 +45,7 @@ class StockApplicationServiceTest {
                 .quantity(100)
                 .reservedQuantity(10)
                 .price(29.99)
+                .reservedByOrder(new java.util.HashMap<>(java.util.Map.of("existing-order", 10)))
                 .build();
 
         // Default lenient stubs for cache service to avoid NPE
@@ -212,6 +213,41 @@ class StockApplicationServiceTest {
 
             verify(productCacheService).evictProduct("product-1");
         }
+
+        @Test
+        @DisplayName("Should be idempotent: re-reserving same quantity for same order does not double-count")
+        void shouldBeIdempotentForSameOrder() {
+            // testProduct already reserves 10 for "existing-order" (reservedQuantity=10)
+            when(productRepository.findById("product-1")).thenReturn(Mono.just(testProduct));
+
+            StepVerifier.create(stockApplicationService.reserve("existing-order", "product-1", 10))
+                    .assertNext(success -> assertThat(success).isTrue())
+                    .verifyComplete();
+
+            // Zero delta: nothing persisted, reserved quantity unchanged
+            assertThat(testProduct.getReservedQuantity()).isEqualTo(10);
+            verify(productRepository, never()).save(any(Product.class));
+            verify(productCacheService, never()).evictProduct(anyString());
+        }
+
+        @Test
+        @DisplayName("Should apply only the delta when an order updates its reserved quantity (cart add-more)")
+        void shouldApplyDeltaWhenQuantityIncreases() {
+            // "existing-order" already reserves 10; now it wants 15 total (e.g. added 5 more to cart)
+            when(productRepository.findById("product-1")).thenReturn(Mono.just(testProduct));
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+            when(productCacheService.evictProduct("product-1")).thenReturn(Mono.empty());
+
+            StepVerifier.create(stockApplicationService.reserve("existing-order", "product-1", 15))
+                    .assertNext(success -> assertThat(success).isTrue())
+                    .verifyComplete();
+
+            // reservedQuantity goes 10 -> 15 (delta +5), and the per-order map reflects 15
+            assertThat(testProduct.getReservedQuantity()).isEqualTo(15);
+            assertThat(testProduct.getReservedByOrder().get("existing-order")).isEqualTo(15);
+            verify(productRepository).save(any(Product.class));
+            verify(productCacheService).evictProduct("product-1");
+        }
     }
 
     @Nested
@@ -225,7 +261,7 @@ class StockApplicationServiceTest {
             when(productRepository.save(any(Product.class))).thenReturn(Mono.just(testProduct));
             when(productCacheService.evictProduct("product-1")).thenReturn(Mono.empty());
 
-            StepVerifier.create(stockApplicationService.release("order-1", "product-1", 5))
+            StepVerifier.create(stockApplicationService.release("existing-order", "product-1", 5))
                     .verifyComplete();
 
             verify(productRepository).save(any(Product.class));
@@ -244,7 +280,7 @@ class StockApplicationServiceTest {
             });
             when(productCacheService.evictProduct("product-1")).thenReturn(Mono.empty());
 
-            StepVerifier.create(stockApplicationService.release("order-1", "product-1", 10))
+            StepVerifier.create(stockApplicationService.release("existing-order", "product-1", 10))
                     .verifyComplete();
 
             verify(productRepository).save(any(Product.class));
@@ -274,13 +310,13 @@ class StockApplicationServiceTest {
             when(productRepository.findById("product-1")).thenReturn(Mono.just(testProduct));
             when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
                 Product saved = invocation.getArgument(0);
-                assertThat(saved.getQuantity()).isEqualTo(95); // 100 - 5
-                assertThat(saved.getReservedQuantity()).isEqualTo(5); // 10 - 5
+                assertThat(saved.getQuantity()).isEqualTo(90); // 100 - 10 (reserved by existing-order)
+                assertThat(saved.getReservedQuantity()).isEqualTo(0); // 10 - 10
                 return Mono.just(saved);
             });
             when(productCacheService.evictProduct("product-1")).thenReturn(Mono.empty());
 
-            StepVerifier.create(stockApplicationService.confirmDispatch("order-1", "product-1", 5))
+            StepVerifier.create(stockApplicationService.confirmDispatch("existing-order", "product-1", 5))
                     .verifyComplete();
 
             verify(productRepository).save(any(Product.class));
