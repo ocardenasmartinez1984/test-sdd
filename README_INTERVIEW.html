@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — POS Microservices System</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#ccc; --code:#f0f0f0; --codefg:#222; }
+    body { font-size:12pt; } .wrap { max-width:none; }
+    .q,.a,.followup,blockquote { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — POS Microservices System</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · sistema POS cloud-native
+     (Spring Boot · Kafka · SAGA · Angular)</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista sobre este proyecto (sistema POS
+       cloud-native con microservicios Spring Boot, Kafka, SAGA y Angular).
+       Cada sección incluye la <strong>pregunta del entrevistador</strong>, una
+       <strong>respuesta modelo</strong> y, cuando aplica,
+       <strong>preguntas de seguimiento</strong> (follow-ups) que suelen aparecer.</p>
+    <p>Formato sugerido: 60–75 min. Bloques: arquitectura (15'), SAGA/mensajería
+       (20'), datos (10'), seguridad (10'), frontend (10'), DevOps/testing (10'),
+       diseño abierto (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — "Cuéntame del proyecto"</a></li>
+      <li><a href="#s1">Arquitectura</a></li>
+      <li><a href="#s2">Patrón SAGA y mensajería</a></li>
+      <li><a href="#s3">Datos y persistencia</a></li>
+      <li><a href="#s4">Seguridad</a></li>
+      <li><a href="#s5">Frontend (Angular)</a></li>
+      <li><a href="#s6">DevOps, testing y tooling</a></li>
+      <li><a href="#s7">Diseño abierto / escenarios</a></li>
+      <li><a href="#s8">Preguntas de cierre</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — "Cuéntame del proyecto"</h2>
+  <div class="q"><span class="tag tag-q">P</span> En 2–3 minutos, describe el sistema y tu rol.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Es un sistema de punto de venta (POS) construido con arquitectura de
+    microservicios. Hay seis servicios backend en Java 21 / Spring Boot 3.3:
+    <ul>
+      <li><strong>api-gateway</strong> (8080): único punto de entrada, Spring Cloud Gateway + Eureka.</li>
+      <li><strong>auth-service</strong> (8084): autenticación JWT con PostgreSQL.</li>
+      <li><strong>stock-service</strong> (8081): inventario, MongoDB + Kafka.</li>
+      <li><strong>venta-service</strong> (8082): orquestador de ventas, implementa el patrón SAGA.</li>
+      <li><strong>despacho-service</strong> (8083): despachos/envíos, MongoDB + Kafka.</li>
+      <li><strong>eureka-server</strong> (8761): service discovery.</li>
+    </ul>
+    Tres frontends Angular 18: <code>pos-frontend</code> (4300),
+    <code>ventas-mantenedor</code> (4200) y <code>users-mantenedor</code> (4400).
+    La infraestructura es Kafka, MongoDB, PostgreSQL y Redis, con Jenkins y
+    SonarQube para CI/CD y calidad. Todo se orquesta con Docker Compose (y
+    manifiestos de Kubernetes en <code>k8s/</code>).
+    El caso de negocio central es una <strong>venta como transacción distribuida</strong>:
+    crear la orden, reservar stock y solicitar despacho, con compensación
+    automática si algo falla.
+  </div>
+
+  <h2 id="s1">1. Arquitectura</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Por qué microservicios y no un monolito para un POS?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Se justifica por: (1) <strong>límites de dominio claros</strong> — inventario,
+    ventas y despacho evolucionan y escalan por separado; (2) <strong>escalado
+    independiente</strong> — el stock y las ventas tienen perfiles de carga distintos;
+    (3) <strong>aislamiento de fallos</strong> — si despacho cae, la reserva de stock
+    y la captura de la venta siguen. El costo es complejidad operativa (mensajería,
+    consistencia eventual, observabilidad), que aquí se acepta como ejercicio de
+    diseño. Para un POS pequeño, un monolito modular sería defendible; la decisión
+    aquí es explícitamente didáctica y orientada a demostrar SAGA.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Qué rol cumple el API Gateway y por qué Eureka?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El gateway (Spring Cloud Gateway) es el único punto de entrada: enruta a los
+    servicios, centraliza CORS, y puede aplicar rate limiting con Redis. Eureka da
+    <strong>service discovery</strong> dinámico: los servicios se registran y el
+    gateway los resuelve por nombre lógico en vez de IP/puerto fijos, lo que permite
+    escalar réplicas sin reconfigurar. En Kubernetes este rol lo podría asumir el DNS
+    del cluster; Eureka se mantiene por portabilidad.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Y si Eureka se cae? — Los clientes cachean el registro, así que hay degradación
+    elegante por un tiempo; aun así es un punto a replicar en producción (varias
+    instancias en zona/región).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P3</span> ¿Comunicación síncrona vs asíncrona en este sistema?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Las consultas cliente→servicio son <strong>síncronas</strong> (REST vía gateway).
+    El flujo de venta entre servicios es <strong>asíncrono</strong> vía Kafka (eventos).
+    Esto desacopla al orquestador de los participantes y da tolerancia a picos y a
+    caídas temporales de un consumidor (los mensajes quedan en el topic).
+  </div>
+
+  <h2 id="s2">2. Patrón SAGA y mensajería (núcleo del proyecto)</h2>
+
+  <div class="q"><span class="tag tag-q">P4</span> Explica el flujo SAGA de una venta.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>venta-service</code> es el <strong>orquestador</strong>. El flujo:
+    <ol>
+      <li><code>POST /api/ventas</code> crea la orden en estado <strong>PENDING</strong> y produce a <code>stock-reserve-topic</code>.</li>
+      <li><code>stock-service</code> (participante) consume, valida <code>quantity - reservedQuantity &gt;= solicitado</code>, reserva y responde en <code>stock-reserve-response-topic</code>.</li>
+      <li>Si <code>success=true</code> → orden pasa a <strong>STOCK_RESERVED</strong> y venta produce a <code>despacho-request-topic</code>. Si <code>success=false</code> → <strong>STOCK_FAILED</strong> (terminal).</li>
+      <li><code>despacho-service</code> consume, genera un tracking <code>TRK-XXXXXXXX</code>, crea el despacho en <strong>PROCESSING</strong> y responde en <code>despacho-response-topic</code>.</li>
+      <li>Si <code>success=true</code> → orden <strong>COMPLETED</strong>. Si <code>success=false</code> → <strong>DISPATCH_FAILED</strong> y venta produce a <code>stock-compensate-topic</code> para <strong>liberar</strong> el stock reservado (compensación).</li>
+    </ol>
+    Es una <strong>SAGA por orquestación</strong>: un coordinador central dirige los
+    pasos y dispara las compensaciones, a diferencia de la coreografía donde cada
+    servicio reacciona a eventos sin coordinador.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P5</span> ¿Orquestación vs coreografía? ¿Por qué orquestación aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Orquestación centraliza la lógica del flujo y las compensaciones en un solo lugar
+    (venta), lo que hace el flujo <strong>explícito, testeable y fácil de observar</strong>
+    — clave con solo tres pasos y compensación no trivial. Coreografía escala mejor a
+    muchos servicios y evita un coordinador central, pero dispersa la lógica y complica
+    el rastreo. Con este tamaño, orquestación es la elección correcta.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P6</span> ¿Cómo se implementa la <strong>compensación</strong> y por qué no un rollback ACID?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    No hay transacción distribuida ACID (no hay 2PC entre MongoDB de distintos
+    servicios). En su lugar, cada paso tiene una <strong>acción compensatoria
+    semántica</strong>: la reserva de stock se compensa liberando la cantidad
+    (<code>stock-compensate-topic</code>). Es <strong>consistencia eventual</strong>:
+    durante la SAGA el sistema puede estar temporalmente inconsistente (stock reservado
+    pero venta no completada), y las compensaciones lo reconcilian. Se evita 2PC porque
+    bloquea recursos, acopla servicios y escala mal.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Y si la compensación falla? — Hay que hacerla <strong>idempotente y reintentable</strong>;
+    en producción se añade DLQ (dead-letter topic), reintentos con backoff y alertas
+    para intervención manual como último recurso.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P7</span> Idempotencia y entrega "at-least-once": ¿qué problemas y cómo los mitigas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Kafka garantiza <em>al menos una vez</em> por defecto, así que un consumidor puede
+    procesar el mismo evento dos veces (p. ej. tras un rebalanceo). Riesgos: reservar
+    stock dos veces, crear dos despachos. Mitigaciones:
+    <ul>
+      <li><strong>Claves de idempotencia</strong> por <code>orderId</code> (la regla "no dos despachos para la misma orden" del spec de despacho apunta a esto).</li>
+      <li>Operaciones <strong>idempotentes</strong> (upsert por orderId; verificar estado actual antes de aplicar).</li>
+      <li><strong>Deduplicación</strong> por evento procesado.</li>
+      <li>Diseñar las compensaciones para ser seguras si se repiten.</li>
+    </ul>
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Orden de mensajes? — Kafka ordena <strong>por partición</strong>. Particionar por
+    <code>orderId</code> garantiza orden dentro de una misma orden, que es lo que importa aquí.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P8</span> ¿Qué topics existen y quién produce/consume?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <table>
+      <thead><tr><th>Topic</th><th>Produce</th><th>Consume</th></tr></thead>
+      <tbody>
+        <tr><td><code>stock-reserve-topic</code></td><td>venta</td><td>stock</td></tr>
+        <tr><td><code>stock-reserve-response-topic</code></td><td>stock</td><td>venta</td></tr>
+        <tr><td><code>despacho-request-topic</code></td><td>venta</td><td>despacho</td></tr>
+        <tr><td><code>despacho-response-topic</code></td><td>despacho</td><td>venta</td></tr>
+        <tr><td><code>stock-compensate-topic</code></td><td>venta</td><td>stock</td></tr>
+      </tbody>
+    </table>
+    Cada servicio tiene su <strong>consumer group</strong> (<code>venta-group</code>,
+    <code>stock-group</code>, <code>despacho-group</code>), lo que permite escalar
+    consumidores dentro de un grupo.
+  </div>
+
+  <h2 id="s3">3. Datos y persistencia</h2>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Por qué MongoDB para stock/venta/despacho y PostgreSQL para auth?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Database-per-service</strong>: cada servicio es dueño de su base y nadie
+    accede a la de otro directamente. MongoDB (documental) encaja con agregados
+    autocontenidos como <code>Order</code>, <code>Product</code> y <code>Dispatch</code>,
+    con esquema flexible y escritura simple. PostgreSQL (relacional) para <strong>auth</strong>
+    porque usuarios, roles y credenciales se benefician de integridad referencial y
+    consultas relacionales. Es "poliglot persistence": elegir el motor por caso de uso.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Cómo consultas datos que cruzan servicios (p. ej. venta + producto + despacho)? —
+    No con JOINs entre bases. Opciones: composición vía API (el gateway/BFF agrega), o
+    vistas materializadas por eventos (CQRS/read model). Aquí el frontend compone
+    llamando a varios endpoints.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P10</span> Modela el estado de una orden. ¿Qué estados son terminales?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>OrderStatus</code>: PENDING → STOCK_RESERVED → (DISPATCHED) → COMPLETED en el
+    camino feliz. Terminales de fallo: <strong>STOCK_FAILED</strong> (no hubo stock) y
+    <strong>DISPATCH_FAILED</strong> (falló el despacho, ya compensado). CANCELLED para
+    cancelación. Modelarlo como máquina de estados evita transiciones inválidas (regla:
+    "solo órdenes con stock reservado pueden solicitar despacho").
+  </div>
+
+  <h2 id="s4">4. Seguridad</h2>
+
+  <div class="q"><span class="tag tag-q">P11</span> ¿Cómo funciona la autenticación con JWT aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>auth-service</code> valida credenciales contra PostgreSQL y emite un
+    <strong>JWT</strong> firmado (HS256) con expiración (<code>JWT_EXPIRATION</code>).
+    El cliente lo envía en <code>Authorization: Bearer</code>. El gateway/servicios
+    validan la firma con <code>JWT_SECRET</code>. JWT es <strong>stateless</strong>: no
+    hay sesión en servidor, lo que escala bien horizontalmente.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up 1</span>
+    ¿Dónde guardas el token en el frontend y qué riesgos hay? — Típicamente en memoria
+    o <code>localStorage</code>. <code>localStorage</code> es vulnerable a XSS; cookies
+    <code>HttpOnly</code>+<code>SameSite</code> mitigan XSS pero requieren cuidado con
+    CSRF. Se elige según el modelo de amenazas.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up 2</span>
+    ¿Cómo revocas un JWT antes de que expire? — JWT puro no se revoca; se usan listas de
+    revocación/denylist (Redis), rotación de claves o tokens de vida corta + refresh tokens.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P12</span> <em>(Trabajo reciente en este repo)</em>
+    Se pidió <strong>doble validación de contraseña</strong> en el alta de usuario
+    (<code>users-mantenedor</code>). ¿Cómo lo resolviste y qué falta para que sea seguro?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    En el formulario reactivo de Angular añadí un segundo campo <code>confirmPassword</code>
+    y un <strong>validador a nivel de grupo</strong> (<code>passwordsMatch</code>) que
+    compara ambos y marca el error <code>passwordMismatch</code>, deshabilitando el submit
+    y mostrando "Las contraseñas no coinciden". En <strong>crear</strong> ambos son
+    requeridos; en <strong>editar</strong> son opcionales (vacío = no cambiar) y solo se
+    valida coincidencia si el usuario escribe algo.
+    <br><br>
+    Importante: esto es <strong>validación de UX en el cliente</strong>. La confirmación
+    no se envía al backend (solo <code>password</code>). Para seguridad real hace falta:
+    validación y reglas de fortaleza en <code>auth-service</code>, <strong>hashing</strong>
+    con bcrypt/argon2 (nunca texto plano), y política de contraseñas server-side. El
+    cliente nunca es la frontera de seguridad.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P13</span> ¿Rate limiting? ¿Para qué está Redis?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Redis actúa como store para <strong>rate limiting</strong> en el gateway (y como
+    caché). Limitar peticiones por cliente/IP protege de abuso y fuerza bruta en login.
+    Spring Cloud Gateway tiene un <code>RequestRateLimiter</code> basado en Redis (token bucket).
+  </div>
+
+  <h2 id="s5">5. Frontend (Angular)</h2>
+
+  <div class="q"><span class="tag tag-q">P14</span> ¿Cómo se sirven los frontends en contenedor y qué implicación tiene?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Build multi-stage: etapa Node hace <code>ng build</code> (Angular 18, componentes
+    <em>standalone</em>), y una etapa <strong>Nginx</strong> sirve el <code>dist/</code>
+    estático. Implicación clave: el bundle queda <strong>congelado en la imagen</strong>.
+    Editar el código fuente no cambia lo que ve el usuario hasta <strong>reconstruir la
+    imagen y recrear el contenedor</strong> — justo un caso que viví: un cambio no aparecía
+    porque el contenedor servía el build anterior; se resolvió con:
+    <pre><code>docker compose up -d --build --force-recreate &lt;servicio&gt;</code></pre>
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Cómo evitas caché del navegador tras un deploy? — Angular genera nombres de bundle
+    con hash (<code>main-XXXX.js</code>), lo que invalida caché automáticamente; un hard
+    refresh (Ctrl+F5) fuerza recarga del <code>index.html</code>.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P15</span> ¿Formularios reactivos vs template-driven? ¿Por qué reactivos aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Reactivos (<code>ReactiveFormsModule</code>, <code>FormBuilder</code>) porque permiten
+    <strong>validadores compuestos y a nivel de grupo</strong> (como el de contraseñas),
+    lógica testeable, y control programático del estado del form. Template-driven sirve
+    para formularios triviales; para validaciones cruzadas, reactivos.
+  </div>
+
+  <h2 id="s6">6. DevOps, testing y tooling</h2>
+
+  <div class="q"><span class="tag tag-q">P16</span> Describe el pipeline CI/CD.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Jenkins con etapas: Checkout → Build (Gradle) → Test (unit + integración) → SonarQube
+    (análisis + cobertura JaCoCo) → Docker (build/push) → Deploy (Kubernetes). El
+    <em>quality gate</em> exige, según el README, ~80% de cobertura y cero issues
+    críticos/blocker.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P17</span> ¿Cómo se testea una SAGA de forma fiable?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Tres niveles: (1) <strong>unitarios</strong> de la lógica de transición de estados y
+    compensación (sin infra); (2) <strong>integración con Testcontainers</strong> levantando
+    MongoDB/PostgreSQL/Kafka reales para verificar producción/consumo de eventos end-to-end
+    de cada servicio; (3) <strong>E2E</strong> (Playwright, carpeta <code>e2e/</code>) y
+    <strong>carga</strong> con Gatling (<code>stress-test/</code>). Testcontainers es clave
+    porque los mocks de Kafka no capturan rebalanceos, offsets ni serialización real.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P18</span> El README menciona optimizaciones de arranque. ¿Cuáles y por qué?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    (1) <strong>Perfiles de Compose</strong>: tooling pesado (Jenkins, SonarQube) va tras
+    perfiles y no arranca por defecto → stack más liviano. (2) <strong>Límites de CPU</strong>
+    de 2 CPU/768M por JVM porque el arranque de Spring Boot es CPU-bound (JIT, class
+    scanning); bajarlo a 0.5 CPU casi duplica el tiempo. (3) <strong>Cachés BuildKit
+    compartidas</strong> de Gradle y npm entre servicios → dependencias se descargan una
+    vez. (4) <code>-Djava.security.egd=file:/dev/./urandom</code> para no bloquear por
+    entropía. (5) <strong>Arranque por fases</strong> (infra → backend → frontend) esperando
+    health checks. Hay scripts en <code>services-script/</code> para esto.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P19</span> <em>(Trabajo reciente)</em>
+    Construiste una <strong>GUI de escritorio</strong> para gestionar el stack. Cuéntala y justifica decisiones.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Es <code>services-script/stack_gui.py</code>, una GUI <strong>GTK3 nativa</strong>
+    (PyGObject) con tres pestañas: <strong>Control</strong> (botones subir/bajar por fase,
+    stack completo, Jenkins, Sonar; cada tarjeta muestra estado Arriba/Parcial/Abajo por
+    servicio; consola con <strong>traza en vivo</strong> por streaming línea a línea con
+    <code>Popen</code>), <strong>Logs</strong> (docker logs por contenedor) y
+    <strong>Recursos</strong> (CPU/RAM por contenedor con alertas). Decisiones: (a) reescribí
+    una versión web previa a <strong>escritorio</strong> por requisito; (b) elegí
+    <strong>GTK3</strong> porque PyGObject ya estaba disponible sin <code>sudo</code> ni pip,
+    fiel al espíritu "solo stdlib"; (c) las operaciones bloqueantes corren en
+    <strong>hilos</strong> y actualizan la UI con <code>GLib.idle_add</code>, con timers
+    <code>GLib.timeout_add</code>; (d) la ventana se <strong>ajusta al área de trabajo del
+    monitor</strong> y usa un <code>Gtk.Paned</code> para que la consola nunca quede fuera de
+    pantalla; (e) las acciones están en un <strong>whitelist</strong> que solo ejecuta los
+    scripts <code>.sh</code> del repo (no comandos arbitrarios). Para verificarla en un
+    entorno headless (sin X ni <code>sudo</code> para xvfb) usé el backend
+    <strong>Broadway</strong> de GTK, que renderiza en memoria sin servidor X.
+  </div>
+
+  <h2 id="s7">7. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P20</span> El <code>despacho-service</code> cae por 30 minutos. ¿Qué pasa con las ventas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Las órdenes quedan en <strong>STOCK_RESERVED</strong> con su evento en
+    <code>despacho-request-topic</code> (Kafka lo retiene). Al volver despacho, consume el
+    backlog y responde; la SAGA continúa. Riesgo: stock reservado retenido mientras tanto.
+    Mitigaciones: timeouts en la SAGA que compensen si despacho no responde en X, y
+    monitoreo del lag del consumer group.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P21</span> ¿Cómo agregarías <strong>observabilidad</strong> de una venta que atraviesa 3 servicios y Kafka?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Tracing distribuido</strong> (OpenTelemetry/Zipkin) propagando un
+    <code>traceId</code>/<code>correlationId</code> desde el gateway y a través de las
+    cabeceras de los eventos Kafka, para reconstruir la línea de tiempo completa. Más
+    <strong>métricas</strong> (Actuator/Micrometer → Prometheus: lag de Kafka, tasa de
+    compensaciones, duración de SAGA) y <strong>logs estructurados</strong> correlacionados
+    por <code>orderId</code>.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P22</span> Llega Black Friday. ¿Qué escalas primero y cómo?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Perfilar antes de escalar. Probables cuellos: <code>stock-service</code> (mucha
+    contención de reservas) y <code>venta-service</code>. Escalado horizontal de esos
+    consumidores (más particiones por <code>orderId</code> + más instancias en el consumer
+    group), réplicas del gateway, y cuidar el hotspot de reservas (posible optimistic
+    locking en Mongo). Kafka absorbe picos como buffer natural.
+  </div>
+
+  <h2 id="s8">8. Preguntas de cierre (para el candidato)</h2>
+  <ul>
+    <li>¿Qué <strong>rediseñarías</strong>? — Añadir DLQ + reintentos con backoff a los
+        consumidores; timeouts/compensación por vencimiento en la SAGA; tracing distribuido;
+        y mover la validación de contraseña también al backend con hashing fuerte.</li>
+    <li>¿Mayor <strong>deuda técnica</strong>? — Consistencia eventual sin timeouts explícitos
+        y compensaciones no garantizadas como idempotentes; falta de observabilidad transversal.</li>
+    <li>¿De qué estás <strong>orgulloso</strong>? — Del flujo SAGA limpio por orquestación con
+        compensación explícita y del tooling de operación (GUI + scripts por fases) que hace el
+        stack manejable localmente.</li>
+  </ul>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <thead><tr><th>Tema</th><th>Punto clave</th></tr></thead>
+    <tbody>
+      <tr><td>Arquitectura</td><td>6 microservicios Spring Boot + 3 frontends Angular + gateway/Eureka</td></tr>
+      <tr><td>SAGA</td><td>Orquestada por venta-service; compensación vía <code>stock-compensate-topic</code></td></tr>
+      <tr><td>Consistencia</td><td>Eventual, no 2PC; compensaciones semánticas idempotentes</td></tr>
+      <tr><td>Kafka</td><td>at-least-once → idempotencia por <code>orderId</code>; orden por partición</td></tr>
+      <tr><td>Datos</td><td>DB-per-service; Mongo (dominio) + Postgres (auth)</td></tr>
+      <tr><td>Seguridad</td><td>JWT stateless HS256; rate limiting con Redis; validar+hashear en server</td></tr>
+      <tr><td>Frontend</td><td>Angular standalone, build estático servido por Nginx (rebuild para desplegar)</td></tr>
+      <tr><td>CI/CD</td><td>Jenkins: build→test→sonar→docker→k8s; Testcontainers para integración</td></tr>
+      <tr><td>Arranque</td><td>Perfiles Compose, CPU 2/768M por JVM, cachés BuildKit, fases con health checks</td></tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>
