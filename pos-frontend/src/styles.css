@@ -1005,7 +1005,8 @@ body {
 .toast {
   position: fixed;
   top: 24px;
-  right: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 16px 28px;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -1031,9 +1032,9 @@ body {
 }
 
 @keyframes toastSlide {
-  0% { opacity: 0; transform: translateX(40px) translateY(-10px) scale(0.9); }
-  60% { transform: translateX(-5px) translateY(0) scale(1.02); }
-  100% { opacity: 1; transform: translateX(0) translateY(0) scale(1); }
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+  60% { transform: translateX(-50%) translateY(2px) scale(1.02); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
 /* ==================== USER BAR ==================== */

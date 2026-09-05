@@ -676,7 +676,24 @@ export class PosComponent implements OnInit {
   // --- Cart Toggle ---
 
   toggleCart(): void {
-    this.cartOpen.set(!this.cartOpen());
+    const willClose = this.cartOpen();
+    this.cartOpen.set(!willClose);
+    // When closing the cart, refresh the catalog so stock/availability
+    // reflects the current reservations on the server (without reopening it).
+    if (willClose) {
+      this.refreshStock();
+    }
+  }
+
+  /** Reloads the catalog stock without re-syncing/reopening the cart. */
+  private refreshStock(): void {
+    this.stockService.getAll().subscribe({
+      next: (products) => {
+        this.products.set(products);
+        this.filterProducts();
+      },
+      error: () => this.showToast('⚠️ No se pudo actualizar el stock', true)
+    });
   }
 
   // --- Auth ---
