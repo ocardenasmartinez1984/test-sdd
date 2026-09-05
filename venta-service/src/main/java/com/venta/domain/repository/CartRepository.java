@@ -6,6 +6,8 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+
 @Repository
 public interface CartRepository extends ReactiveMongoRepository<CartItem, String> {
 
@@ -14,4 +16,6 @@ public interface CartRepository extends ReactiveMongoRepository<CartItem, String
     Flux<CartItem> findBySessionIdAndStatus(String sessionId, String status);
 
     Mono<CartItem> findBySessionIdAndProductId(String sessionId, String productId);
+
+    Flux<CartItem> findByStatusAndExpiresAtBefore(String status, LocalDateTime threshold);
 }
