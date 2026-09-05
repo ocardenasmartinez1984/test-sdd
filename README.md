@@ -69,7 +69,7 @@ Venta Service ──► Stock Reserve (Kafka) ──► Stock Service
 | Backend        | Java 21, Spring Boot 3.3, Spring Cloud 2023   |
 | API Gateway    | Spring Cloud Gateway + Eureka Discovery       |
 | Messaging      | Apache Kafka (KRaft mode in K8s)              |
-| Databases      | MongoDB 7.0, PostgreSQL 16                    |
+| Databases      | MongoDB 8.0, PostgreSQL 16                    |
 | Cache          | Redis                                         |
 | Frontend       | Angular 18, TypeScript                        |
 | Containerization | Docker, Kubernetes                          |
@@ -233,6 +233,22 @@ bash strip-bom.sh          # report files that have a BOM
 bash strip-bom.sh --fix    # strip the BOM in place
 ```
 
+### Fast Docker image builds
+
+`docker compose build` starts a separate Gradle build inside every service
+container, which is slow on constrained hosts. `build-images-fast.sh` instead
+compiles all service JARs in a single host Gradle run (sharing the build cache)
+and packages them into slim JRE-only images (`Dockerfile.prebuilt`):
+
+```bash
+./build-images-fast.sh                 # build all six service images
+./build-images-fast.sh stock-service   # build only the given service(s)
+docker compose up -d --no-deps --force-recreate <services>
+```
+
+This cuts a full six-service rebuild from ~15-25 min to ~2.5 min on a 4-CPU host.
+Requires a JDK 21 (the script auto-detects one; Gradle 8.9 does not support Java 24+).
+
 ## Development Setup
 
 ### Backend Services
@@ -377,20 +393,23 @@ pos-test/
 ├── api-gateway/          # Spring Cloud Gateway
 ├── auth-service/         # Authentication (JWT + PostgreSQL)
 ├── stock-service/        # Inventory management (MongoDB + Kafka)
-├── venta-service/        # Sales orchestrator - SAGA (MongoDB + Kafka)
+├── venta-service/        # Sales orchestrator - SAGA + Cart (MongoDB + Kafka)
 ├── despacho-service/     # Dispatch service (MongoDB + Kafka)
 ├── eureka-server/        # Service discovery
 ├── pos-frontend/         # Angular POS UI
 ├── ventas-mantenedor/    # Angular Sales Management UI
 ├── users-mantenedor/     # Angular User Management UI
-├── frontend/             # Shared frontend (legacy)
 ├── stress-test/          # Gatling stress tests
 ├── k8s/                  # Kubernetes manifests
 ├── jenkins/              # Jenkins Dockerfile
 ├── docker-compose.yml    # Full stack orchestration
 ├── Jenkinsfile           # CI/CD pipeline
 ├── build.gradle          # Root Gradle build
-└── settings.gradle       # Multi-project settings
+├── settings.gradle       # Multi-project settings
+├── build-images-fast.sh  # Fast local image build (host Gradle + slim images)
+├── seed-products.sh      # Seed the product catalog via the API gateway
+├── start-stack.sh / .ps1 # Phased startup helpers
+└── strip-bom.sh          # UTF-8 BOM guard for source files
 ```
 
 ## Contributing

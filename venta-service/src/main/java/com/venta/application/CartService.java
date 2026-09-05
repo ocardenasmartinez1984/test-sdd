@@ -120,18 +120,21 @@ public class CartService {
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "clearCartFallback")
     public Mono<Void> clearCart(String sessionId) {
         return cartRepository.findBySessionId(sessionId)
-                .filter(item -> CartItem.STATUS_RESERVED.equals(item.getStatus()))
-                .doOnNext(item -> {
-                    StockReserveEvent compensateEvent = StockReserveEvent.builder()
-                            .orderId(item.getId())
-                            .productId(item.getProductId())
-                            .quantity(item.getQuantity())
-                            .build();
-                    stockEventPublisher.compensateStock(compensateEvent);
-                    log.info("Stock compensate event sent for cart item: {}", item.getId());
-                })
-                .then(cartRepository.deleteAll(cartRepository.findBySessionId(sessionId)))
-                .then();
+                .collectList()
+                .flatMap(items -> {
+                    items.stream()
+                            .filter(item -> CartItem.STATUS_RESERVED.equals(item.getStatus()))
+                            .forEach(item -> {
+                                StockReserveEvent compensateEvent = StockReserveEvent.builder()
+                                        .orderId(item.getId())
+                                        .productId(item.getProductId())
+                                        .quantity(item.getQuantity())
+                                        .build();
+                                stockEventPublisher.compensateStock(compensateEvent);
+                                log.info("Stock compensate event sent for cart item: {}", item.getId());
+                            });
+                    return cartRepository.deleteAll(items);
+                });
     }
 
     // Fallback methods

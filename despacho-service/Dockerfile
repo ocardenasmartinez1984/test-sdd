@@ -12,7 +12,7 @@ COPY --from=gradle-root settings.gradle .
 COPY --from=gradle-root gradle.properties .
 
 RUN chmod +x gradlew
-RUN mkdir -p eureka-server api-gateway stock-service venta-service auth-service saga-orchestrator-service stress-test
+RUN mkdir -p eureka-server api-gateway stock-service venta-service auth-service stress-test
 
 # Copy service source (from primary context)
 COPY . despacho-service/

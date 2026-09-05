@@ -1,5 +1,0 @@
-server = "http://172.19.0.5:5000"
-
-[host."http://172.19.0.5:5000"]
-  capabilities = ["pull", "resolve"]
-  skip_verify = true

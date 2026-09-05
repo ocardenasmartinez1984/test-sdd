@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -213,7 +214,7 @@ class CartServiceTest {
             when(cartRepository.findBySessionId("session-1"))
                     .thenReturn(Flux.just(item1, item2));
             doNothing().when(stockEventPublisher).compensateStock(any());
-            when(cartRepository.deleteAll(any(Flux.class))).thenReturn(Mono.empty());
+            when(cartRepository.deleteAll(anyList())).thenReturn(Mono.empty());
 
             StepVerifier.create(cartService.clearCart("session-1"))
                     .verifyComplete();
@@ -226,7 +227,7 @@ class CartServiceTest {
         void shouldHandleEmptyCartOnClear() {
             when(cartRepository.findBySessionId("session-1"))
                     .thenReturn(Flux.empty());
-            when(cartRepository.deleteAll(any(Flux.class))).thenReturn(Mono.empty());
+            when(cartRepository.deleteAll(anyList())).thenReturn(Mono.empty());
 
             StepVerifier.create(cartService.clearCart("session-1"))
                     .verifyComplete();

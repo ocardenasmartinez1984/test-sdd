@@ -5,8 +5,10 @@ Microservicio orquestador de la SAGA. Coordina el flujo completo de una venta: c
 
 ## Responsabilidades
 - Crear y gestionar órdenes de venta
+- Gestionar el carrito de compras (reservar/actualizar/liberar stock por sesión)
 - Orquestar la SAGA (secuencia de pasos distribuidos)
 - Manejar compensaciones cuando algún paso falla
+- Reconciliar órdenes atascadas y expirar carritos abandonados
 - Exponer API REST para consultas de órdenes
 
 ## Flujo SAGA (Orquestación)
@@ -15,10 +17,10 @@ Microservicio orquestador de la SAGA. Coordina el flujo completo de una venta: c
 [Cliente] → POST /api/ventas → [Orden PENDING]
                                       │
                                       ▼
-                          Produce: stock-reserve-topic
+                          Produce: saga.stock.reserve-command
                                       │
                                       ▼
-                          Consume: stock-reserve-response-topic
+                          Consume: saga.stock.reserve-reply
                                       │
                               ┌───────┴───────┐
                               │               │
@@ -28,10 +30,10 @@ Microservicio orquestador de la SAGA. Coordina el flujo completo de una venta: c
                     [STOCK_RESERVED]    [STOCK_FAILED]
                               │               (fin)
                               ▼
-                  Produce: despacho-request-topic
+                  Produce: saga.despacho.create-command
                               │
                               ▼
-                  Consume: despacho-response-topic
+                  Consume: saga.despacho.create-reply
                               │
                       ┌───────┴───────┐
                       │               │
@@ -41,13 +43,15 @@ Microservicio orquestador de la SAGA. Coordina el flujo completo de una venta: c
                 [COMPLETED]    [DISPATCH_FAILED]
                                       │
                                       ▼
-                          Produce: stock-compensate-topic
+                          Produce: saga.stock.compensate-command
                                   (rollback stock)
 ```
 
 ## API REST
 
-### POST /api/ventas
+Prefijos base: `/api/v1/ventas` (órdenes) y `/api/v1/cart` (carrito)
+
+### POST /api/v1/ventas
 **Descripción:** Crear una nueva orden e iniciar la SAGA
 **Request Body:**
 ```json
@@ -58,45 +62,85 @@ Microservicio orquestador de la SAGA. Coordina el flujo completo de una venta: c
   "totalAmount": 59.98
 }
 ```
-**Response:** `200 OK` - Order con status PENDING
+**Response:** `201 Created` - Order con status PENDING
 
-### GET /api/ventas/{id}
+### GET /api/v1/ventas/{id}
 **Descripción:** Obtener orden por ID
 **Response:** `200 OK` - Order | `404 Not Found`
 
-### GET /api/ventas
+### GET /api/v1/ventas
 **Descripción:** Listar todas las órdenes
 **Response:** `200 OK` - Array de Order
 
-### GET /api/ventas/customer/{customerId}
+### GET /api/v1/ventas/customer/{customerId}
 **Descripción:** Listar órdenes por cliente
 **Response:** `200 OK` - Array de Order
 
-### GET /api/ventas/status/{status}
+### GET /api/v1/ventas/status/{status}
 **Descripción:** Listar órdenes por estado
 **Response:** `200 OK` - Array de Order
 
+## API REST - Carrito (`/api/v1/cart`)
+
+El carrito reserva stock por sesión mientras el cliente compra. Cada `CartItem`
+tiene un `expiresAt` (10 min); los abandonados se liberan automáticamente.
+
+### POST /api/v1/cart
+**Descripción:** Agregar al carrito (cantidad **aditiva**). Reserva stock por el nuevo total del ítem.
+**Request Body:** `{ "sessionId": "s", "productId": "p", "quantity": 1, "unitPrice": 10.0 }`
+**Response:** `201 Created` - CartItem
+
+### PUT /api/v1/cart
+**Descripción:** Fijar la cantidad **absoluta** del ítem (usado al incrementar/decrementar en la UI).
+Re-reserva el nuevo total; el stock aplica solo el delta, por lo que **reducir la cantidad libera stock**.
+Si `quantity <= 0`, elimina el ítem y libera su reserva.
+**Response:** `200 OK` - CartItem | `204 No Content` (si se eliminó)
+
+### GET /api/v1/cart/{sessionId}
+**Descripción:** Listar los ítems RESERVED de una sesión
+**Response:** `200 OK` - Array de CartItem
+
+### DELETE /api/v1/cart/{sessionId}/{productId}
+**Descripción:** Quitar un producto del carrito y liberar su reserva
+**Response:** `204 No Content`
+
+### DELETE /api/v1/cart/{sessionId}
+**Descripción:** Vaciar el carrito: compensa (libera) todos los ítems RESERVED y los borra
+**Response:** `204 No Content`
+
+## Procesos en segundo plano
+
+### SagaReconciler (`@Scheduled`, cada 60s)
+Reenvía el comando pendiente para órdenes atascadas más de `saga.reconciler.stuck-after`
+(por defecto 2 min) en PENDING (re-reserva) o STOCK_RESERVED (re-solicita despacho).
+La reserva de stock es idempotente, por lo que reenviar no infla el reservado.
+
+### CartExpirer (`@Scheduled`, cada 60s)
+Busca `CartItem` RESERVED cuyo `expiresAt` ya pasó, emite un evento de compensación
+para liberar su reserva de stock y borra el ítem. Evita que carritos abandonados
+mantengan stock reservado indefinidamente.
+
 ## Eventos Kafka
 
-### Produce: `stock-reserve-topic`
+### Produce: `saga.stock.reserve-command`
 **Cuándo:** Al crear una nueva orden
 **Evento:** StockReserveEvent
 
-### Produce: `stock-compensate-topic`
+### Produce: `saga.stock.compensate-command`
 **Cuándo:** Cuando el despacho falla (compensación)
 **Evento:** StockReserveEvent
 
-### Produce: `despacho-request-topic`
+### Produce: `saga.despacho.create-command`
 **Cuándo:** Cuando la reserva de stock es exitosa
 **Evento:** DespachoRequestEvent
 
-### Consume: `stock-reserve-response-topic`
+### Consume: `saga.stock.reserve-reply`
 **Evento:** StockReserveResponseEvent
 **Comportamiento:**
 - success=true → actualizar orden a STOCK_RESERVED, solicitar despacho
 - success=false → actualizar orden a STOCK_FAILED
 
-### Consume: `despacho-response-topic`
+### Consume: `saga.despacho.create-reply`
 **Evento:** DespachoResponseEvent
 **Comportamiento:**
 - success=true → actualizar orden a COMPLETED
@@ -121,7 +165,7 @@ Microservicio orquestador de la SAGA. Coordina el flujo completo de una venta: c
 - `PENDING` - Orden creada, esperando reserva de stock
 - `STOCK_RESERVED` - Stock reservado, esperando despacho
 - `STOCK_FAILED` - Falló la reserva de stock
-- `DISPATCHED` - Despacho en proceso
+- `DISPATCHING` - Despacho en proceso
 - `DISPATCH_FAILED` - Falló el despacho
 - `COMPLETED` - SAGA completada exitosamente
 - `CANCELLED` - Orden cancelada

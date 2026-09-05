@@ -11,25 +11,25 @@ Microservicio encargado de gestionar los despachos/envíos de productos. Partici
 
 ## API REST
 
-### GET /api/despachos
+### GET /api/v1/despachos
 **Descripción:** Listar todos los despachos
 **Response:** `200 OK` - Array de Dispatch
 
-### GET /api/despachos/order/{orderId}
+### GET /api/v1/despachos/order/{orderId}
 **Descripción:** Obtener despacho por ID de orden
 **Response:** `200 OK` - Dispatch | `404 Not Found`
 
-### GET /api/despachos/tracking/{trackingNumber}
+### GET /api/v1/despachos/tracking/{trackingNumber}
 **Descripción:** Obtener despacho por número de tracking
 **Response:** `200 OK` - Dispatch | `404 Not Found`
 
-### GET /api/despachos/status/{status}
+### GET /api/v1/despachos/status/{status}
 **Descripción:** Listar despachos por estado
 **Response:** `200 OK` - Array de Dispatch
 
 ## Eventos Kafka
 
-### Consume: `despacho-request-topic`
+### Consume: `saga.despacho.create-command`
 **Evento:** DespachoRequestEvent
 ```json
 {
@@ -46,7 +46,7 @@ Microservicio encargado de gestionar los despachos/envíos de productos. Partici
 3. Responder con success=true y trackingNumber
 4. En caso de error: responder con success=false y razón
 
-### Produce: `despacho-response-topic`
+### Produce: `saga.despacho.create-reply`
 **Evento:** DespachoResponseEvent
 ```json
 {
