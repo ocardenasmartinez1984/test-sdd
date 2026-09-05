@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1.7
+# Fast-path image (see build-images-fast.sh): packages a prebuilt JAR.
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
+EXPOSE 8084
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar app.jar"]

@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1.7
+# Fast-path image: packages a JAR that was already built on the host with a
+# single multi-module Gradle invocation (see build-images-fast.sh). This avoids
+# starting a separate Gradle build inside every service container, which is the
+# main reason `docker compose build` was slow on this 4-CPU host.
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
+EXPOSE 8081
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar app.jar"]
