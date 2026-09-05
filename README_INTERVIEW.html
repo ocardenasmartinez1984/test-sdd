@@ -84,9 +84,27 @@
   .toc a:hover { text-decoration:underline; }
   @media print {
     :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
-            --muted:#555; --border:#ccc; --code:#f0f0f0; --codefg:#222; }
-    body { font-size:12pt; } .wrap { max-width:none; }
-    .q,.a,.followup,blockquote { break-inside:avoid; }
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    /* Force Chrome/print engines to keep background colors & accent bars. */
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    /* Bold text was white for the dark on-screen theme; make it dark on paper. */
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    /* Keep a Q with its A, and never split a card across pages. */
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }              /* anchors are useless on paper */
+    tr, li { break-inside:avoid; }
   }
 </style>
 </head>
