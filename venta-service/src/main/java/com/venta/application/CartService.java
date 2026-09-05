@@ -53,9 +53,50 @@ public class CartService {
                 });
     }
 
-    @CircuitBreaker(name = "mongoDB", fallbackMethod = "removeFromCartFallback")
-    public Mono<Void> removeFromCart(String sessionId, String productId) {
+    /**
+     * Sets the cart item quantity to an absolute value (not additive). Used when
+     * the UI increments/decrements quantity. It re-emits a reserve command with
+     * the new total; the stock service applies only the delta (via reservedByOrder),
+     * so reducing the quantity correctly releases stock. If the new quantity is
+     * zero or less, the item is removed and its reservation fully released.
+     */
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "setQuantityFallback")
+    public Mono<CartItem> setQuantity(String sessionId, String productId, int quantity, double unitPrice) {
+        if (quantity <= 0) {
+            return removeFromCart(sessionId, productId).then(Mono.empty());
+        }
         return cartRepository.findBySessionIdAndProductId(sessionId, productId)
+                .flatMap(existingItem -> {
+                    existingItem.setQuantity(quantity);
+                    existingItem.setUnitPrice(unitPrice);
+                    existingItem.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+                    return cartRepository.save(existingItem);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    CartItem cartItem = CartItem.builder()
+                            .sessionId(sessionId)
+                            .productId(productId)
+                            .quantity(quantity)
+                            .unitPrice(unitPrice)
+                            .status(CartItem.STATUS_RESERVED)
+                            .createdAt(LocalDateTime.now())
+                            .expiresAt(LocalDateTime.now().plusMinutes(10))
+                            .build();
+                    return cartRepository.save(cartItem);
+                }))
+                .doOnSuccess(savedItem -> {
+                    StockReserveEvent event = StockReserveEvent.builder()
+                            .orderId(savedItem.getId())
+                            .productId(savedItem.getProductId())
+                            .quantity(savedItem.getQuantity())
+                            .build();
+                    stockEventPublisher.reserveStock(event);
+                    log.info("Stock reserve (set qty {}) event sent for cart item: {}", savedItem.getQuantity(), savedItem.getId());
+                });
+    }
+
+    @CircuitBreaker(name = "mongoDB", fallbackMethod = "removeFromCartFallback")
+    public Mono<Void> removeFromCart(String sessionId, String productId) {        return cartRepository.findBySessionIdAndProductId(sessionId, productId)
                 .flatMap(cartItem -> {
                     cartItem.setStatus(CartItem.STATUS_RELEASED);
 
@@ -101,6 +142,11 @@ public class CartService {
 
     private Mono<Void> removeFromCartFallback(String sessionId, String productId, Throwable t) {
         log.error("CircuitBreaker OPEN [mongoDB] - removeFromCart failed. Error: {}", t.getMessage());
+        return Mono.error(new RuntimeException("Cart service temporarily unavailable. Please try again later."));
+    }
+
+    private Mono<CartItem> setQuantityFallback(String sessionId, String productId, int quantity, double unitPrice, Throwable t) {
+        log.error("CircuitBreaker OPEN [mongoDB] - setQuantity failed. Error: {}", t.getMessage());
         return Mono.error(new RuntimeException("Cart service temporarily unavailable. Please try again later."));
     }
 

@@ -23,6 +23,14 @@ public class CartController {
                 .map(cartItem -> ResponseEntity.status(HttpStatus.CREATED).body(cartItem));
     }
 
+    @PutMapping
+    public Mono<ResponseEntity<CartItem>> setQuantity(@RequestBody AddToCartRequest request) {
+        return cartService.setQuantity(request.getSessionId(), request.getProductId(),
+                        request.getQuantity(), request.getUnitPrice())
+                .map(cartItem -> ResponseEntity.ok(cartItem))
+                .defaultIfEmpty(ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/{sessionId}")
     public Flux<CartItem> getCart(@PathVariable String sessionId) {
         return cartService.getCart(sessionId);

@@ -523,11 +523,11 @@ export class PosComponent implements OnInit {
       this.products.set(updatedProducts);
       this.filterProducts();
 
-      // Reserve additional stock via cart API
-      this.cartService.addToCart({
+      // Reserve stock for the new total via cart API (set absolute quantity)
+      this.cartService.setQuantity({
         sessionId: this.sessionId,
         productId: item.product.id,
-        quantity: 1,
+        quantity: target.quantity,
         unitPrice: item.product.price
       }).subscribe({
         next: () => {},
@@ -554,6 +554,16 @@ export class PosComponent implements OnInit {
         this.cartService.removeFromCart(this.sessionId, item.product.id).subscribe();
       } else {
         this.cartItems.set(items);
+        // Persist the reduced quantity so the stock reservation reflects it.
+        this.cartService.setQuantity({
+          sessionId: this.sessionId,
+          productId: item.product.id,
+          quantity: target.quantity,
+          unitPrice: item.product.price
+        }).subscribe({
+          next: () => {},
+          error: () => this.showToast('⚠️ Error al actualizar stock', true)
+        });
       }
     }
   }

@@ -13,6 +13,10 @@ export class CartService {
     return this.http.post<CartItemResponse>(this.apiUrl, request);
   }
 
+  setQuantity(request: CartAddRequest): Observable<CartItemResponse> {
+    return this.http.put<CartItemResponse>(this.apiUrl, request);
+  }
+
   getCart(sessionId: string): Observable<CartItemResponse[]> {
     return this.http.get<CartItemResponse[]>(`${this.apiUrl}/${sessionId}`);
   }
