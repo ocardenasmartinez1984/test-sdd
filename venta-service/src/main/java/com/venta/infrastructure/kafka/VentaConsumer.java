@@ -39,7 +39,7 @@ public class VentaConsumer {
     private final CartRepository cartRepository;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "stock-reserve-response", groupId = "venta-service-group")
+    @KafkaListener(topics = "saga.stock.reserve-reply", groupId = "venta-service-group")
     public void consumeStockReserveResponse(Map<String, Object> message) {
         log.info("Received stock-reserve-response: {}", message);
         StockReserveResponseEvent event = objectMapper.convertValue(message, StockReserveResponseEvent.class);
@@ -60,14 +60,14 @@ public class VentaConsumer {
                 .block();
     }
 
-    @KafkaListener(topics = "despacho-response", groupId = "venta-service-group")
+    @KafkaListener(topics = "saga.despacho.create-reply", groupId = "venta-service-group")
     public void consumeDespachoResponse(Map<String, Object> message) {
         log.info("Received despacho-response: {}", message);
         DespachoResponseEvent event = objectMapper.convertValue(message, DespachoResponseEvent.class);
         sagaOrchestrator.handleDespachoResponse(event).block();
     }
 
-    @KafkaListener(topics = "despacho-delivered", groupId = "venta-service-group")
+    @KafkaListener(topics = "saga.despacho.delivered", groupId = "venta-service-group")
     public void consumeDespachoDelivered(Map<String, Object> message) {
         log.info("Received despacho-delivered: {}", message);
         String orderId = (String) message.get("orderId");
