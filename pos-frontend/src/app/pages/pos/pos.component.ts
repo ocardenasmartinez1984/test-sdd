@@ -631,14 +631,28 @@ export class PosComponent implements OnInit {
     } else {
       this.showToast(`⚠️ ${success} procesados, ${errors} con error`, true);
     }
-    // Clear local cart without calling clearCart API - stock transitions from reserved to sold via venta flow
+
+    // Release the cart's own stock reservations. When the cart is closed, the
+    // items were reserved twice: once by the cart (cart-item id) and again by
+    // the sales order created at checkout. If we don't release the cart-side
+    // reservations, reservedQuantity stays inflated and the stock becomes
+    // inconsistent. clearCart emits a compensate event per cart item, subtracting
+    // the products that were not actually sold through the order flow.
+    const closingSessionId = this.sessionId;
+    this.cartService.clearCart(closingSessionId).subscribe({
+      next: () => this.loadProducts(),
+      error: (err) => {
+        console.warn('No se pudo liberar el carrito al cerrar:', err);
+        this.loadProducts();
+      }
+    });
+
     this.cartItems.set([]);
     this.customerId = '';
     // Generate new sessionId for the next transaction
     this.sessionId = 'cart-' + Date.now() + '-' + Math.random().toString(36).substring(7);
     localStorage.setItem('pos_session_id', this.sessionId);
     this.processing.set(false);
-    this.loadProducts();
   }
 
   // --- Keyboard Shortcuts ---
