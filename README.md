@@ -91,11 +91,33 @@ git clone <repository-url>
 cd pos-test
 ```
 
-### Recommended: phased startup (Windows / PowerShell)
+### Recommended: phased startup
 
-Starting all 19 containers at once (6 JVMs + Kafka + SonarQube + Jenkins) can
-overwhelm the machine. Use the phased startup script, which brings the stack up
-by layers and waits for each phase to become healthy:
+Starting all containers at once (6 JVMs + Kafka + databases, plus optional
+tooling) can overwhelm the machine. Use the phased startup script, which brings
+the stack up by layers and waits for each phase to become healthy. Use the
+script for your OS — `start-stack.sh` on Linux/macOS, `start-stack.ps1` on
+Windows.
+
+**Linux / macOS (bash):**
+
+```bash
+# Essential stack only (uses prebuilt images, starts in seconds)
+./start-stack.sh
+
+# Rebuild images first (fast thanks to shared BuildKit Gradle/npm cache)
+./start-stack.sh --build
+
+# Also start CI/CD tools (Jenkins, SonarQube)
+./start-stack.sh --tooling
+
+# Tear everything down
+./start-stack.sh --down
+```
+
+> If you get "permission denied", make it executable once: `chmod +x start-stack.sh`.
+
+**Windows (PowerShell):**
 
 ```powershell
 # Essential stack only (uses prebuilt images, starts in seconds)
@@ -110,6 +132,10 @@ by layers and waits for each phase to become healthy:
 # Tear everything down
 ./start-stack.ps1 -Down
 ```
+
+> If PowerShell blocks the script ("running scripts is disabled on this system"),
+> allow it for the current session:
+> `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
 
 ### Manual startup with Docker Compose
 

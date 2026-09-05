@@ -395,8 +395,10 @@ export class UsersComponent implements OnInit {
     this.loadUsers();
   }
 
-  loadUsers(): void {
-    this.loading.set(true);
+  loadUsers(showSpinner: boolean = true): void {
+    if (showSpinner) {
+      this.loading.set(true);
+    }
     this.userService.getAll().subscribe({
       next: (users) => {
         this.users.set(users);
@@ -475,7 +477,7 @@ export class UsersComponent implements OnInit {
         next: () => {
           this.successMessage.set('Usuario actualizado correctamente');
           this.closeForm();
-          this.loadUsers();
+          this.loadUsers(false);
           this.submitting.set(false);
         },
         error: (err) => {
@@ -496,7 +498,7 @@ export class UsersComponent implements OnInit {
         next: () => {
           this.successMessage.set('Usuario creado correctamente');
           this.closeForm();
-          this.loadUsers();
+          this.loadUsers(false);
           this.submitting.set(false);
         },
         error: (err) => {
@@ -527,7 +529,7 @@ export class UsersComponent implements OnInit {
       next: () => {
         this.successMessage.set('Usuario eliminado correctamente');
         this.cancelDelete();
-        this.loadUsers();
+        this.loadUsers(false);
         this.submitting.set(false);
       },
       error: (err) => {
