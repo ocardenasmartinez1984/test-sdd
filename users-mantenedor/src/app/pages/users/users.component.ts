@@ -1,6 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { UserService } from '../../services/user.service';
 import { User, CreateUserRequest, UpdateUserRequest } from '../../models/user.model';
@@ -99,6 +99,13 @@ import { User, CreateUserRequest, UpdateUserRequest } from '../../models/user.mo
               <div class="form-group">
                 <label>{{ editingUser() ? 'Nueva Contraseña (dejar vacío para no cambiar)' : 'Contraseña' }}</label>
                 <input type="password" formControlName="password" placeholder="Contraseña">
+              </div>
+              <div class="form-group">
+                <label>{{ editingUser() ? 'Confirmar Nueva Contraseña' : 'Confirmar Contraseña' }}</label>
+                <input type="password" formControlName="confirmPassword" placeholder="Repite la contraseña">
+                @if (userForm.errors?.['passwordMismatch'] && userForm.get('confirmPassword')?.touched) {
+                  <span class="field-error">Las contraseñas no coinciden</span>
+                }
               </div>
               <div class="form-group">
                 <label>Nombre Completo</label>
@@ -256,6 +263,14 @@ import { User, CreateUserRequest, UpdateUserRequest } from '../../models/user.mo
       font-weight: 500;
     }
 
+    .field-error {
+      display: block;
+      margin-top: 6px;
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
     .toggle-group {
       margin-bottom: 18px;
     }
@@ -386,9 +401,24 @@ export class UsersComponent implements OnInit {
       username: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: [''],
+      confirmPassword: [''],
       fullName: ['', Validators.required],
       enabled: [true]
-    });
+    }, { validators: UsersComponent.passwordsMatchValidator });
+  }
+
+  /**
+   * Group-level validator: password and confirmPassword must match.
+   * Only enforced when a password has been entered (so editing without
+   * changing the password stays valid).
+   */
+  static passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
+    const password = group.get('password')?.value ?? '';
+    const confirm = group.get('confirmPassword')?.value ?? '';
+    if (!password && !confirm) {
+      return null;
+    }
+    return password === confirm ? null : { passwordMismatch: true };
   }
 
   ngOnInit(): void {
@@ -412,10 +442,12 @@ export class UsersComponent implements OnInit {
   openCreateForm(): void {
     this.editingUser.set(null);
     this.selectedRoles = ['ROLE_USER'];
-    this.userForm.reset({ username: '', email: '', password: '', fullName: '', enabled: true });
+    this.userForm.reset({ username: '', email: '', password: '', confirmPassword: '', fullName: '', enabled: true });
     this.userForm.get('username')?.enable();
     this.userForm.get('password')?.setValidators(Validators.required);
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userForm.get('confirmPassword')?.setValidators(Validators.required);
+    this.userForm.get('confirmPassword')?.updateValueAndValidity();
     this.showForm.set(true);
   }
 
@@ -426,12 +458,15 @@ export class UsersComponent implements OnInit {
       username: user.username,
       email: user.email,
       password: '',
+      confirmPassword: '',
       fullName: user.fullName,
       enabled: user.enabled
     });
     this.userForm.get('username')?.disable();
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
+    this.userForm.get('confirmPassword')?.clearValidators();
+    this.userForm.get('confirmPassword')?.updateValueAndValidity();
     this.showForm.set(true);
   }
 
