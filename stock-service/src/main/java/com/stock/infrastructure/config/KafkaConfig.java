@@ -25,6 +25,14 @@ public class KafkaConfig {
     }
 
     @Bean
+    public NewTopic stockConfirmTopic() {
+        return TopicBuilder.name("saga.stock.confirm-command")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
     public NewTopic stockReserveResponseTopic() {
         return TopicBuilder.name("saga.stock.reserve-reply")
                 .partitions(3)

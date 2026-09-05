@@ -228,6 +228,8 @@ class SagaOrchestratorTest {
                     .verifyComplete();
 
             verify(orderRepository).save(any(Order.class));
+            // On delivery the reservation is confirmed -> physical stock decrement
+            verify(stockEventPublisher).confirmStock(any());
         }
 
         @Test

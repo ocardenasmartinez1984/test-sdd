@@ -53,4 +53,18 @@ public class StockConsumer {
                         () -> log.info("Stock compensation completed for order: {}", event.getOrderId())
                 );
     }
+
+    @KafkaListener(topics = "saga.stock.confirm-command", groupId = "stock-service-group")
+    public void handleStockConfirm(Map<String, Object> message) {
+        log.info("Received saga.stock.confirm-command event: {}", message);
+
+        StockReserveEvent event = objectMapper.convertValue(message, StockReserveEvent.class);
+
+        stockApplicationService.confirmDispatch(event.getOrderId(), event.getProductId(), event.getQuantity())
+                .subscribe(
+                        unused -> log.info("Stock dispatch confirmed for order: {}", event.getOrderId()),
+                        error -> log.error("Error processing stock-confirm for order {}: {}", event.getOrderId(), error.getMessage()),
+                        () -> log.info("Stock dispatch confirmed for order: {}", event.getOrderId())
+                );
+    }
 }

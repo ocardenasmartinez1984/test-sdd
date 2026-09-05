@@ -19,6 +19,7 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
 
     private static final String STOCK_RESERVE_TOPIC = "saga.stock.reserve-command";
     private static final String STOCK_COMPENSATE_TOPIC = "saga.stock.compensate-command";
+    private static final String STOCK_CONFIRM_TOPIC = "saga.stock.confirm-command";
     private static final String DESPACHO_REQUEST_TOPIC = "saga.despacho.create-command";
 
     @Override
@@ -36,6 +37,13 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
     }
 
     @Override
+    @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "confirmStockFallback")
+    public void confirmStock(StockReserveEvent event) {
+        log.info("Sending stock-confirm event: {}", event);
+        kafkaTemplate.send(STOCK_CONFIRM_TOPIC, event.getOrderId(), event);
+    }
+
+    @Override
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "requestDespachoFallback")
     public void requestDespacho(DespachoRequestEvent event) {
         log.info("Sending despacho-request event: {}", event);
@@ -49,6 +57,10 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
 
     private void compensateStockFallback(StockReserveEvent event, Throwable t) {
         log.error("CircuitBreaker OPEN - Failed to send stock-compensate for order: {}. Error: {}", event.getOrderId(), t.getMessage());
+    }
+
+    private void confirmStockFallback(StockReserveEvent event, Throwable t) {
+        log.error("CircuitBreaker OPEN - Failed to send stock-confirm for order: {}. Error: {}", event.getOrderId(), t.getMessage());
     }
 
     private void requestDespachoFallback(DespachoRequestEvent event, Throwable t) {

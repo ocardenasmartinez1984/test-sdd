@@ -116,8 +116,17 @@ public class SagaOrchestrator {
                         order.setUpdatedAt(LocalDateTime.now());
 
                         return orderRepository.save(order)
-                                .doOnSuccess(savedOrder ->
-                                        log.info("Order completed (delivered): {}", savedOrder.getId()));
+                                .doOnSuccess(savedOrder -> {
+                                    // Confirm the sale: turn the reservation into an actual
+                                    // stock decrement (quantity -= reserved) in the stock service.
+                                    StockReserveEvent confirmEvent = StockReserveEvent.builder()
+                                            .orderId(savedOrder.getId())
+                                            .productId(savedOrder.getProductId())
+                                            .quantity(savedOrder.getQuantity())
+                                            .build();
+                                    stockEventPublisher.confirmStock(confirmEvent);
+                                    log.info("Order completed (delivered): {}. Stock confirm sent.", savedOrder.getId());
+                                });
                     }
                     return Mono.just(order);
                 })
