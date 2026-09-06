@@ -60,15 +60,23 @@ ACTIONS = {
 
 # --- Compose services backing each Control card (container = "saga-<service>") --
 # Used to show an up/down status message per card.
+#
+# NOTE: The "all" card (Subir/Bajar todo) mirrors up-all.sh / down-all.sh, which
+# only ever start/stop phases 1-3. Jenkins and SonarQube live behind their own
+# Compose profiles ("ci" / "sonar") and are intentionally NOT part of the full
+# stack: "Subir todo" / "Bajar todo" must never bring them up or down. "all" is
+# derived from the phase lists below so this stays true even if a phase changes.
+_PHASE1_SERVICES = ["postgres", "mongodb", "kafka", "redis"]
+_PHASE2_SERVICES = ["eureka-server", "api-gateway", "auth-service",
+                    "stock-service", "venta-service", "despacho-service"]
+_PHASE3_SERVICES = ["pos-frontend", "ventas-mantenedor", "users-mantenedor"]
+
 CARD_SERVICES = {
-    "all":      ["postgres", "mongodb", "kafka", "redis",
-                 "eureka-server", "api-gateway", "auth-service",
-                 "stock-service", "venta-service", "despacho-service",
-                 "pos-frontend", "ventas-mantenedor", "users-mantenedor"],
-    "phase1":   ["postgres", "mongodb", "kafka", "redis"],
-    "phase2":   ["eureka-server", "api-gateway", "auth-service",
-                 "stock-service", "venta-service", "despacho-service"],
-    "phase3":   ["pos-frontend", "ventas-mantenedor", "users-mantenedor"],
+    # Full stack = phases 1+2+3 only (never jenkins/sonar).
+    "all":      _PHASE1_SERVICES + _PHASE2_SERVICES + _PHASE3_SERVICES,
+    "phase1":   _PHASE1_SERVICES,
+    "phase2":   _PHASE2_SERVICES,
+    "phase3":   _PHASE3_SERVICES,
     "jenkins":  ["jenkins"],
     "sonar":    ["postgres-sonar", "sonarqube"],
 }
@@ -181,6 +189,22 @@ def all_logs(tail=80):
     for row in docker_ps():
         result[row["name"]] = docker_logs(row["name"], tail=tail)
     return result
+
+
+def docker_prune():
+    """Reclaim unused Docker resources to free RAM/disk, non-destructively.
+
+    Runs `docker system prune -f`, which removes ONLY things that are safe to
+    drop:
+      * stopped containers
+      * networks not used by any container
+      * dangling images
+      * build cache
+
+    It does NOT touch running containers and does NOT pass --volumes, so named
+    volumes (postgres/mongodb data) are preserved. Returns (rc, output).
+    """
+    return _run(["docker", "system", "prune", "-f"], timeout=120)
 
 
 def run_action(action):
@@ -421,8 +445,11 @@ class StackWindow(Gtk.Window):
         self._append_console(tail)
         for b in self._action_buttons:
             b.set_sensitive(True)
-        # An up/down just ran: refresh the per-card status messages.
+        # An up/down just ran: refresh the per-card status messages and the
+        # logs tab (dropdown + contents) so newly started/stopped containers
+        # are reflected right away.
         self._refresh_status()
+        self._refresh_logs()
         return False
 
     # ---- Per-card up/down status -----------------------------------------
@@ -485,7 +512,9 @@ class StackWindow(Gtk.Window):
         self.log_container = Gtk.ComboBoxText()
         self.log_container.append("__all__", "Todos")
         self.log_container.set_active_id("__all__")
-        self.log_container.connect("changed", lambda *_: self._refresh_logs())
+        self._log_container_handler = self.log_container.connect(
+            "changed", lambda *_: self._render_logs()
+        )
         selrow.pack_start(self.log_container, False, False, 0)
 
         selrow.pack_start(Gtk.Label(label="Líneas:"), False, False, 0)
@@ -517,6 +546,8 @@ class StackWindow(Gtk.Window):
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scroll.add(self.logbox)
+        # Keep a handle so we can auto-scroll to the bottom when logs change.
+        self._log_scroll = scroll
         outer.pack_start(scroll, True, True, 0)
 
         return outer
@@ -529,22 +560,37 @@ class StackWindow(Gtk.Window):
         threading.Thread(target=worker, daemon=True).start()
 
     def _populate_containers(self, rows, on_done):
+        # Preserve the user's current selection across refreshes. If the
+        # previously-selected container no longer exists, fall back to "Todos".
         current = self.log_container.get_active_id()
-        self.log_container.remove_all()
-        self.log_container.append("__all__", "Todos")
-        for c in rows:
-            short = c["name"][5:] if c["name"].startswith("saga-") else c["name"]
-            self.log_container.append(c["name"], f"{short} ({c['state']})")
-        self.log_container.set_active_id(current or "__all__")
+        available_ids = {"__all__"} | {c["name"] for c in rows}
+
+        # Avoid firing the "changed" handler (and a redundant refresh) while we
+        # rebuild the list programmatically.
+        self.log_container.handler_block(self._log_container_handler)
+        try:
+            self.log_container.remove_all()
+            self.log_container.append("__all__", "Todos")
+            for c in rows:
+                short = c["name"][5:] if c["name"].startswith("saga-") else c["name"]
+                self.log_container.append(c["name"], f"{short} ({c['state']})")
+            target = current if current in available_ids else "__all__"
+            self.log_container.set_active_id(target)
+        finally:
+            self.log_container.handler_unblock(self._log_container_handler)
+
         self._containers_loaded = True
         if on_done:
             on_done()
         return False
 
     def _refresh_logs(self):
-        if not self._containers_loaded:
-            self._load_containers(on_done=self._refresh_logs)
-            return
+        # Always refresh the container dropdown from the live docker state so
+        # newly started/stopped containers (and their up/down status) show up.
+        # The first call loads the list, then re-renders logs via on_done.
+        self._load_containers(on_done=self._render_logs)
+
+    def _render_logs(self):
         name = self.log_container.get_active_id() or "__all__"
         try:
             tail = int(self.log_tail.get_active_id() or "200")
@@ -566,6 +612,15 @@ class StackWindow(Gtk.Window):
 
     def _set_logbox(self, text):
         self.logbox_buf.set_text(text)
+        # Auto-scroll to the bottom so the newest log lines stay visible.
+        mark = self.logbox_buf.get_mark("log_bottom")
+        if mark is None:
+            mark = self.logbox_buf.create_mark(
+                "log_bottom", self.logbox_buf.get_end_iter(), False
+            )
+        else:
+            self.logbox_buf.move_mark(mark, self.logbox_buf.get_end_iter())
+        self.logbox.scroll_to_mark(mark, 0.0, True, 0.0, 1.0)
         return False
 
     # ---- Resources tab ----------------------------------------------------
@@ -584,6 +639,22 @@ class StackWindow(Gtk.Window):
             f"Umbral de alerta: CPU ≥ {CPU_ALERT}%  /  RAM ≥ {MEM_ALERT}%"
         )
         outer.pack_start(self.res_hint, False, False, 0)
+
+        # --- Free-RAM row: prune unused Docker resources (safe / non-destructive) ---
+        toolrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.free_ram_btn = Gtk.Button(label="Liberar RAM")
+        self.free_ram_btn.set_tooltip_text(
+            "Elimina contenedores parados, redes sin uso, imágenes colgantes y "
+            "caché de build (docker system prune -f). No toca contenedores en "
+            "ejecución ni datos (volúmenes)."
+        )
+        self.free_ram_btn.connect("clicked", self._on_free_ram_clicked)
+        toolrow.pack_start(self.free_ram_btn, False, False, 0)
+
+        self.free_ram_status = Gtk.Label(xalign=0)
+        self.free_ram_status.get_style_context().add_class("dim-label")
+        toolrow.pack_start(self.free_ram_status, False, False, 0)
+        outer.pack_start(toolrow, False, False, 0)
 
         self.res_flow = Gtk.FlowBox()
         self.res_flow.set_valign(Gtk.Align.START)
@@ -606,6 +677,38 @@ class StackWindow(Gtk.Window):
             GLib.idle_add(self._render_stats, stats)
 
         threading.Thread(target=worker, daemon=True).start()
+
+    # ---- Free RAM (prune unused Docker resources) -------------------------
+    def _on_free_ram_clicked(self, _btn):
+        self.free_ram_btn.set_sensitive(False)
+        self.free_ram_status.set_markup("<small>Liberando… (prune en curso)</small>")
+
+        def worker():
+            rc, out = docker_prune()
+            GLib.idle_add(self._free_ram_done, rc, out)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _free_ram_done(self, rc, out):
+        # docker prints a "Total reclaimed space: <N>" line on success.
+        reclaimed = ""
+        for line in (out or "").splitlines():
+            if "reclaimed" in line.lower():
+                reclaimed = line.strip()
+                break
+        if rc == 0:
+            msg = reclaimed or "Recursos sin uso liberados."
+            self.free_ram_status.set_markup(
+                f"<small><span foreground='#22c55e'>✔ {GLib.markup_escape_text(msg)}</span></small>"
+            )
+        else:
+            self.free_ram_status.set_markup(
+                f"<small><span foreground='#ef4444'>✖ Error al liberar (rc={rc})</span></small>"
+            )
+        self.free_ram_btn.set_sensitive(True)
+        # Reflect the freed resources in the live stats.
+        self._refresh_stats()
+        return False
 
     def _render_stats(self, stats):
         for child in self.res_flow.get_children():
