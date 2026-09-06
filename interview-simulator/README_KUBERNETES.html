@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Kubernetes (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Kubernetes</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · manifiestos, Deployments/StatefulSets,
+     Services e Ingress para el sistema POS</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista sobre <strong>Kubernetes</strong> aplicado a este proyecto POS
+       (manifiestos en <code>k8s/</code>: namespace, MongoDB, PostgreSQL, Kafka KRaft, microservicios y
+       frontends). Cada sección incluye la <strong>pregunta del entrevistador</strong>, una
+       <strong>respuesta modelo</strong> y <strong>follow-ups</strong>.</p>
+    <p>Formato sugerido: 50–60 min. Bloques: fundamentos (10'), workloads (15'), red/servicios (10'),
+       config/estado (10'), operación y escalado (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — K8s en el proyecto</a></li>
+      <li><a href="#s1">Fundamentos</a></li>
+      <li><a href="#s2">Workloads: Pods, Deployments, StatefulSets</a></li>
+      <li><a href="#s3">Red: Services e Ingress</a></li>
+      <li><a href="#s4">Configuración y estado</a></li>
+      <li><a href="#s5">Salud, escalado y operación</a></li>
+      <li><a href="#s6">Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — K8s en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se despliega el sistema en Kubernetes?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Los manifiestos viven en <code>k8s/</code> y se aplican en orden con <code>deploy.sh</code>/<code>deploy.bat</code>:
+    <code>00-namespace</code>, <code>01-mongodb</code> (StatefulSet), <code>02-postgres</code> (StatefulSet),
+    <code>03-kafka</code> (KRaft, sin ZooKeeper), <code>04-microservices</code> (los 6 backends) y
+    <code>05-frontend</code>. Las bases de datos y Kafka son <strong>stateful</strong> (StatefulSet + volúmenes),
+    los servicios y frontends son <strong>stateless</strong> (Deployment). El namespace aísla los recursos del POS.
+  </div>
+
+  <h2 id="s1">1. Fundamentos</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Qué problema resuelve Kubernetes frente a Docker Compose?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Compose orquesta contenedores en <strong>una sola máquina</strong> (ideal para desarrollo). Kubernetes
+    orquesta contenedores en un <strong>clúster de nodos</strong> con <strong>auto-recuperación</strong>
+    (reinicia/reprograma pods caídos), <strong>escalado</strong> (manual y automático), <strong>rolling
+    updates</strong> sin downtime, <strong>service discovery</strong> y balanceo nativos, y gestión declarativa
+    del estado deseado. Es el paso de "correr contenedores" a "operar un sistema distribuido en producción".
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Qué es el modelo declarativo y el reconciliation loop?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Declaras el <strong>estado deseado</strong> en manifiestos YAML (p. ej. "quiero 3 réplicas"). Los
+    <strong>controladores</strong> ejecutan un <strong>reconciliation loop</strong>: comparan el estado actual
+    con el deseado y actúan para converger (si hay 2 pods, crean 1 más; si sobra, lo eliminan). Por eso K8s es
+    <strong>auto-reparador</strong>: si un pod muere, el controlador lo recrea sin intervención.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Componentes del control plane? — <code>kube-apiserver</code> (API), <code>etcd</code> (estado),
+    <code>scheduler</code> (asigna pods a nodos), <code>controller-manager</code> (los loops). En cada nodo:
+    <code>kubelet</code> y <code>kube-proxy</code>.
+  </div>
+
+  <h2 id="s2">2. Workloads: Pods, Deployments, StatefulSets</h2>
+
+  <div class="q"><span class="tag tag-q">P3</span> ¿Qué es un Pod y por qué no se despliegan pods directamente?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un <strong>Pod</strong> es la unidad mínima desplegable: uno o más contenedores que comparten red y
+    volúmenes. No se crean pods "sueltos" porque son <strong>efímeros</strong> y no se recuperan solos; se usan
+    controladores (<strong>Deployment</strong>) que los gestionan, mantienen el número de réplicas y hacen
+    rollouts.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P4</span> ¿Deployment vs StatefulSet? ¿Cuándo cada uno aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Deployment</strong>: pods <strong>intercambiables/stateless</strong>, nombres aleatorios, rolling
+    updates; ideal para los <strong>servicios y frontends</strong> del POS. <strong>StatefulSet</strong>: pods
+    con <strong>identidad estable</strong> (nombre ordinal <code>-0</code>, <code>-1</code>), almacenamiento
+    persistente por pod y arranque/terminación ordenados; necesario para <strong>MongoDB, PostgreSQL y Kafka</strong>,
+    donde cada instancia tiene datos y una identidad de red propia.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Por qué Kafka en KRaft en K8s? — KRaft elimina ZooKeeper (Kafka gestiona su propio consenso de metadatos con
+    Raft), simplificando el despliegue: menos componentes stateful que operar.
+  </div>
+
+  <h2 id="s3">3. Red: Services e Ingress</h2>
+
+  <div class="q"><span class="tag tag-q">P5</span> ¿Qué es un Service y qué tipos hay?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un <strong>Service</strong> da una <strong>IP/DNS estable</strong> y balanceo sobre un conjunto de pods
+    (seleccionados por labels), desacoplando a los clientes de las IPs efímeras de los pods. Tipos:
+    <strong>ClusterIP</strong> (interno, por defecto), <strong>NodePort</strong> (expone puerto en cada nodo),
+    <strong>LoadBalancer</strong> (LB del cloud). El DNS interno (<code>venta-service.namespace.svc</code>) hace
+    innecesario Eureka dentro del clúster.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P6</span> ¿Service vs Ingress?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un <strong>Service</strong> expone a nivel L4 (TCP/UDP) dentro (o hacia fuera con LoadBalancer). Un
+    <strong>Ingress</strong> opera en L7 (HTTP/HTTPS): enruta por host/path, termina TLS y consolida el acceso
+    externo por un solo punto, apoyado en un <em>ingress controller</em> (Nginx, Traefik). En este sistema, un
+    Ingress podría cumplir parte del rol del API Gateway para el tráfico entrante.
+  </div>
+
+  <h2 id="s4">4. Configuración y estado</h2>
+
+  <div class="q"><span class="tag tag-q">P7</span> ¿ConfigMap vs Secret? ¿Dónde van las variables del <code>.env</code>?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>ConfigMap</strong>: configuración no sensible (URLs de Eureka/Kafka, puertos). <strong>Secret</strong>:
+    datos sensibles (<code>JWT_SECRET</code>, credenciales de Postgres/Mongo), codificados base64 y con control de
+    acceso RBAC. Se inyectan como <strong>variables de entorno</strong> o volúmenes montados. Esto reemplaza el
+    <code>.env</code> del Compose y evita hornear secretos en imágenes.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Base64 = cifrado? — No, base64 es solo codificación. Para seguridad real se habilita
+    <strong>encryption at rest</strong> en etcd y/o un gestor externo (Sealed Secrets, Vault, cloud KMS).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P8</span> ¿Cómo se persisten los datos? PV, PVC y StorageClass.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un <strong>PersistentVolumeClaim</strong> (PVC) es la <em>solicitud</em> de almacenamiento que hace el pod;
+    se satisface con un <strong>PersistentVolume</strong> (PV), aprovisionado dinámicamente vía
+    <strong>StorageClass</strong> (disco del cloud). Los StatefulSets de Mongo/Postgres/Kafka usan
+    <code>volumeClaimTemplates</code> para dar a <strong>cada pod</strong> su propio PVC, de modo que los datos
+    sobreviven a reprogramaciones del pod.
+  </div>
+
+  <h2 id="s5">5. Salud, escalado y operación</h2>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Diferencia entre liveness, readiness y startup probes?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Liveness</strong>: ¿el pod está vivo? Si falla, K8s lo <strong>reinicia</strong>.
+    <strong>Readiness</strong>: ¿está listo para recibir tráfico? Si falla, lo <strong>saca del Service</strong>
+    (sin reiniciar). <strong>Startup</strong>: da margen a apps de arranque lento (¡Spring Boot!) antes de que
+    liveness empiece a contar. Se apuntan a <code>/actuator/health</code>. Sin readiness bien configurado, el
+    tráfico llegaría a un pod que aún arranca.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P10</span> ¿Cómo escalas y por qué importan requests/limits?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Escalado horizontal manual (<code>kubectl scale</code>) o con <strong>HPA</strong> (Horizontal Pod Autoscaler)
+    según CPU/memoria o métricas. Los <strong>resource requests</strong> guían al scheduler (cuánto reservar) y
+    los <strong>limits</strong> ponen el techo. Es el equivalente K8s a los límites de CPU del Compose: dado que
+    Spring Boot es CPU-bound al arrancar, hay que darle requests suficientes o el arranque se ralentiza.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Qué pasa si un pod excede su limit de memoria? — Es <strong>OOMKilled</strong> (terminado por el kernel) y
+    reiniciado. Si excede CPU, se le <strong>throttlea</strong> (no lo matan).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P11</span> ¿Cómo hace K8s un despliegue sin downtime?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con <strong>rolling update</strong>: crea pods nuevos y retira los viejos gradualmente respetando
+    <code>maxSurge</code>/<code>maxUnavailable</code>, y solo enruta tráfico a pods <em>ready</em>. Si algo falla,
+    <code>kubectl rollout undo</code> revierte. Alternativas: <strong>blue-green</strong> o <strong>canary</strong>
+    para exponer la versión nueva a un porcentaje del tráfico primero.
+  </div>
+
+  <h2 id="s6">6. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P12</span> Migras de Compose a K8s. ¿Qué cambia respecto a Eureka y el gateway?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El <strong>service discovery</strong> lo puede dar el DNS del clúster (Service), haciendo Eureka opcional.
+    El acceso externo puede pasar por un <strong>Ingress</strong> en vez del gateway, o mantener el gateway como
+    un Deployment más. La config del <code>.env</code> pasa a <strong>ConfigMaps/Secrets</strong>, y los límites
+    de CPU/memoria a <strong>requests/limits</strong>. Bases y Kafka se vuelven <strong>StatefulSets con PVC</strong>.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P13</span> Un pod entra en <code>CrashLoopBackOff</code>. ¿Cómo lo diagnosticas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>kubectl describe pod</code> (eventos, motivo de fallo, OOMKilled), <code>kubectl logs --previous</code>
+    (logs del contenedor que murió), revisar <strong>probes</strong> (una liveness demasiado agresiva reinicia una
+    app que aún arranca), <strong>requests/limits</strong> (falta de memoria) y dependencias (¿la BD/Kafka están
+    listas?). El <code>BackOff</code> es el retardo exponencial entre reintentos de reinicio.
+  </div>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <tr><th>Tema</th><th>Punto clave</th></tr>
+    <tr><td>Vs Compose</td><td>Orquesta un clúster con auto-recuperación, escalado y rolling updates</td></tr>
+    <tr><td>Declarativo</td><td>Estado deseado + reconciliation loop → auto-reparación</td></tr>
+    <tr><td>Pod</td><td>Unidad mínima; efímero; gestionado por controladores (Deployment)</td></tr>
+    <tr><td>Deployment vs StatefulSet</td><td>Stateless intercambiable vs identidad+almacenamiento estables (Mongo/PG/Kafka)</td></tr>
+    <tr><td>Service</td><td>IP/DNS estable + balanceo; ClusterIP/NodePort/LoadBalancer; sustituye a Eureka</td></tr>
+    <tr><td>Ingress</td><td>L7: enruta por host/path, termina TLS; puede hacer de gateway de entrada</td></tr>
+    <tr><td>Config</td><td>ConfigMap (no sensible) + Secret (sensible; base64 ≠ cifrado)</td></tr>
+    <tr><td>Estado</td><td>PVC→PV vía StorageClass; volumeClaimTemplates por pod en StatefulSet</td></tr>
+    <tr><td>Probes</td><td>liveness (reinicia) / readiness (saca del Service) / startup (arranque lento)</td></tr>
+    <tr><td>Escalado</td><td>HPA + requests/limits; exceso de memoria → OOMKilled</td></tr>
+    <tr><td>Deploy</td><td>Rolling update (maxSurge/maxUnavailable); rollout undo; canary/blue-green</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

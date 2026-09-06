@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — SAGA &amp; Outbox (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — SAGA &amp; Outbox</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · patrón SAGA por orquestación y
+     patrón Transactional Outbox en el sistema POS</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista sobre el <strong>patrón SAGA</strong> (orquestado por
+       <code>venta-service</code>) y el <strong>patrón Outbox</strong> para publicación fiable de
+       eventos. Cada sección incluye la <strong>pregunta del entrevistador</strong>, una
+       <strong>respuesta modelo</strong> y <strong>follow-ups</strong>.</p>
+    <p>Formato sugerido: 50–60 min. Bloques: SAGA (20'), compensación e idempotencia (15'),
+       Outbox y dual-write (15'), escenarios (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — SAGA en el proyecto</a></li>
+      <li><a href="#s1">Patrón SAGA</a></li>
+      <li><a href="#s2">Compensación e idempotencia</a></li>
+      <li><a href="#s3">El problema dual-write</a></li>
+      <li><a href="#s4">Patrón Transactional Outbox</a></li>
+      <li><a href="#s5">Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — SAGA en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> Describe el flujo SAGA de una venta.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>venta-service</code> es el <strong>orquestador</strong>:
+    <ol>
+      <li><code>POST /api/ventas</code> crea la orden en <strong>PENDING</strong> y produce a
+          <code>stock-reserve-topic</code>.</li>
+      <li><code>stock-service</code> consume, valida disponibilidad, reserva y responde en
+          <code>stock-reserve-response-topic</code>.</li>
+      <li>Si <code>success=true</code> → <strong>STOCK_RESERVED</strong> y produce a
+          <code>despacho-request-topic</code>. Si no → <strong>STOCK_FAILED</strong> (terminal).</li>
+      <li><code>despacho-service</code> genera tracking <code>TRK-XXXXXXXX</code>, crea el despacho
+          en PROCESSING y responde en <code>despacho-response-topic</code>.</li>
+      <li>Si <code>success=true</code> → <strong>COMPLETED</strong>. Si no → <strong>DISPATCH_FAILED</strong>
+          y produce a <code>stock-compensate-topic</code> para liberar el stock (compensación).</li>
+    </ol>
+    Es una <strong>SAGA por orquestación</strong>: un coordinador central dirige pasos y compensaciones.
+  </div>
+
+  <h2 id="s1">1. Patrón SAGA</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Qué problema resuelve SAGA y por qué no una transacción distribuida ACID?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    En microservicios con <strong>base-por-servicio</strong> no hay una transacción ACID que abarque
+    varias bases. SAGA descompone una transacción de negocio en una <strong>secuencia de transacciones
+    locales</strong>, cada una con una <strong>acción compensatoria</strong> si algo falla más adelante.
+    Se evita <strong>2PC</strong> (two-phase commit) porque bloquea recursos, acopla servicios,
+    tiene un coordinador frágil y escala mal. SAGA acepta <strong>consistencia eventual</strong> a cambio
+    de disponibilidad y desacoplamiento.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Orquestación vs coreografía? ¿Por qué orquestación aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Orquestación</strong>: un coordinador central (venta) invoca los pasos y decide las
+    compensaciones → flujo <strong>explícito, testeable y observable</strong>. <strong>Coreografía</strong>:
+    cada servicio reacciona a eventos sin coordinador → escala a muchos servicios pero <strong>dispersa</strong>
+    la lógica y complica el rastreo. Con solo 3 pasos y una compensación no trivial, orquestación es la
+    elección correcta.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P3</span> Modela la máquina de estados de la orden. ¿Cuáles son terminales?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>PENDING → STOCK_RESERVED → (DISPATCHED) → COMPLETED</code> en el camino feliz. Terminales de
+    fallo: <strong>STOCK_FAILED</strong> (sin stock) y <strong>DISPATCH_FAILED</strong> (falló despacho,
+    ya compensado). <strong>CANCELLED</strong> para cancelación. Modelarlo como máquina de estados evita
+    transiciones inválidas (regla: "solo órdenes con stock reservado pueden solicitar despacho").
+  </div>
+
+  <h2 id="s2">2. Compensación e idempotencia</h2>
+
+  <div class="q"><span class="tag tag-q">P4</span> ¿Cómo se implementa la compensación?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Cada paso tiene una <strong>acción compensatoria semántica</strong> (no un rollback físico): la
+    reserva de stock se compensa <strong>liberando</strong> la cantidad reservada vía
+    <code>stock-compensate-topic</code>. Durante la SAGA el sistema puede estar temporalmente
+    inconsistente (stock reservado, venta no completada); las compensaciones reconcilian el estado.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Y si la compensación falla? — Debe ser <strong>idempotente y reintentable</strong>; en producción
+    se añade <strong>DLQ</strong> (dead-letter topic), reintentos con backoff y alertas para intervención
+    manual como último recurso.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P5</span> Kafka entrega "at-least-once". ¿Qué riesgos y cómo los mitigas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un consumidor puede procesar el mismo evento dos veces (p. ej. tras un rebalanceo), causando doble
+    reserva o doble despacho. Mitigaciones:
+    <ul>
+      <li><strong>Claves de idempotencia</strong> por <code>orderId</code>.</li>
+      <li>Operaciones <strong>idempotentes</strong> (upsert por orderId; verificar estado actual antes de aplicar).</li>
+      <li><strong>Deduplicación</strong> de eventos procesados (tabla/set de IDs vistos).</li>
+      <li>Compensaciones seguras si se repiten.</li>
+    </ul>
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Y el orden de los mensajes? — Kafka ordena <strong>por partición</strong>. Particionar por
+    <code>orderId</code> garantiza el orden dentro de una misma orden, que es lo que importa aquí.
+  </div>
+
+  <h2 id="s3">3. El problema dual-write</h2>
+
+  <div class="q"><span class="tag tag-q">P6</span> ¿Qué es el problema del "dual write" en este flujo?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Cuando <code>venta-service</code> debe hacer <strong>dos escrituras</strong> en sistemas distintos:
+    (1) guardar la orden en MongoDB y (2) publicar el evento en Kafka. No hay transacción que abarque
+    ambos. Si guarda en Mongo y <strong>cae antes de publicar</strong>, la orden existe pero el evento
+    nunca sale → la SAGA se queda colgada. Si publica y falla al guardar, hay un evento sin orden.
+    Los dos recursos no se pueden confirmar atómicamente.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P7</span> ¿Por qué no basta con "guardar y luego publicar"?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Porque entre ambas operaciones hay una <strong>ventana de fallo</strong>. Tampoco sirve publicar
+    primero (podría no guardarse). Cualquier orden de dos operaciones no atómicas deja un estado
+    inconsistente posible. La solución es convertir las dos escrituras en <strong>una sola escritura
+    local transaccional</strong> → patrón <strong>Outbox</strong>.
+  </div>
+
+  <h2 id="s4">4. Patrón Transactional Outbox</h2>
+
+  <div class="q"><span class="tag tag-q">P8</span> Explica el patrón Transactional Outbox.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    En la <strong>misma transacción local</strong> que guarda la orden, se inserta el evento en una
+    tabla/colección <strong>outbox</strong>. Como ambas escrituras van a la misma base, son atómicas.
+    Luego un proceso aparte (<strong>relay</strong>/publisher) lee la outbox y publica a Kafka,
+    marcando cada evento como enviado. Así nunca hay orden sin evento ni evento sin orden.
+<pre><code>@Transactional
+public void crearVenta(Orden orden) {
+    ordenRepo.save(orden);                 // 1) estado de negocio
+    outboxRepo.save(new OutboxEvent(       // 2) evento, MISMA transacción
+        orden.getId(), "stock-reserve", payload));
+}
+// Proceso relay (aparte): lee outbox PENDING → publica a Kafka → marca SENT</code></pre>
+  </div>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Cómo se publica desde la outbox? ¿Polling o CDC?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Dos enfoques:
+    <ul>
+      <li><strong>Polling publisher</strong>: un scheduler consulta periódicamente los eventos
+          <code>PENDING</code>, los publica y los marca <code>SENT</code>. Simple, funciona con
+          Mongo o SQL.</li>
+      <li><strong>CDC (Change Data Capture)</strong>, p. ej. <strong>Debezium</strong>: lee el
+          <em>oplog</em>/WAL de la base y publica los cambios a Kafka sin polling. Más eficiente y
+          de baja latencia, pero añade infraestructura.</li>
+    </ul>
+    En ambos casos la publicación es <strong>at-least-once</strong>, así que los consumidores deben ser
+    idempotentes.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Relación con Outbox e idempotencia? — La outbox garantiza que el evento <strong>se publica</strong>
+    (no se pierde); la idempotencia del consumidor garantiza que <strong>procesarlo varias veces</strong>
+    no causa daño. Se necesitan ambas: entrega fiable + procesamiento seguro.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P10</span> ¿El proyecto implementa Outbox hoy? ¿Cómo lo añadirías?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El diseño actual publica directamente a Kafka tras guardar (dual-write, con la ventana de fallo
+    descrita). Para endurecerlo añadiría una <strong>colección <code>outbox</code></strong> en cada
+    servicio productor (venta, stock, despacho), escritura del evento <strong>dentro de la misma
+    transacción</strong> que el cambio de estado, y un <strong>relay</strong> (polling o Debezium)
+    que publique y marque enviado. Esto convierte la publicación de eventos en fiable de extremo a extremo.
+  </div>
+
+  <h2 id="s5">5. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P11</span> <code>despacho-service</code> cae 30 minutos. ¿Qué pasa con las ventas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Las órdenes quedan en <strong>STOCK_RESERVED</strong> con su evento retenido en
+    <code>despacho-request-topic</code> (Kafka lo persiste). Al volver despacho, consume el backlog y la
+    SAGA continúa. Riesgo: stock reservado retenido mientras tanto. Mitigaciones: <strong>timeouts</strong>
+    en la SAGA que compensen si despacho no responde en X, y monitoreo del <strong>lag</strong> del consumer group.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P12</span> ¿Cómo observas una SAGA que cruza 3 servicios y Kafka?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Tracing distribuido</strong> (OpenTelemetry) propagando un <code>correlationId</code> desde
+    el gateway a través de las cabeceras de los eventos Kafka; <strong>métricas</strong> (duración de la
+    SAGA, tasa de compensaciones, lag de Kafka) vía Micrometer→Prometheus; y <strong>logs estructurados</strong>
+    correlacionados por <code>orderId</code>.
+  </div>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <tr><th>Tema</th><th>Punto clave</th></tr>
+    <tr><td>SAGA</td><td>Transacciones locales + compensaciones; orquestada por venta-service</td></tr>
+    <tr><td>Por qué no 2PC</td><td>Bloquea recursos, acopla, coordinador frágil, escala mal</td></tr>
+    <tr><td>Compensación</td><td>Semántica (liberar stock vía <code>stock-compensate-topic</code>), idempotente</td></tr>
+    <tr><td>Estados</td><td>PENDING→STOCK_RESERVED→COMPLETED; fallos: STOCK_FAILED / DISPATCH_FAILED</td></tr>
+    <tr><td>at-least-once</td><td>Idempotencia por <code>orderId</code>; orden por partición</td></tr>
+    <tr><td>Dual-write</td><td>Guardar en Mongo + publicar en Kafka no es atómico → ventana de fallo</td></tr>
+    <tr><td>Outbox</td><td>Evento en la MISMA transacción local; relay publica después (polling/CDC)</td></tr>
+    <tr><td>Relay</td><td>Polling publisher o Debezium (CDC del oplog/WAL); sigue siendo at-least-once</td></tr>
+    <tr><td>Observabilidad</td><td>correlationId en cabeceras Kafka + métricas de SAGA + logs por orderId</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

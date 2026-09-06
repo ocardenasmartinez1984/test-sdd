@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — API Gateway &amp; Eureka (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — API Gateway &amp; Eureka</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · Spring Cloud Gateway + Eureka
+     Service Discovery en el sistema POS</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista centrada en el <strong>API Gateway</strong>
+       (Spring Cloud Gateway) y <strong>Eureka</strong> (service discovery) de este proyecto POS.
+       Cada sección incluye la <strong>pregunta del entrevistador</strong>, una
+       <strong>respuesta modelo</strong> y <strong>follow-ups</strong> frecuentes.</p>
+    <p>Formato sugerido: 45–55 min. Bloques: rol del gateway (10'), Eureka/discovery (15'),
+       routing y filtros (10'), resiliencia (10'), seguridad y operación (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — Gateway y Eureka en el proyecto</a></li>
+      <li><a href="#s1">API Gateway</a></li>
+      <li><a href="#s2">Eureka y service discovery</a></li>
+      <li><a href="#s3">Routing, filtros y load balancing</a></li>
+      <li><a href="#s4">Resiliencia</a></li>
+      <li><a href="#s5">Seguridad y operación</a></li>
+      <li><a href="#s6">Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — Gateway y Eureka en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué rol cumplen el API Gateway y Eureka aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El <strong>API Gateway</strong> (<code>:8080</code>, Spring Cloud Gateway) es el
+    <strong>único punto de entrada</strong>: los tres frontends Angular y clientes externos hablan
+    solo con él, y este enruta a los seis microservicios. Centraliza CORS, rate limiting (con Redis),
+    y agrega la documentación Swagger. <strong>Eureka</strong> (<code>:8761</code>) es el
+    <strong>service discovery</strong>: cada servicio se registra al arrancar y el gateway resuelve
+    destinos por <strong>nombre lógico</strong> (<code>lb://venta-service</code>) en vez de IP/puerto
+    fijos, permitiendo escalar réplicas sin reconfigurar.
+  </div>
+
+  <h2 id="s1">1. API Gateway</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Qué problemas resuelve un API Gateway en microservicios?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Evita que el cliente conozca la topología interna (cuántos servicios, dónde están) y centraliza
+    <strong>cross-cutting concerns</strong>: enrutamiento, autenticación/autorización, rate limiting,
+    CORS, TLS termination, agregación de respuestas y observabilidad. Sin gateway, cada frontend
+    tendría que conocer todas las URLs, manejar CORS por servicio y duplicar lógica de seguridad.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Gateway vs BFF (Backend for Frontend)? — El gateway es genérico; un BFF es un gateway
+    especializado por tipo de cliente (web/móvil) que agrega y adapta respuestas a esa UI concreta.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Por qué Spring Cloud Gateway y no Zuul?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Spring Cloud Gateway está construido sobre <strong>Spring WebFlux/Reactor Netty</strong>:
+    es <strong>no bloqueante y reactivo</strong>, maneja muchas conexiones concurrentes con pocos
+    hilos, ideal para un proxy I/O-bound. Zuul 1 era bloqueante (un hilo por request). Gateway también
+    tiene un modelo limpio de <strong>predicates + filters</strong> y buena integración con Eureka,
+    Resilience4j y el <code>RedisRateLimiter</code>.
+  </div>
+
+  <h2 id="s2">2. Eureka y service discovery</h2>
+
+  <div class="q"><span class="tag tag-q">P3</span> ¿Cómo funciona el registro y descubrimiento en Eureka?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Es <strong>client-side discovery</strong>: al arrancar, cada servicio (cliente Eureka) se
+    <strong>registra</strong> en el servidor Eureka con su nombre lógico e instancias (host/puerto).
+    Envía <strong>heartbeats</strong> periódicos (por defecto cada 30s) para renovar el lease. Los
+    clientes (como el gateway) <strong>descargan y cachean</strong> el registro localmente y eligen
+    una instancia con un balanceador cliente (Spring Cloud LoadBalancer). Si un servicio deja de
+    enviar heartbeats, Eureka lo expira del registro.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Client-side vs server-side discovery? — Client-side (Eureka): el cliente conoce las instancias
+    y balancea. Server-side (p. ej. un LB/K8s Service): el cliente llama a una VIP y el LB balancea.
+    En K8s el DNS del cluster + Service cumple este rol, por eso Eureka podría omitirse allí.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P4</span> ¿Qué es el "self-preservation mode" de Eureka?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Cuando Eureka detecta que <strong>demasiados</strong> servicios dejaron de renovar el lease en
+    poco tiempo, asume que el problema es de <strong>red</strong> (partición) y no que todos cayeron,
+    así que <strong>deja de expulsar</strong> instancias para no vaciar el registro por error. Prioriza
+    disponibilidad sobre consistencia (Eureka es un sistema <strong>AP</strong> en términos de CAP).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P5</span> ¿Qué pasa si Eureka se cae?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Hay <strong>degradación elegante</strong>: los clientes cachean el último registro conocido, así
+    que siguen resolviendo servicios por un tiempo. No se descubren instancias <em>nuevas</em> mientras
+    Eureka esté caído. Por eso en producción se corren <strong>varias réplicas de Eureka</strong>
+    (peer-to-peer, replicándose entre sí) en distintas zonas.
+  </div>
+
+  <h2 id="s3">3. Routing, filtros y load balancing</h2>
+
+  <div class="q"><span class="tag tag-q">P6</span> Explica predicates y filters en Spring Cloud Gateway.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Una <strong>route</strong> = predicate(s) + uri + filter(s). Los <strong>predicates</strong>
+    deciden si la ruta aplica (por path, método, host, header, etc.). Los <strong>filters</strong>
+    modifican request/response (reescribir path, añadir cabeceras, rate limit, circuit breaker).
+<pre><code>spring:
+  cloud:
+    gateway:
+      routes:
+        - id: venta-service
+          uri: lb://venta-service
+          predicates:
+            - Path=/api/ventas/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20</code></pre>
+    <code>lb://</code> indica al gateway que resuelva <code>venta-service</code> vía discovery y balancee.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P7</span> ¿Cómo balancea carga entre réplicas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con <strong>Spring Cloud LoadBalancer</strong> (client-side). El gateway obtiene la lista de
+    instancias desde Eureka y elige una (round-robin por defecto). Al añadir réplicas, el gateway las
+    ve automáticamente sin reconfiguración; al morir una, sale del registro y deja de recibir tráfico.
+  </div>
+
+  <h2 id="s4">4. Resiliencia</h2>
+
+  <div class="q"><span class="tag tag-q">P8</span> ¿Cómo evitas que un servicio lento tumbe al gateway?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con <strong>timeouts</strong> por ruta y un <strong>circuit breaker</strong> (Resilience4j):
+    el filtro <code>CircuitBreaker</code> abre el circuito tras un umbral de fallos/lentitud y devuelve
+    un <strong>fallback</strong> rápido en vez de encolar peticiones. Combinado con <strong>bulkheads</strong>
+    (aislar pools) y <strong>retries</strong> acotados con backoff, evita fallos en cascada.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Estados de un circuit breaker? — <strong>Closed</strong> (pasa tráfico), <strong>Open</strong>
+    (rechaza y devuelve fallback), <strong>Half-Open</strong> (deja pasar unas pocas pruebas para
+    ver si el servicio se recuperó).
+  </div>
+
+  <h2 id="s5">5. Seguridad y operación</h2>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Dónde validas el JWT: en el gateway o en cada servicio?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Se puede validar la firma en el <strong>gateway</strong> (rechazo temprano de tokens inválidos,
+    menos carga en servicios) y <strong>además</strong> en los servicios como defensa en profundidad
+    (no confiar solo en el borde). El gateway propaga el token o claims (p. ej. cabeceras) hacia los
+    servicios. También centraliza <strong>CORS</strong> y el <strong>rate limiting</strong> del login.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P10</span> ¿Cómo agrega el gateway la documentación Swagger?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Cada servicio expone su OpenAPI (<code>/api-docs</code>) y el gateway ofrece un Swagger UI
+    <strong>agregado</strong> en <code>http://localhost:8080/swagger-ui.html</code> que lista los
+    servicios. Así hay un único portal de documentación para todo el sistema.
+  </div>
+
+  <h2 id="s6">6. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P11</span> Migras a Kubernetes. ¿Mantienes Eureka?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Es opcional. En K8s el <strong>Service + DNS del cluster</strong> ya hacen discovery y balanceo
+    server-side (<code>venta-service.namespace.svc</code>), y un <strong>Ingress</strong> puede sustituir
+    parte del gateway. Se mantiene Eureka por <strong>portabilidad</strong> (que el mismo stack corra
+    igual en Docker Compose y K8s) y para no reescribir la resolución <code>lb://</code>. La alternativa
+    es quitar Eureka y usar DNS nativo, simplificando la operación en K8s.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P12</span> El gateway es un único punto de entrada: ¿no es un SPOF?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Lo sería con una sola instancia. Se mitiga corriendo <strong>varias réplicas</strong> del gateway
+    detrás de un balanceador/Ingress, sin estado local (el estado de rate limit vive en Redis, compartido).
+    Así cualquier réplica atiende cualquier request y la caída de una no afecta al servicio.
+  </div>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <tr><th>Tema</th><th>Punto clave</th></tr>
+    <tr><td>Gateway</td><td>Único punto de entrada; Spring Cloud Gateway sobre WebFlux (reactivo)</td></tr>
+    <tr><td>Cross-cutting</td><td>Routing, CORS, rate limiting (Redis), JWT, Swagger agregado</td></tr>
+    <tr><td>Eureka</td><td>Client-side discovery; registro + heartbeats (30s); resuelve <code>lb://</code></td></tr>
+    <tr><td>CAP</td><td>Eureka es AP; self-preservation evita vaciar el registro en particiones</td></tr>
+    <tr><td>Eureka caído</td><td>Degradación elegante (clientes cachean); replicar en HA peer-to-peer</td></tr>
+    <tr><td>Routing</td><td>Route = predicates + uri (<code>lb://</code>) + filters</td></tr>
+    <tr><td>Balanceo</td><td>Spring Cloud LoadBalancer (client-side), round-robin sobre instancias</td></tr>
+    <tr><td>Resiliencia</td><td>Timeouts + Resilience4j (circuit breaker closed/open/half-open) + fallback</td></tr>
+    <tr><td>K8s</td><td>Service+DNS+Ingress pueden reemplazar Eureka/gateway; se mantiene por portabilidad</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

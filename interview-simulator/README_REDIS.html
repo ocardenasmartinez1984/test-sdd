@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Redis (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Redis</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · uso de Redis en el sistema POS
+     (rate limiting en el gateway · caché · sesiones · denylist de JWT)</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista centrada en <strong>Redis</strong> dentro de
+       este proyecto POS. Cada sección incluye la <strong>pregunta del entrevistador</strong>,
+       una <strong>respuesta modelo</strong> y, cuando aplica,
+       <strong>preguntas de seguimiento</strong> (follow-ups).</p>
+    <p>Formato sugerido: 40–50 min. Bloques: fundamentos (10'), estructuras de datos (10'),
+       rate limiting en el gateway (10'), caché y sesiones (10'), operación/HA (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — Redis en el proyecto</a></li>
+      <li><a href="#s1">Fundamentos</a></li>
+      <li><a href="#s2">Estructuras de datos</a></li>
+      <li><a href="#s3">Rate limiting en el API Gateway</a></li>
+      <li><a href="#s4">Caché y patrones</a></li>
+      <li><a href="#s5">Persistencia y alta disponibilidad</a></li>
+      <li><a href="#s6">Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — Redis en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Para qué se usa Redis en este sistema POS?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Redis (<code>:6379</code>) cumple sobre todo dos roles: es el <strong>store de rate
+    limiting</strong> del API Gateway (Spring Cloud Gateway usa un <code>RequestRateLimiter</code>
+    basado en Redis con algoritmo token-bucket) y sirve como <strong>caché</strong> de baja latencia.
+    Además es el candidato natural para casos transversales como <strong>denylist de JWT</strong>
+    (revocación de tokens antes de expirar) y almacenamiento de sesiones o datos efímeros.
+    Es un almacén <strong>en memoria</strong> clave-valor, single-threaded para comandos, lo que
+    lo hace extremadamente rápido y predecible.
+  </div>
+
+  <h2 id="s1">1. Fundamentos</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Por qué Redis es tan rápido si es single-threaded?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Porque trabaja <strong>en memoria</strong> (RAM), evita el costo de I/O de disco en la ruta
+    caliente, y su modelo <strong>single-threaded</strong> para la ejecución de comandos elimina
+    bloqueos y contención de locks: cada comando es atómico y se procesa secuencialmente sobre
+    un event loop con multiplexación de I/O (epoll/kqueue). Redis 6+ sí usa hilos auxiliares para
+    I/O de red, pero la lógica de datos sigue siendo un solo hilo, lo que simplifica el modelo
+    de consistencia.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Qué riesgo tiene un comando lento como <code>KEYS *</code>? — Bloquea el único hilo y frena
+    a todos los clientes. En producción se usa <code>SCAN</code> (cursor incremental) en su lugar.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Redis vs Memcached para caché?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Memcached es puramente caché clave-valor multihilo, muy simple. Redis ofrece <strong>estructuras
+    de datos ricas</strong> (listas, sets, hashes, sorted sets, streams), <strong>persistencia</strong>
+    opcional (RDB/AOF), replicación, scripting Lua y pub/sub. Para este proyecto Redis gana porque
+    el rate limiting con token bucket necesita operaciones atómicas y expiración, algo que Redis
+    resuelve de forma nativa.
+  </div>
+
+  <h2 id="s2">2. Estructuras de datos</h2>
+
+  <div class="q"><span class="tag tag-q">P3</span> ¿Qué estructuras de datos ofrece Redis y para qué las usarías aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <ul>
+      <li><strong>String</strong>: contadores de rate limit, caché de respuestas JSON, flags.</li>
+      <li><strong>Hash</strong>: representar un objeto (p. ej. datos de sesión) con campos.</li>
+      <li><strong>List</strong>: colas simples, logs recientes.</li>
+      <li><strong>Set</strong>: denylist de JWT revocados (pertenencia O(1)).</li>
+      <li><strong>Sorted Set</strong>: rate limiting por ventana deslizante (score = timestamp), rankings.</li>
+      <li><strong>Stream</strong>: event log con consumer groups (alternativa ligera a Kafka).</li>
+    </ul>
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Cómo expiras claves? — Con <code>EXPIRE</code>/<code>TTL</code> o fijando TTL al crear
+    (<code>SET k v EX 60</code>). Redis usa expiración perezosa + muestreo activo.
+  </div>
+
+  <h2 id="s3">3. Rate limiting en el API Gateway</h2>
+
+  <div class="q"><span class="tag tag-q">P4</span> Explica cómo Spring Cloud Gateway hace rate limiting con Redis.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El <code>RedisRateLimiter</code> implementa un <strong>token bucket</strong>: se configuran
+    <code>replenishRate</code> (tokens/segundo), <code>burstCapacity</code> (máximo acumulable) y
+    <code>requestedTokens</code> por petición. En cada request el gateway ejecuta un <strong>script
+    Lua atómico</strong> en Redis que decrementa tokens y decide permitir (200) o rechazar (429).
+    Lua garantiza atomicidad (leer + calcular + escribir en un solo paso), evitando condiciones
+    de carrera entre réplicas del gateway.
+  </div>
+  <div class="a"><span class="tag tag-a">R</span>
+    La clave se deriva de un <code>KeyResolver</code> (por IP, por usuario del JWT, o por API key).
+    Ejemplo de configuración:
+<pre><code>spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                key-resolver: "#{@ipKeyResolver}"</code></pre>
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Por qué centralizar el rate limit en Redis y no en memoria del gateway? — Porque hay
+    <strong>varias réplicas</strong> del gateway; un contador en memoria local no vería el tráfico
+    de las otras instancias. Redis es el estado compartido y consistente.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P5</span> ¿Qué respondes al cliente cuando se supera el límite?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>HTTP 429 Too Many Requests</strong>, idealmente con cabeceras
+    <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Burst-Capacity</code> y
+    <code>Retry-After</code>. Esto protege especialmente el endpoint de login de
+    <code>auth-service</code> frente a fuerza bruta.
+  </div>
+
+  <h2 id="s4">4. Caché y patrones</h2>
+
+  <div class="q"><span class="tag tag-q">P6</span> ¿Qué patrón de caché usarías para el catálogo de productos?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Cache-aside</strong> (lazy loading): el servicio consulta Redis primero; si hay
+    <em>miss</em>, lee de MongoDB, guarda en Redis con TTL y responde. Es simple y resiliente
+    (si Redis cae, se degrada a la base). Alternativas: <em>write-through</em> (escribe en caché
+    y BD a la vez, más consistente) y <em>write-behind</em> (asíncrono, más rápido pero con riesgo
+    de pérdida). Para un catálogo mayormente de lectura, cache-aside con TTL corto es lo adecuado.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Cómo invalidas la caché cuando cambia el stock? — Publicando un evento (o borrando la clave)
+    al actualizar el producto; TTL corto acota la ventana de datos obsoletos aunque falle la invalidación.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P7</span> Explica cache stampede, penetration y avalanche.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <ul>
+      <li><strong>Stampede</strong>: muchas peticiones fallan a la vez al expirar una clave popular
+          y golpean la BD; se mitiga con <em>locks</em>/single-flight o recomputación anticipada.</li>
+      <li><strong>Penetration</strong>: se consultan claves inexistentes que nunca cachean; se mitiga
+          cacheando el "no existe" (valor nulo con TTL corto) o un filtro de Bloom.</li>
+      <li><strong>Avalanche</strong>: muchas claves expiran simultáneamente; se mitiga con TTL con
+          <em>jitter</em> aleatorio.</li>
+    </ul>
+  </div>
+
+  <h2 id="s5">5. Persistencia y alta disponibilidad</h2>
+
+  <div class="q"><span class="tag tag-q">P8</span> ¿RDB vs AOF? ¿Redis pierde datos?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>RDB</strong> son snapshots periódicos (rápido de restaurar, compacto, pero puede perder
+    los cambios desde el último snapshot). <strong>AOF</strong> registra cada escritura (más durable,
+    con <code>fsync</code> configurable: always/everysec/no). Para caché pura la pérdida es tolerable;
+    para datos importantes se usa AOF (o ambos). En este proyecto Redis es principalmente caché y
+    rate limiting, donde perder estado no es crítico (se reconstruye).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Cómo escalas Redis y das alta disponibilidad?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>Replicación</strong> primario-réplica para lecturas y failover; <strong>Sentinel</strong>
+    para failover automático y descubrimiento; <strong>Cluster</strong> para <em>sharding</em>
+    (particiona por hash slots, 16384 slots) cuando el dataset no cabe en un nodo. En Kubernetes se
+    suele desplegar con un operador o Helm chart y un StatefulSet.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿La replicación es síncrona? — No por defecto: es <strong>asíncrona</strong>, así que un failover
+    puede perder las últimas escrituras no replicadas. <code>WAIT</code> permite semi-sincronía.
+  </div>
+
+  <h2 id="s6">6. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P10</span> Se cae Redis. ¿Qué pasa con el gateway y el login?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El <code>RequestRateLimiter</code> depende de Redis: hay que decidir la política de
+    <strong>fail-open</strong> (permitir tráfico si Redis no responde, priorizando disponibilidad)
+    o <strong>fail-closed</strong> (rechazar, priorizando protección). Para caché cache-aside, se
+    degrada leyendo directo de la BD. Lo correcto es tener Redis en HA (Sentinel/Cluster) para que
+    esta caída sea rara y breve.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P11</span> ¿Cómo implementas revocación de JWT con Redis?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Manteniendo una <strong>denylist</strong>: al hacer logout o revocar, se guarda el
+    <code>jti</code> (id del token) en Redis con TTL igual al tiempo restante de vida del token.
+    El gateway/servicios comprueban si el <code>jti</code> está en la denylist antes de aceptarlo.
+    El TTL asegura que la entrada se limpia sola cuando el token habría expirado igualmente.
+  </div>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <tr><th>Tema</th><th>Punto clave</th></tr>
+    <tr><td>Rol en el POS</td><td>Rate limiting del gateway + caché (+ denylist JWT/sesiones)</td></tr>
+    <tr><td>Modelo</td><td>In-memory, single-threaded por comando → atómico y rápido</td></tr>
+    <tr><td>Rate limit</td><td>Token bucket vía script Lua atómico; estado compartido entre réplicas</td></tr>
+    <tr><td>Límite superado</td><td>HTTP 429 + <code>Retry-After</code>; protege login de fuerza bruta</td></tr>
+    <tr><td>Caché</td><td>Cache-aside con TTL; cuidado con stampede/penetration/avalanche</td></tr>
+    <tr><td>Persistencia</td><td>RDB (snapshots) vs AOF (log de escrituras); replicación asíncrona</td></tr>
+    <tr><td>HA / escala</td><td>Sentinel (failover) + Cluster (sharding por hash slots)</td></tr>
+    <tr><td>Antipatrón</td><td><code>KEYS *</code> bloquea; usar <code>SCAN</code></td></tr>
+  </table>
+
+</div>
+</body>
+</html>

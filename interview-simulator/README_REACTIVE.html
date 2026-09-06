@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Programación Reactiva (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Programación Reactiva</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · Project Reactor, Spring WebFlux y
+     backpressure en el contexto del sistema POS (gateway reactivo)</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista sobre <strong>programación reactiva</strong>
+       (Project Reactor / Spring WebFlux), el modelo que usa el <strong>API Gateway</strong> de este
+       proyecto. Cada sección incluye la <strong>pregunta del entrevistador</strong>, una
+       <strong>respuesta modelo</strong> y <strong>follow-ups</strong>.</p>
+    <p>Formato sugerido: 45–55 min. Bloques: fundamentos (10'), Reactor Mono/Flux (15'),
+       backpressure (10'), WebFlux (10'), errores y escenarios (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — Reactivo en el proyecto</a></li>
+      <li><a href="#s1">Fundamentos</a></li>
+      <li><a href="#s2">Project Reactor: Mono y Flux</a></li>
+      <li><a href="#s3">Backpressure</a></li>
+      <li><a href="#s4">Spring WebFlux</a></li>
+      <li><a href="#s5">Errores, threading y scheduling</a></li>
+      <li><a href="#s6">Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — Reactivo en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Dónde aparece la programación reactiva en este sistema?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    En el <strong>API Gateway</strong>: Spring Cloud Gateway está construido sobre <strong>Spring
+    WebFlux</strong> y <strong>Reactor Netty</strong>, un stack <strong>no bloqueante y reactivo</strong>.
+    Un gateway es I/O-bound (reenvía peticiones a servicios), así que el modelo reactivo le permite
+    manejar <strong>miles de conexiones concurrentes con pocos hilos</strong>, en lugar de un hilo por
+    request como en el modelo servlet bloqueante. Los servicios de negocio (venta, stock, despacho)
+    son MVC tradicional; el reactivo brilla en el borde/proxy.
+  </div>
+
+  <h2 id="s1">1. Fundamentos</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Qué es programación reactiva y qué problema resuelve?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Es un paradigma <strong>asíncrono</strong> y <strong>orientado a flujos de datos</strong> con
+    propagación de cambios, no bloqueante y con <strong>backpressure</strong>. Resuelve el problema de
+    escalar I/O: en el modelo bloqueante (un hilo por petición) muchos hilos quedan <em>esperando</em>
+    respuestas de red/BD, consumiendo memoria y provocando context-switching. El modelo reactivo libera
+    el hilo mientras espera y lo reutiliza, logrando alta concurrencia con pocos hilos (event loop).
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Reactivo siempre es mejor? — No. Para cargas <strong>CPU-bound</strong> o código que llama a
+    librerías bloqueantes (JDBC clásico) el modelo bloqueante es más simple e igual de eficiente. El
+    reactivo gana en <strong>I/O-bound</strong> con alta concurrencia. Todo el stack debe ser no bloqueante
+    para aprovecharlo.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Qué son los 4 principios del Reactive Manifesto?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un sistema reactivo es: <strong>Responsive</strong> (responde a tiempo), <strong>Resilient</strong>
+    (se mantiene ante fallos, con aislamiento), <strong>Elastic</strong> (escala con la carga) y
+    <strong>Message-driven</strong> (comunicación asíncrona por mensajes, que habilita las otras tres).
+  </div>
+
+  <h2 id="s2">2. Project Reactor: Mono y Flux</h2>
+
+  <div class="q"><span class="tag tag-q">P3</span> ¿Diferencia entre Mono y Flux?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Ambos son <strong>Publishers</strong> (spec Reactive Streams). <strong><code>Mono&lt;T&gt;</code></strong>
+    emite <strong>0 o 1</strong> elemento (p. ej. una respuesta HTTP única). <strong><code>Flux&lt;T&gt;</code></strong>
+    emite <strong>0..N</strong> elementos (un stream, p. ej. eventos SSE o filas de una consulta). Son
+    <strong>perezosos</strong>: nada ocurre hasta que hay un <em>subscribe</em>.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    "Nothing happens until you subscribe" — ¿qué significa? — Un <code>Mono</code>/<code>Flux</code> es
+    solo una <strong>receta</strong> (pipeline). No ejecuta nada hasta que alguien se suscribe; en WebFlux
+    el framework hace el subscribe por ti al devolver el publisher del controlador.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P4</span> ¿Operadores comunes? Muestra un pipeline.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <code>map</code> (transformar), <code>flatMap</code> (encadenar operaciones asíncronas),
+    <code>filter</code>, <code>zip</code> (combinar), <code>onErrorResume</code> (fallback).
+<pre><code>Mono&lt;Producto&gt; producto = webClient.get()
+    .uri("/api/stock/{id}", id)
+    .retrieve()
+    .bodyToMono(Producto.class)
+    .timeout(Duration.ofSeconds(2))
+    .retryWhen(Retry.backoff(3, Duration.ofMillis(200)))
+    .onErrorResume(ex -&gt; Mono.just(Producto.noDisponible(id)));</code></pre>
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿<code>map</code> vs <code>flatMap</code>? — <code>map</code> transforma un valor de forma síncrona
+    (<code>T→U</code>). <code>flatMap</code> transforma en <strong>otro Publisher</strong> asíncrono
+    (<code>T→Mono&lt;U&gt;</code>) y lo aplana; se usa para llamadas anidadas no bloqueantes.
+  </div>
+
+  <h2 id="s3">3. Backpressure</h2>
+
+  <div class="q"><span class="tag tag-q">P5</span> ¿Qué es backpressure y por qué importa?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Es el mecanismo por el cual el <strong>consumidor controla el ritmo</strong> al que el productor le
+    envía datos, evitando que un productor rápido <strong>desborde</strong> a un consumidor lento (y agote
+    memoria). En Reactive Streams el subscriber pide <code>request(n)</code> elementos; el productor no
+    emite más de lo solicitado. Es la diferencia clave frente a un stream "empujado" ciego.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Estrategias si no se puede frenar al productor? — <code>onBackpressureBuffer</code> (encolar),
+    <code>onBackpressureDrop</code> (descartar), <code>onBackpressureLatest</code> (quedarse con el último).
+    Cada una intercambia memoria por pérdida de datos según el caso.
+  </div>
+
+  <h2 id="s4">4. Spring WebFlux</h2>
+
+  <div class="q"><span class="tag tag-q">P6</span> ¿WebFlux vs Spring MVC?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    <strong>MVC</strong>: modelo servlet <strong>bloqueante</strong>, un hilo por request, sobre Tomcat;
+    simple y maduro. <strong>WebFlux</strong>: <strong>no bloqueante</strong> sobre Netty, event loop con
+    pocos hilos, controladores que devuelven <code>Mono</code>/<code>Flux</code>. WebFlux escala mejor en
+    alta concurrencia I/O-bound (el caso del gateway) pero exige que <strong>todo el pipeline</strong>
+    sea no bloqueante (usar <code>WebClient</code>, drivers reactivos como R2DBC o Mongo reactivo).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P7</span> ¿Qué pasa si haces una llamada bloqueante dentro de WebFlux?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Bloqueas un hilo del <strong>event loop</strong>, que es un recurso muy escaso (unos pocos hilos).
+    Eso mata la escalabilidad: pocas llamadas bloqueantes concurrentes pueden congelar todo el servidor.
+    Si es inevitable, hay que <strong>desplazar</strong> el trabajo bloqueante a otro scheduler con
+    <code>subscribeOn(Schedulers.boundedElastic())</code>.
+  </div>
+
+  <h2 id="s5">5. Errores, threading y scheduling</h2>
+
+  <div class="q"><span class="tag tag-q">P8</span> ¿Cómo se manejan errores en un pipeline reactivo?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con operadores dedicados: <code>onErrorReturn</code> (valor por defecto), <code>onErrorResume</code>
+    (pipeline alternativo), <code>onErrorMap</code> (traducir excepción), <code>retry</code>/<code>retryWhen</code>
+    (reintentar con backoff). El error se <strong>propaga por el flujo</strong> como una señal terminal
+    (<code>onError</code>), no como una excepción que rompe la pila; hay que tratarlo declarativamente.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Para qué sirven los Schedulers?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Controlan <strong>en qué hilos</strong> se ejecuta el pipeline. <code>publishOn</code> cambia el hilo
+    para los operadores <em>siguientes</em>; <code>subscribeOn</code> fija el hilo de la <em>suscripción</em>.
+    Schedulers típicos: <code>parallel()</code> (CPU-bound), <code>boundedElastic()</code> (envolver trabajo
+    bloqueante), <code>immediate()</code>. Permiten mantener el event loop libre.
+  </div>
+
+  <h2 id="s6">6. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P10</span> ¿Convendría hacer los servicios de negocio reactivos también?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Depende. Ventajas: mayor concurrencia con menos hilos si son muy I/O-bound (muchas llamadas a Mongo/Kafka).
+    Costos: <strong>curva de aprendizaje</strong>, depuración más difícil (stack traces poco intuitivos),
+    y necesita <strong>drivers reactivos</strong> de punta a punta (Mongo reactivo, R2DBC). Para este POS,
+    con carga moderada, MVC bloqueante en los servicios es una decisión razonable; el reactivo se justifica
+    donde más pega: el <strong>gateway</strong>.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P11</span> ¿Cómo llamarías a stock y despacho en paralelo y combinarías el resultado?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con <code>Mono.zip</code> (o <code>zipWith</code>): dispara ambas llamadas <code>WebClient</code>
+    concurrentemente y combina cuando ambas resuelven, en vez de secuencial. Así la latencia total es la del
+    más lento, no la suma.
+<pre><code>Mono.zip(stockMono, despachoMono)
+    .map(t -&gt; new Resumen(t.getT1(), t.getT2()));</code></pre>
+  </div>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <tr><th>Tema</th><th>Punto clave</th></tr>
+    <tr><td>Dónde</td><td>API Gateway = Spring Cloud Gateway sobre WebFlux/Reactor Netty (no bloqueante)</td></tr>
+    <tr><td>Por qué</td><td>Alta concurrencia I/O-bound con pocos hilos (event loop) vs hilo-por-request</td></tr>
+    <tr><td>Mono/Flux</td><td>Mono = 0..1; Flux = 0..N; perezosos (nada pasa sin subscribe)</td></tr>
+    <tr><td>map vs flatMap</td><td>map: T→U síncrono; flatMap: T→Publisher asíncrono (aplana)</td></tr>
+    <tr><td>Backpressure</td><td>El consumidor pide <code>request(n)</code>; evita desbordar memoria</td></tr>
+    <tr><td>WebFlux vs MVC</td><td>No bloqueante (Netty) vs bloqueante (Tomcat); todo el pipeline debe ser no bloqueante</td></tr>
+    <tr><td>Peligro</td><td>Bloquear el event loop congela el servidor; usar boundedElastic()</td></tr>
+    <tr><td>Errores</td><td>onErrorResume/Return/Map, retryWhen(backoff) — señal onError declarativa</td></tr>
+    <tr><td>Paralelo</td><td><code>Mono.zip</code> para combinar llamadas concurrentes</td></tr>
+  </table>
+
+</div>
+</body>
+</html>

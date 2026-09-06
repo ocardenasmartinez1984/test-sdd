@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Docker (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Docker</h1>
+  <p class="subtitle">Guía de estudio en formato entrevista · Docker, multi-stage builds, BuildKit y
+     Docker Compose en el sistema POS</p>
+
+  <blockquote>
+    <p>Guía de estudio en formato entrevista sobre <strong>Docker</strong> y <strong>Docker Compose</strong>
+       en este proyecto POS (6 servicios Java + 3 frontends Angular + infraestructura). Cada sección incluye
+       la <strong>pregunta del entrevistador</strong>, una <strong>respuesta modelo</strong> y
+       <strong>follow-ups</strong>.</p>
+    <p>Formato sugerido: 45–55 min. Bloques: fundamentos (10'), imágenes y Dockerfile (15'),
+       Compose (10'), optimización de builds del proyecto (10'), operación (10').</p>
+  </blockquote>
+
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">Warm-up — Docker en el proyecto</a></li>
+      <li><a href="#s1">Fundamentos</a></li>
+      <li><a href="#s2">Imágenes y Dockerfile</a></li>
+      <li><a href="#s3">Docker Compose</a></li>
+      <li><a href="#s4">Optimización de builds (proyecto)</a></li>
+      <li><a href="#s5">Redes, volúmenes y operación</a></li>
+      <li><a href="#s6">Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s0">0. Warm-up — Docker en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se conteneriza y orquesta este sistema en local?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Todo corre con <strong>Docker Compose</strong>: infraestructura (Kafka, MongoDB, PostgreSQL, Redis,
+    Eureka), los 6 servicios Java y los 3 frontends Angular. Los servicios Java usan Dockerfiles
+    <strong>multi-stage</strong> con caché de Gradle compartida (BuildKit); los frontends compilan con Node
+    y sirven el estático con <strong>Nginx</strong>. El tooling pesado (Jenkins, SonarQube) está detrás de
+    <strong>perfiles</strong> de Compose y no arranca por defecto. Hay scripts de arranque por fases
+    (<code>start-stack.sh</code>) para no saturar la máquina.
+  </div>
+
+  <h2 id="s1">1. Fundamentos</h2>
+
+  <div class="q"><span class="tag tag-q">P1</span> ¿Diferencia entre contenedor y máquina virtual?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Una <strong>VM</strong> virtualiza hardware y corre un <strong>SO invitado completo</strong> sobre un
+    hypervisor: aislamiento fuerte pero pesado (GBs, arranque lento). Un <strong>contenedor</strong>
+    comparte el <strong>kernel del host</strong> y aísla procesos con <strong>namespaces</strong> (PID, net,
+    mount) y <strong>cgroups</strong> (límites de CPU/memoria): mucho más ligero (MBs, arranca en ms) pero
+    con aislamiento a nivel de proceso. Por eso Docker es ideal para microservicios: densidad y velocidad.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P2</span> ¿Imagen vs contenedor?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Una <strong>imagen</strong> es una plantilla inmutable de solo lectura, construida por capas. Un
+    <strong>contenedor</strong> es una <strong>instancia en ejecución</strong> de una imagen, con una capa
+    de escritura efímera encima. Analogía: imagen = clase, contenedor = objeto instanciado. Muchos
+    contenedores pueden nacer de la misma imagen.
+  </div>
+
+  <h2 id="s2">2. Imágenes y Dockerfile</h2>
+
+  <div class="q"><span class="tag tag-q">P3</span> Explica los multi-stage builds y por qué se usan aquí.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Un <strong>multi-stage build</strong> usa varias etapas <code>FROM</code>: una etapa <em>builder</em>
+    con el toolchain pesado (JDK+Gradle o Node) compila el artefacto, y una etapa <em>runtime</em> ligera
+    (JRE o Nginx) copia solo el resultado final. Así la imagen final <strong>no arrastra</strong> compiladores
+    ni dependencias de build → imágenes pequeñas y con menor superficie de ataque.
+<pre><code># etapa build
+FROM gradle:8.9-jdk21 AS build
+WORKDIR /app
+COPY . .
+RUN gradle :stock-service:bootJar
+
+# etapa runtime (slim)
+FROM eclipse-temurin:21-jre
+COPY --from=build /app/stock-service/build/libs/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]</code></pre>
+    Los frontends hacen lo mismo: etapa Node hace <code>ng build</code>, etapa Nginx sirve <code>dist/</code>.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P4</span> ¿Cómo funciona el layer caching y cómo lo aprovechas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Cada instrucción del Dockerfile crea una <strong>capa</strong> cacheada. Docker reutiliza una capa si su
+    instrucción y su contexto no cambiaron. La regla clave: poner lo que <strong>cambia poco arriba</strong>
+    y lo que cambia mucho abajo. Por eso se copian primero los ficheros de dependencias
+    (<code>build.gradle</code>/<code>package.json</code>) y se descargan dependencias, y <strong>luego</strong>
+    el código fuente: así un cambio de código no invalida la capa de dependencias.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿Cómo reduces el tamaño de imagen? — Imagen base slim/alpine, multi-stage, <code>.dockerignore</code>,
+    combinar <code>RUN</code> y limpiar cachés de apt/npm en la misma capa, y no instalar dependencias de dev.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P5</span> ¿Por qué el frontend "no muestra los cambios" hasta reconstruir?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Porque el build de Angular queda <strong>congelado dentro de la imagen</strong>: Nginx sirve el
+    <code>dist/</code> horneado en tiempo de build. Editar el código fuente no cambia lo servido hasta
+    <strong>reconstruir la imagen y recrear el contenedor</strong>:
+    <code>docker compose up -d --build --force-recreate &lt;servicio&gt;</code>. Angular pone hash en los
+    bundles (<code>main-XXXX.js</code>), lo que invalida caché del navegador tras el redeploy.
+  </div>
+
+  <h2 id="s3">3. Docker Compose</h2>
+
+  <div class="q"><span class="tag tag-q">P6</span> ¿Qué aporta Docker Compose y qué son los perfiles?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Compose declara el stack multi-contenedor en un YAML (servicios, redes, volúmenes, dependencias) y lo
+    levanta con un comando. Los <strong>perfiles</strong> permiten agrupar servicios opcionales que no
+    arrancan por defecto: aquí <code>tooling</code>/<code>sonar</code>/<code>ci</code> (Jenkins, SonarQube)
+    quedan fuera del arranque normal, dejando solo los ~13 contenedores esenciales. Se activan con
+    <code>docker compose --profile tooling up -d</code>.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P7</span> ¿Cómo manejas el orden de arranque y las dependencias?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con <code>depends_on</code> combinado con <strong>healthchecks</strong>
+    (<code>condition: service_healthy</code>): un servicio Java no arranca hasta que Kafka/Mongo están
+    <em>healthy</em>, no solo <em>started</em>. Aun así, la app debe tolerar reintentos de conexión.
+    El proyecto además usa arranque <strong>por fases</strong> (infra → backend → frontend) para no saturar
+    CPU con 6 JVMs a la vez.
+  </div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span>
+    ¿<code>depends_on</code> espera a que la app esté lista? — Sin healthcheck solo espera a que el contenedor
+    <em>arranque</em>, no a que la app <em>escuche</em>. Por eso se define <code>healthcheck</code> (p. ej.
+    <code>/actuator/health</code>) y se usa <code>condition: service_healthy</code>.
+  </div>
+
+  <h2 id="s4">4. Optimización de builds (proyecto)</h2>
+
+  <div class="q"><span class="tag tag-q">P8</span> ¿Qué es BuildKit y cómo lo usa el proyecto?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    BuildKit es el motor de build moderno de Docker: builds en paralelo, mejor caché y <strong>cache
+    mounts</strong>. El proyecto comparte una <strong>caché de Gradle</strong> (<code>/root/.gradle</code>)
+    entre los 6 servicios y una <strong>caché de npm</strong> (<code>/root/.npm</code>) entre frontends, de
+    modo que las dependencias se descargan <strong>una sola vez</strong>. Requiere
+    <code>DOCKER_BUILDKIT=1</code> (los scripts de arranque lo activan).
+  </div>
+
+  <div class="q"><span class="tag tag-q">P9</span> ¿Qué hace <code>build-images-fast.sh</code> y por qué es más rápido?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    En vez de lanzar un Gradle <strong>dentro de cada contenedor</strong> (lento y sin caché compartida),
+    compila <strong>todos los JAR en un solo build de Gradle en el host</strong> (compartiendo la build cache)
+    y los empaqueta en imágenes <strong>slim solo-JRE</strong> (<code>Dockerfile.prebuilt</code>). Esto baja
+    un rebuild completo de ~15-25 min a ~2.5 min en un host de 4 CPU.
+  </div>
+
+  <h2 id="s5">5. Redes, volúmenes y operación</h2>
+
+  <div class="q"><span class="tag tag-q">P10</span> ¿Cómo se comunican los contenedores entre sí?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Compose crea una <strong>red bridge</strong> por proyecto y da <strong>DNS interno</strong>: cada servicio
+    es alcanzable por su <strong>nombre</strong> (p. ej. <code>kafka:9092</code>, <code>mongodb:27017</code>).
+    Solo los puertos <strong>publicados</strong> (<code>ports:</code>) quedan expuestos al host. El aislamiento
+    de red evita exponer todo hacia fuera.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P11</span> ¿Cómo persisten datos MongoDB/PostgreSQL entre reinicios?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Con <strong>volúmenes</strong> nombrados montados en los directorios de datos. El sistema de ficheros del
+    contenedor es <strong>efímero</strong> (se pierde al recrear); un volumen vive fuera del ciclo de vida del
+    contenedor, así que los datos sobreviven a <code>up/down</code>. <code>docker compose down -v</code>
+    <strong>borra</strong> también los volúmenes (destructivo).
+  </div>
+
+  <h2 id="s6">6. Diseño abierto / escenarios</h2>
+
+  <div class="q"><span class="tag tag-q">P12</span> Buenas prácticas de seguridad en imágenes de contenedor.</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    Correr como <strong>usuario no-root</strong> (<code>USER</code>), imágenes base <strong>mínimas</strong>
+    (distroless/slim) para reducir superficie, <strong>fijar versiones</strong> (no <code>latest</code>),
+    escanear vulnerabilidades (Trivy/Grype), no meter <strong>secretos</strong> en capas (usar variables/secret
+    mounts), y filesystem de solo lectura cuando se pueda. El JWT_SECRET y credenciales van por variables de
+    entorno / secretos, nunca horneados en la imagen.
+  </div>
+
+  <div class="q"><span class="tag tag-q">P13</span> El arranque satura la máquina. ¿Qué ajustas?</div>
+  <div class="a"><span class="tag tag-a">R</span>
+    El arranque de Spring Boot es <strong>CPU-bound</strong> (JIT, class scanning). El proyecto asigna
+    <strong>2 CPU / 768M</strong> por JVM; bajarlo a 0.5 CPU casi duplica el tiempo. Se combina con arranque
+    <strong>por fases</strong> (esperar health checks entre capas) y <code>-Djava.security.egd=file:/dev/./urandom</code>
+    para no bloquear por entropía. Perfiles de Compose evitan levantar tooling innecesario.
+  </div>
+
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+    <tr><th>Tema</th><th>Punto clave</th></tr>
+    <tr><td>Contenedor vs VM</td><td>Comparte kernel (namespaces + cgroups); ligero vs SO invitado completo</td></tr>
+    <tr><td>Imagen vs contenedor</td><td>Plantilla inmutable por capas vs instancia en ejecución</td></tr>
+    <tr><td>Multi-stage</td><td>Builder pesado → runtime slim (JRE/Nginx); imágenes pequeñas y seguras</td></tr>
+    <tr><td>Layer cache</td><td>Dependencias arriba, código abajo; no invalidar capas caras</td></tr>
+    <tr><td>Frontend</td><td>Build horneado en la imagen; rebuild + force-recreate para desplegar</td></tr>
+    <tr><td>Compose</td><td>Stack en YAML; perfiles dejan tooling fuera del arranque por defecto</td></tr>
+    <tr><td>Orden</td><td><code>depends_on</code> + healthcheck (<code>service_healthy</code>) + fases</td></tr>
+    <tr><td>BuildKit</td><td>Cache mounts de Gradle/npm compartidas; <code>DOCKER_BUILDKIT=1</code></td></tr>
+    <tr><td>Red/volúmenes</td><td>DNS interno por nombre; volúmenes para persistir datos (<code>down -v</code> borra)</td></tr>
+    <tr><td>Seguridad</td><td>No-root, base mínima, versiones fijas, escaneo, secretos fuera de la imagen</td></tr>
+  </table>
+
+</div>
+</body>
+</html>
