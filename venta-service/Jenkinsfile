@@ -58,15 +58,12 @@ pipeline {
                 always {
                     junit allowEmptyResults: true,
                           testResults: 'venta-service/build/test-results/test/*.xml'
-                    // Publish coverage HTML if the HTML Publisher plugin is present.
-                    publishHTML(target: [
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'venta-service/build/reports/jacoco/test/html',
-                        reportFiles: 'index.html',
-                        reportName: 'JaCoCo Coverage — venta-service'
-                    ])
+                    // Archive the JaCoCo HTML/XML report as build artifacts.
+                    // Uses the native archiveArtifacts step (no extra plugin
+                    // required, unlike publishHTML from the HTML Publisher plugin).
+                    archiveArtifacts artifacts: 'venta-service/build/reports/jacoco/test/**',
+                                     allowEmptyArchive: true,
+                                     fingerprint: false
                 }
             }
         }
