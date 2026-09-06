@@ -1,8 +1,8 @@
 package com.venta.domain.exception;
 
 /**
- * Raised when a business rule prevents an operation — e.g. trying to cancel an
- * already-completed order.
+ * Se lanza cuando una regla de negocio impide una operación; por ejemplo,
+ * intentar cancelar una orden ya completada.
  */
 public class InvalidOrderStateException extends RuntimeException {
 

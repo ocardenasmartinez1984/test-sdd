@@ -13,6 +13,15 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
+/**
+ * Servicio de aplicación que gestiona el carrito de compra y sus reservas de
+ * stock.
+ *
+ * <p>Persiste los ítems en MongoDB vía {@link CartRepository} y coordina la
+ * reserva/liberación de stock publicando comandos a través de
+ * {@link StockEventPublisher}. Cada operación está protegida por un circuit
+ * breaker sobre MongoDB con su método de fallback.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,6 +30,20 @@ public class CartService {
     private final CartRepository cartRepository;
     private final StockEventPublisher stockEventPublisher;
 
+    /**
+     * Añade un producto al carrito (de forma aditiva) y reserva su stock.
+     *
+     * <p>Si el producto ya está en el carrito de la sesión, suma la cantidad,
+     * actualiza el precio y renueva la expiración; si no, crea un nuevo ítem
+     * RESERVED con expiración a 10 minutos. Tras guardar, publica un
+     * {@link StockReserveEvent} para reservar el total en el stock-service.
+     *
+     * @param sessionId identificador de la sesión de carrito
+     * @param productId identificador del producto
+     * @param quantity cantidad a añadir
+     * @param unitPrice precio unitario del producto
+     * @return {@link Mono} con el ítem de carrito persistido
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "addToCartFallback")
     public Mono<CartItem> addToCart(String sessionId, String productId, int quantity, double unitPrice) {
         return cartRepository.findBySessionIdAndProductId(sessionId, productId)
@@ -54,11 +77,18 @@ public class CartService {
     }
 
     /**
-     * Sets the cart item quantity to an absolute value (not additive). Used when
-     * the UI increments/decrements quantity. It re-emits a reserve command with
-     * the new total; the stock service applies only the delta (via reservedByOrder),
-     * so reducing the quantity correctly releases stock. If the new quantity is
-     * zero or less, the item is removed and its reservation fully released.
+     * Fija la cantidad del ítem de carrito a un valor absoluto (no aditivo). Se
+     * usa cuando la UI incrementa o decrementa la cantidad. Reemite un comando de
+     * reserva con el nuevo total; el stock-service aplica solo el delta (vía
+     * reservedByOrder), de modo que reducir la cantidad libera stock
+     * correctamente. Si la nueva cantidad es cero o menor, el ítem se elimina y su
+     * reserva se libera por completo.
+     *
+     * @param sessionId identificador de la sesión de carrito
+     * @param productId identificador del producto
+     * @param quantity cantidad absoluta a establecer (si &le; 0 elimina el ítem)
+     * @param unitPrice precio unitario del producto
+     * @return {@link Mono} con el ítem actualizado, o vacío si se eliminó
      */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "setQuantityFallback")
     public Mono<CartItem> setQuantity(String sessionId, String productId, int quantity, double unitPrice) {
@@ -95,6 +125,16 @@ public class CartService {
                 });
     }
 
+    /**
+     * Elimina un producto del carrito y libera su reserva de stock.
+     *
+     * <p>Marca el ítem como RELEASED, publica un evento de compensación de stock
+     * para devolver las unidades reservadas y borra el ítem de MongoDB.
+     *
+     * @param sessionId identificador de la sesión de carrito
+     * @param productId identificador del producto a eliminar
+     * @return {@link Mono} que completa tras eliminar el ítem
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "removeFromCartFallback")
     public Mono<Void> removeFromCart(String sessionId, String productId) {        return cartRepository.findBySessionIdAndProductId(sessionId, productId)
                 .flatMap(cartItem -> {
@@ -112,11 +152,26 @@ public class CartService {
                 });
     }
 
+    /**
+     * Devuelve los ítems reservados del carrito de una sesión.
+     *
+     * @param sessionId identificador de la sesión de carrito
+     * @return flujo de ítems en estado RESERVED
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "getCartFallback")
     public Flux<CartItem> getCart(String sessionId) {
         return cartRepository.findBySessionIdAndStatus(sessionId, CartItem.STATUS_RESERVED);
     }
 
+    /**
+     * Vacía por completo el carrito de una sesión, liberando el stock reservado.
+     *
+     * <p>Para cada ítem en estado RESERVED publica un evento de compensación de
+     * stock y luego elimina todos los ítems de la sesión de MongoDB.
+     *
+     * @param sessionId identificador de la sesión de carrito
+     * @return {@link Mono} que completa tras vaciar el carrito
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "clearCartFallback")
     public Mono<Void> clearCart(String sessionId) {
         return cartRepository.findBySessionId(sessionId)

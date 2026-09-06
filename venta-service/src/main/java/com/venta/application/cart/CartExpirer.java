@@ -13,14 +13,15 @@ import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Periodically releases stock held by abandoned carts.
+ * Libera periódicamente el stock retenido por carritos abandonados.
  *
- * <p>Cart items are created with a 10-minute {@code expiresAt} but nothing acted
- * on it, so an abandoned cart kept its stock reserved forever — inflating
- * {@code reservedQuantity} on the product (e.g. a cart with 30 units left the
- * product showing 30 reserved indefinitely). This sweeper finds RESERVED cart
- * items whose {@code expiresAt} has passed, emits a compensate event to release
- * the reservation in the stock service, and deletes the item.
+ * <p>Los ítems de carrito se crean con un {@code expiresAt} de 10 minutos, pero
+ * nada actuaba sobre él, de modo que un carrito abandonado mantenía su stock
+ * reservado para siempre —inflando el {@code reservedQuantity} del producto (por
+ * ejemplo, un carrito con 30 unidades dejaba el producto mostrando 30 reservadas
+ * indefinidamente)—. Este barredor encuentra ítems RESERVED cuyo {@code expiresAt}
+ * ya pasó, emite un evento de compensación para liberar la reserva en el
+ * stock-service y borra el ítem.
  */
 @Slf4j
 @Component
@@ -35,6 +36,12 @@ public class CartExpirer {
         this.stockEventPublisher = stockEventPublisher;
     }
 
+    /**
+     * Disparador programado de la expiración de carritos.
+     *
+     * <p>Usa un flag atómico para evitar solapes con un barrido en curso; lanza
+     * {@link #expire()} de forma asíncrona y registra los errores.
+     */
     @Scheduled(fixedDelayString = "${cart.expirer.interval-ms:60000}")
     public void expireAbandonedCarts() {
         if (!running.compareAndSet(false, true)) {
@@ -46,7 +53,13 @@ public class CartExpirer {
                 .subscribe(null, error -> log.error("Cart expirer sweep failed", error));
     }
 
-    /** Reactive sweep, extracted for deterministic unit testing. */
+    /**
+     * Barrido reactivo, extraído para poder testearse de forma determinista.
+     *
+     * <p>Busca los ítems RESERVED ya expirados y los libera y elimina.
+     *
+     * @return {@link Mono} que completa cuando se han procesado todos los ítems expirados
+     */
     Mono<Void> expire() {
         return cartRepository
                 .findByStatusAndExpiresAtBefore(CartItem.STATUS_RESERVED, LocalDateTime.now())
@@ -54,6 +67,15 @@ public class CartExpirer {
                 .then();
     }
 
+    /**
+     * Libera la reserva de stock de un ítem de carrito expirado y luego lo borra.
+     *
+     * <p>Publica un evento de compensación de stock (usando el id del ítem como
+     * orderId) para devolver las unidades y elimina el ítem de MongoDB.
+     *
+     * @param item ítem de carrito expirado a liberar y eliminar
+     * @return {@link Mono} que completa tras borrar el ítem
+     */
     private Mono<Void> releaseAndDelete(CartItem item) {
         StockReserveEvent compensateEvent = StockReserveEvent.builder()
                 .orderId(item.getId())

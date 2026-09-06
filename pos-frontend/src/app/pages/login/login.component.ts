@@ -77,6 +77,13 @@ import { AuthService } from '../../services/auth.service';
     }
   `]
 })
+/**
+ * Componente de la pantalla de inicio de sesión del POS.
+ *
+ * Presenta el formulario de credenciales y delega la autenticación en
+ * {@link AuthService}. Gestiona el estado de carga y los mensajes de error de
+ * la UI, y navega al punto de venta al autenticar correctamente.
+ */
 export class LoginComponent {
   username = '';
   password = '';
@@ -85,6 +92,12 @@ export class LoginComponent {
 
   constructor(private authService: AuthService, private router: Router) {}
 
+  /**
+   * Envía las credenciales al {@link AuthService}. Valida que no estén vacías,
+   * muestra el spinner mientras se procesa y, en caso de éxito, navega a la
+   * raíz; ante error muestra "Credenciales inválidas" (401) o un error de
+   * conexión.
+   */
   onLogin(): void {
     if (!this.username.trim() || !this.password.trim()) return;
 

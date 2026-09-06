@@ -1,11 +1,13 @@
 package com.venta.domain.exception;
 
 /**
- * Raised when an order referenced by a SAGA step or command cannot be found.
+ * Se lanza cuando una orden referenciada por un paso de la SAGA o por un comando
+ * no existe.
  *
- * <p>Using a specific domain exception (instead of a bare
- * {@link RuntimeException}) lets callers, error handlers and tests distinguish a
- * genuinely missing aggregate from arbitrary infrastructure failures.
+ * <p>Usar una excepción de dominio específica (en lugar de una
+ * {@link RuntimeException} genérica) permite a llamadores, manejadores de error y
+ * tests distinguir un agregado realmente inexistente de un fallo arbitrario de
+ * infraestructura.
  */
 public class OrderNotFoundException extends RuntimeException {
 

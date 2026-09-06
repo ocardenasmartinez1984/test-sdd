@@ -15,6 +15,16 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
+/**
+ * Servicio de aplicación (lado <i>command</i> de CQRS) para las operaciones de
+ * escritura sobre órdenes de venta.
+ *
+ * <p>Inicia la SAGA de venta al crear una orden y gestiona su cancelación y
+ * cambios de estado, publicando los comandos de stock correspondientes mediante
+ * {@link StockEventPublisher} y persistiendo en MongoDB vía
+ * {@link OrderRepository}. Cada operación está protegida por un circuit breaker
+ * sobre MongoDB con su método de fallback.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +33,16 @@ public class OrderCommandService {
     private final OrderRepository orderRepository;
     private final StockEventPublisher stockEventPublisher;
 
+    /**
+     * Crea una nueva orden e inicia la SAGA de venta.
+     *
+     * <p>Fija el estado en {@link OrderStatus#PENDING} y las marcas de tiempo,
+     * persiste la orden en MongoDB y, tras guardarla con éxito, publica un
+     * {@link StockReserveEvent} para que el stock-service reserve las unidades.
+     *
+     * @param order orden a crear (sin estado ni fechas asignadas)
+     * @return {@link Mono} con la orden persistida
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "crearVentaFallback")
     public Mono<Order> crearVenta(Order order) {
         order.setStatus(OrderStatus.PENDING);
@@ -44,6 +64,19 @@ public class OrderCommandService {
                 });
     }
 
+    /**
+     * Cancela una orden existente y, si procede, compensa el stock reservado.
+     *
+     * <p>Rechaza la cancelación si la orden está {@code COMPLETED} o
+     * {@code CANCELLED}. Al cancelar una orden que estaba en {@code STOCK_RESERVED}
+     * o {@code DISPATCHING} publica un evento de compensación de stock para
+     * liberar las unidades reservadas.
+     *
+     * @param orderId identificador de la orden a cancelar
+     * @return {@link Mono} con la orden cancelada
+     * @throws OrderNotFoundException si la orden no existe
+     * @throws InvalidOrderStateException si la orden no puede cancelarse por su estado
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "cancelarVentaFallback")
     public Mono<Order> cancelarVenta(String orderId) {
         return orderRepository.findById(orderId)
@@ -73,6 +106,14 @@ public class OrderCommandService {
                 });
     }
 
+    /**
+     * Actualiza el estado de una orden de forma directa (sin efectos SAGA).
+     *
+     * @param orderId identificador de la orden
+     * @param nuevoEstado nuevo estado a asignar
+     * @return {@link Mono} con la orden actualizada
+     * @throws OrderNotFoundException si la orden no existe
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "actualizarEstadoFallback")
     public Mono<Order> actualizarEstado(String orderId, OrderStatus nuevoEstado) {
         return orderRepository.findById(orderId)

@@ -2,6 +2,10 @@ import { Component, signal, ViewChild, ElementRef, AfterViewChecked } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+/**
+ * Mensaje individual del chat: indica el emisor (`user` o `bot`), el texto y
+ * la marca de tiempo. Modelo de vista usado por {@link ChatbotComponent}.
+ */
 export interface ChatMessage {
   role: 'user' | 'bot';
   text: string;
@@ -362,6 +366,15 @@ export interface ChatMessage {
     }
   `]
 })
+/**
+ * Componente de asistente de ventas (chatbot) flotante del POS.
+ *
+ * Muestra un botón flotante y una ventana de chat con mensajes, acciones
+ * rápidas e indicador de "escribiendo". Las respuestas se generan localmente
+ * mediante reglas por palabras clave (no consume servicios externos) y simula
+ * latencia con un retardo. Gestiona el estado con signals y el auto-scroll de
+ * la conversación.
+ */
 export class ChatbotComponent implements AfterViewChecked {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
@@ -385,6 +398,10 @@ export class ChatbotComponent implements AfterViewChecked {
     }]);
   }
 
+  /**
+   * Hook del ciclo de vida: tras cada verificación de la vista, desplaza el
+   * chat al final si hay mensajes nuevos pendientes de mostrar.
+   */
   ngAfterViewChecked(): void {
     if (this.shouldScroll) {
       this.scrollToBottom();
@@ -392,6 +409,10 @@ export class ChatbotComponent implements AfterViewChecked {
     }
   }
 
+  /**
+   * Abre o cierra la ventana del chat. Al abrirla, reinicia el contador de no
+   * leídos y solicita el auto-scroll al final.
+   */
   toggle(): void {
     this.isOpen.set(!this.isOpen());
     if (this.isOpen()) {
@@ -400,6 +421,12 @@ export class ChatbotComponent implements AfterViewChecked {
     }
   }
 
+  /**
+   * Envía el mensaje escrito por el usuario: lo añade a la conversación,
+   * activa el indicador de "escribiendo" y, tras un retardo simulado, agrega
+   * la respuesta generada por {@link generateResponse}. Si el chat está
+   * cerrado, incrementa el contador de no leídos.
+   */
   sendMessage(): void {
     const text = this.userInput.trim();
     if (!text) return;
@@ -422,11 +449,23 @@ export class ChatbotComponent implements AfterViewChecked {
     }, 800 + Math.random() * 700);
   }
 
+  /**
+   * Rellena la entrada con una acción rápida predefinida y la envía como
+   * mensaje.
+   * @param action texto de la acción rápida seleccionada.
+   */
   sendQuickAction(action: string): void {
     this.userInput = action;
     this.sendMessage();
   }
 
+  /**
+   * Convierte el texto de un mensaje a HTML seguro para la vista: transforma
+   * saltos de línea en `<br>`, `**negrita**` en `<strong>` y normaliza las
+   * viñetas.
+   * @param text texto plano del mensaje.
+   * @returns cadena HTML lista para renderizar.
+   */
   formatMessage(text: string): string {
     return text
       .replace(/\n/g, '<br>')
@@ -440,6 +479,14 @@ export class ChatbotComponent implements AfterViewChecked {
     this.messages.set(msgs);
   }
 
+  /**
+   * Genera la respuesta del bot aplicando reglas por palabras clave sobre la
+   * entrada del usuario (productos, ventas, stock, errores, precios, cliente,
+   * carrito, saludos, agradecimientos, ayuda) y devuelve un mensaje por
+   * defecto si no reconoce la consulta.
+   * @param input texto ingresado por el usuario.
+   * @returns respuesta textual del asistente.
+   */
   private generateResponse(input: string): string {
     const lower = input.toLowerCase();
 

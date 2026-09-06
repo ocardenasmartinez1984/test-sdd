@@ -214,6 +214,13 @@ import { AuthService, LoginRequest, RegisterRequest } from '../../services/auth.
     }
   `]
 })
+/**
+ * Componente de la pantalla de inicio de sesión y registro del mantenedor.
+ *
+ * Alterna entre los formularios de login y registro y delega la autenticación
+ * en {@link AuthService}. Gestiona el estado de carga y errores de la UI y
+ * navega a `/ventas` al autenticar o registrar correctamente.
+ */
 export class LoginComponent {
   isRegister = signal(false);
   loading = signal(false);
@@ -224,6 +231,10 @@ export class LoginComponent {
 
   constructor(private authService: AuthService, private router: Router) {}
 
+  /**
+   * Envía las credenciales al {@link AuthService}; navega a `/ventas` en caso
+   * de éxito o muestra el error devuelto por el backend.
+   */
   onLogin() {
     this.loading.set(true);
     this.error.set('');
@@ -236,6 +247,10 @@ export class LoginComponent {
     });
   }
 
+  /**
+   * Envía los datos de registro al {@link AuthService}; navega a `/ventas` en
+   * caso de éxito o muestra el error devuelto por el backend.
+   */
   onRegister() {
     this.loading.set(true);
     this.error.set('');

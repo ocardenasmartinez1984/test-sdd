@@ -10,6 +10,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Adaptador de salida Kafka que implementa los puertos {@link StockEventPublisher}
+ * y {@link DespachoEventPublisher}.
+ *
+ * <p>Traduce las intenciones del dominio (reservar, compensar o confirmar stock,
+ * y solicitar despacho) en mensajes publicados en los tópicos SAGA
+ * {@code saga.stock.*-command} y {@code saga.despacho.create-command}, usando el
+ * id de orden como clave de partición. Cada envío está protegido por un circuit
+ * breaker {@code kafkaProducer} cuyo fallback solo registra el fallo.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -22,6 +32,11 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
     private static final String STOCK_CONFIRM_TOPIC = "saga.stock.confirm-command";
     private static final String DESPACHO_REQUEST_TOPIC = "saga.despacho.create-command";
 
+    /**
+     * Publica un comando de reserva de stock en el tópico correspondiente.
+     *
+     * @param event evento con orden, producto y cantidad a reservar
+     */
     @Override
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "reserveStockFallback")
     public void reserveStock(StockReserveEvent event) {
@@ -29,6 +44,11 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
         kafkaTemplate.send(STOCK_RESERVE_TOPIC, event.getOrderId(), event);
     }
 
+    /**
+     * Publica un comando de compensación (liberación) de stock.
+     *
+     * @param event evento con orden, producto y cantidad a liberar
+     */
     @Override
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "compensateStockFallback")
     public void compensateStock(StockReserveEvent event) {
@@ -36,6 +56,11 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
         kafkaTemplate.send(STOCK_COMPENSATE_TOPIC, event.getOrderId(), event);
     }
 
+    /**
+     * Publica un comando de confirmación de stock (descuento definitivo).
+     *
+     * @param event evento con orden, producto y cantidad a confirmar
+     */
     @Override
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "confirmStockFallback")
     public void confirmStock(StockReserveEvent event) {
@@ -43,6 +68,11 @@ public class VentaProducer implements StockEventPublisher, DespachoEventPublishe
         kafkaTemplate.send(STOCK_CONFIRM_TOPIC, event.getOrderId(), event);
     }
 
+    /**
+     * Publica una solicitud de despacho para una orden.
+     *
+     * @param event evento con orden, producto, cantidad y cliente a despachar
+     */
     @Override
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "requestDespachoFallback")
     public void requestDespacho(DespachoRequestEvent event) {

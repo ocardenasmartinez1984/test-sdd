@@ -9,6 +9,16 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
+/**
+ * Ítem de carrito de compra: producto que un usuario ha añadido a su sesión y
+ * cuyo stock queda reservado temporalmente.
+ *
+ * <p>Se persiste en la colección {@code cart_items} de MongoDB. Cada ítem tiene
+ * un {@code expiresAt} tras el cual el {@code CartExpirer} libera la reserva de
+ * stock asociada. El campo {@code status} usa las constantes definidas en esta
+ * clase ({@code RESERVED}, {@code RESERVE_FAILED}, {@code RELEASED}). Lombok
+ * genera constructores, getters y setters.
+ */
 @Data
 @Builder
 @NoArgsConstructor

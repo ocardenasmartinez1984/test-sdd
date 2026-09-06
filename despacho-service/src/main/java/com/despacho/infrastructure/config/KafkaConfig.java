@@ -15,12 +15,32 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Configuración de Kafka para el servicio de despacho.
+ *
+ * <p>Pertenece a la capa de infraestructura y declara los beans necesarios para
+ * consumir y producir mensajes: la {@code ConsumerFactory}/{@code
+ * ProducerFactory}, la {@code ContainerFactory} de listeners y el {@code
+ * KafkaTemplate}. Configura la (de)serialización JSON de los valores y toma la
+ * dirección de los brokers de la propiedad
+ * {@code spring.kafka.bootstrap-servers}.</p>
+ */
 @Configuration
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    /**
+     * Crea la fábrica de consumidores Kafka.
+     *
+     * <p>Configura los brokers, el {@code group.id} {@code despacho-group}, el
+     * deserializador de clave ({@code String}) y el de valor ({@code
+     * JsonDeserializer}) confiando en todos los paquetes, sin usar cabeceras de
+     * tipo y deserializando por defecto a {@code java.util.HashMap}.</p>
+     *
+     * @return fábrica de consumidores configurada para mensajes de tipo mapa
+     */
     @Bean
     public ConsumerFactory<String, Map<String, Object>> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -34,6 +54,14 @@ public class KafkaConfig {
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
+    /**
+     * Crea la fábrica de contenedores de listeners Kafka concurrentes.
+     *
+     * <p>Enlaza los {@code @KafkaListener} con la {@link #consumerFactory()}
+     * definida para recibir mensajes deserializados como mapa.</p>
+     *
+     * @return fábrica de contenedores de listeners configurada
+     */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> factory =
@@ -42,6 +70,14 @@ public class KafkaConfig {
         return factory;
     }
 
+    /**
+     * Crea la fábrica de productores Kafka.
+     *
+     * <p>Configura los brokers, el serializador de clave ({@code String}) y el
+     * de valor ({@code JsonSerializer}) para emitir mensajes en formato JSON.</p>
+     *
+     * @return fábrica de productores configurada
+     */
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -51,6 +87,11 @@ public class KafkaConfig {
         return new DefaultKafkaProducerFactory<>(props);
     }
 
+    /**
+     * Crea el {@link KafkaTemplate} usado por el servicio para publicar eventos.
+     *
+     * @return plantilla de Kafka basada en la {@link #producerFactory()}
+     */
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());

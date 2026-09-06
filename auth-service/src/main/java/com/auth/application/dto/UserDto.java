@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+/**
+ * DTO de salida que representa a un usuario en las respuestas de la API de
+ * gestión de usuarios, exponiendo únicamente datos seguros (sin contraseña) y
+ * los nombres de sus roles.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

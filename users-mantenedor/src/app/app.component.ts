@@ -88,10 +88,19 @@ import { AuthService } from './services/auth.service';
     }
   `]
 })
+/**
+ * Componente raíz del mantenedor de Usuarios.
+ *
+ * Actúa como shell: muestra la barra superior con el botón de cerrar sesión
+ * cuando hay sesión activa y delega el contenido al `<router-outlet>`.
+ * Colabora con {@link AuthService} para el estado de autenticación y el
+ * logout.
+ */
 export class AppComponent {
   authService = inject(AuthService);
   private router = inject(Router);
 
+  /** Cierra la sesión del usuario y navega a la pantalla de login. */
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);

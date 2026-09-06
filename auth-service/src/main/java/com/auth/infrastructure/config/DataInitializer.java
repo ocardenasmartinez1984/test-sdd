@@ -15,6 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+/**
+ * Inicializador de datos que se ejecuta al arrancar la aplicación para
+ * garantizar un estado mínimo del sistema de autenticación.
+ *
+ * <p>Pertenece a la capa de infraestructura (configuración). Crea los roles
+ * base ({@code ROLE_ADMIN}, {@code ROLE_USER}) si no existen y un usuario
+ * administrador por defecto la primera vez. Colabora con
+ * {@link RoleRepository}, {@link UserRepository} y {@link PasswordEncoder}.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -24,6 +33,16 @@ public class DataInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Siembra los datos iniciales: asegura la existencia de los roles
+     * {@code ROLE_ADMIN} y {@code ROLE_USER} y, si no existe el usuario
+     * {@code admin}, crea la cuenta administradora por defecto.
+     *
+     * <p>Efectos secundarios: persiste roles y el usuario administrador en la
+     * base de datos, y registra en el log la creación de la cuenta admin.
+     *
+     * @param args argumentos de arranque de la aplicación (no utilizados)
+     */
     @Override
     @Transactional
     public void run(ApplicationArguments args) {

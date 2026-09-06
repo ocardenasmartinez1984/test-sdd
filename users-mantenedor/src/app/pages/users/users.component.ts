@@ -379,6 +379,15 @@ import { User, CreateUserRequest, UpdateUserRequest } from '../../models/user.mo
     }
   `]
 })
+/**
+ * Componente de la vista de gestión de Usuarios (CRUD) del mantenedor.
+ *
+ * Lista los usuarios y permite crearlos, editarlos y eliminarlos mediante
+ * modales, usando un formulario reactivo con validación (incluida la
+ * coincidencia de contraseñas) y {@link UserService} como colaborador de
+ * datos. Gestiona el estado con signals (carga, envío, mensajes) y la
+ * selección de roles.
+ */
 export class UsersComponent implements OnInit {
   users = signal<User[]>([]);
   loading = signal(true);
@@ -408,9 +417,11 @@ export class UsersComponent implements OnInit {
   }
 
   /**
-   * Group-level validator: password and confirmPassword must match.
-   * Only enforced when a password has been entered (so editing without
-   * changing the password stays valid).
+   * Validador a nivel de grupo: `password` y `confirmPassword` deben coincidir.
+   * Solo se aplica cuando se ha introducido una contraseña (así, editar sin
+   * cambiar la contraseña sigue siendo válido).
+   * @param group grupo de controles del formulario.
+   * @returns error `passwordMismatch` si no coinciden, o null si es válido.
    */
   static passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
     const password = group.get('password')?.value ?? '';
@@ -421,10 +432,16 @@ export class UsersComponent implements OnInit {
     return password === confirm ? null : { passwordMismatch: true };
   }
 
+  /** Hook de inicialización: carga la lista de usuarios. */
   ngOnInit(): void {
     this.loadUsers();
   }
 
+  /**
+   * Carga los usuarios desde {@link UserService}, actualizando el estado y el
+   * indicador de carga. Muestra un mensaje de error si falla.
+   * @param showSpinner si true, activa el spinner de carga (por defecto true).
+   */
   loadUsers(showSpinner: boolean = true): void {
     if (showSpinner) {
       this.loading.set(true);
@@ -441,6 +458,11 @@ export class UsersComponent implements OnInit {
     });
   }
 
+  /**
+   * Prepara y abre el modal en modo alta: reinicia el formulario, asigna el
+   * rol por defecto `ROLE_USER`, habilita el campo de usuario y hace
+   * obligatorias las contraseñas.
+   */
   openCreateForm(): void {
     this.editingUser.set(null);
     this.selectedRoles = ['ROLE_USER'];
@@ -453,6 +475,12 @@ export class UsersComponent implements OnInit {
     this.showForm.set(true);
   }
 
+  /**
+   * Prepara y abre el modal en modo edición: precarga los datos del usuario,
+   * deshabilita el campo de usuario y quita la obligatoriedad de las
+   * contraseñas (para permitir editar sin cambiarlas).
+   * @param user usuario a editar.
+   */
   openEditForm(user: User): void {
     this.editingUser.set(user);
     this.selectedRoles = [...user.roles];
@@ -472,15 +500,26 @@ export class UsersComponent implements OnInit {
     this.showForm.set(true);
   }
 
+  /** Cierra el modal de formulario y limpia el usuario en edición. */
   closeForm(): void {
     this.showForm.set(false);
     this.editingUser.set(null);
   }
 
+  /**
+   * Indica si el rol dado está actualmente seleccionado.
+   * @param role rol a comprobar.
+   * @returns true si el rol está seleccionado.
+   */
   hasRole(role: string): boolean {
     return this.selectedRoles.includes(role);
   }
 
+  /**
+   * Alterna la selección de un rol: lo añade si no estaba, o lo quita si ya
+   * estaba seleccionado.
+   * @param role rol a alternar.
+   */
   toggleRole(role: string): void {
     const index = this.selectedRoles.indexOf(role);
     if (index > -1) {
@@ -490,6 +529,12 @@ export class UsersComponent implements OnInit {
     }
   }
 
+  /**
+   * Envía el formulario. En modo edición actualiza el usuario (incluyendo la
+   * contraseña solo si se indicó) y en modo alta lo crea, ambos vía
+   * {@link UserService}. Gestiona el estado de envío, mensajes de éxito/error,
+   * cierre del modal y recarga de la lista.
+   */
   onSubmit(): void {
     if (this.userForm.invalid) return;
 
@@ -544,16 +589,26 @@ export class UsersComponent implements OnInit {
     }
   }
 
+  /**
+   * Abre el modal de confirmación de borrado para el usuario indicado.
+   * @param user usuario candidato a eliminar.
+   */
   confirmDelete(user: User): void {
     this.deletingUser.set(user);
     this.showDeleteConfirm.set(true);
   }
 
+  /** Cancela el borrado y cierra el modal de confirmación. */
   cancelDelete(): void {
     this.showDeleteConfirm.set(false);
     this.deletingUser.set(null);
   }
 
+  /**
+   * Elimina el usuario seleccionado vía {@link UserService.delete}, gestiona el
+   * estado de envío, muestra mensajes de éxito/error, cierra el modal y recarga
+   * la lista.
+   */
   onDelete(): void {
     if (!this.deletingUser()) return;
 

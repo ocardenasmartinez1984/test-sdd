@@ -651,6 +651,16 @@ import { CommonModule } from '@angular/common';
     }
   `]
 })
+/**
+ * Componente de presentación (standalone, OnPush) que dibuja el icono SVG
+ * animado de una categoría de producto.
+ *
+ * Selecciona el gráfico según la categoría recibida por `@Input()`, aplica un
+ * gradiente propio por categoría y un filtro de brillo, y ajusta el tamaño del
+ * host. Genera un id único por instancia para aislar los `<defs>` del SVG. Se
+ * usa en el catálogo y el carrito del POS para dar identidad visual a cada
+ * tipo de producto. No tiene lógica de negocio.
+ */
 export class CategoryIconComponent {
   @Input() category: string = 'default';
   @Input() size: number = 48;
@@ -664,6 +674,11 @@ export class CategoryIconComponent {
   readonly uid = Math.random().toString(36).slice(2, 9);
   readonly Math = Math;
 
+  /**
+   * Devuelve el color inicial del gradiente correspondiente a la categoría
+   * actual, recurriendo al gradiente `default` si la categoría no está mapeada.
+   * @returns color de inicio del gradiente en formato hex.
+   */
   get gradientStart(): string {
     const map: Record<string, [string, string]> = {
       laptop:    ['#818cf8', '#4f46e5'],
@@ -694,6 +709,11 @@ export class CategoryIconComponent {
     return (map[this.category] ?? map['default'])[0];
   }
 
+  /**
+   * Devuelve el color final del gradiente correspondiente a la categoría
+   * actual, recurriendo al gradiente `default` si la categoría no está mapeada.
+   * @returns color de fin del gradiente en formato hex.
+   */
   get gradientEnd(): string {
     const map: Record<string, [string, string]> = {
       laptop:    ['#818cf8', '#4f46e5'],

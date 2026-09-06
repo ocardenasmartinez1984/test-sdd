@@ -15,12 +15,26 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Configuración de Kafka del venta-service: define productores, consumidores y
+ * la fábrica de listeners.
+ *
+ * <p>Configura la serialización JSON para los mensajes salientes y la
+ * deserialización a {@code Map} para los entrantes, apuntando al broker indicado
+ * por {@code spring.kafka.bootstrap-servers}.
+ */
 @Configuration
 public class KafkaConfig {
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
+    /**
+     * Crea la fábrica de productores con serializador de clave String y de valor
+     * JSON.
+     *
+     * @return fábrica de productores Kafka configurada
+     */
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
@@ -30,11 +44,24 @@ public class KafkaConfig {
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
+    /**
+     * Expone el {@link KafkaTemplate} usado por productores y outbox para enviar
+     * mensajes.
+     *
+     * @return plantilla Kafka lista para publicar eventos
+     */
     @Bean
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 
+    /**
+     * Crea la fábrica de consumidores que deserializa los valores JSON a
+     * {@code HashMap}, confiando en todos los paquetes y sin usar cabeceras de
+     * tipo.
+     *
+     * @return fábrica de consumidores Kafka configurada
+     */
     @Bean
     public ConsumerFactory<String, Map<String, Object>> consumerFactory() {
         Map<String, Object> configProps = new HashMap<>();
@@ -48,6 +75,12 @@ public class KafkaConfig {
         return new DefaultKafkaConsumerFactory<>(configProps);
     }
 
+    /**
+     * Crea la fábrica de contenedores de listeners que usan los
+     * {@code @KafkaListener} del servicio.
+     *
+     * @return fábrica de contenedores concurrentes de listeners
+     */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Map<String, Object>> factory =

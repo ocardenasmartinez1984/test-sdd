@@ -6,6 +6,14 @@ import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Entidad de dominio que representa un rol de seguridad, persistida en la tabla
+ * {@code roles}.
+ *
+ * <p>Agrupa un conjunto de {@link Permission} (relación muchos-a-muchos cargada
+ * de forma eager) y se asocia a los usuarios para determinar sus autorizaciones
+ * dentro del contexto de autenticación.
+ */
 @Entity
 @Table(name = "roles")
 @Getter

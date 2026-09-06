@@ -9,6 +9,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entidad de dominio que representa un despacho (envío) de una orden de venta.
+ *
+ * <p>Es la raíz de agregado de la capa de dominio del servicio de despacho y se
+ * persiste en la colección {@code dispatches} de MongoDB. Guarda la asociación
+ * con la orden y el producto, el número de seguimiento (tracking) generado y el
+ * estado del envío a lo largo de su ciclo de vida, junto con las marcas de
+ * tiempo de creación y última actualización.</p>
+ */
 @Data
 @Builder
 @NoArgsConstructor

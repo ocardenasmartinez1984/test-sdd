@@ -250,6 +250,17 @@ import { CategoryIconComponent } from '../../components/category-icon/category-i
     }
   `]
 })
+/**
+ * Componente principal del punto de venta (pantalla POS).
+ *
+ * Orquesta toda la experiencia de venta en la UI: carga el catálogo desde
+ * {@link StockService}, filtra por categoría/búsqueda, gestiona el carrito con
+ * reservas de stock en tiempo real vía {@link CartService}, y procesa el cobro
+ * creando órdenes con {@link VentaService} (que dispara la SAGA en el backend).
+ * Mantiene el estado reactivo con signals, persiste la sesión de carrito y el
+ * cliente en `localStorage`, y ofrece atajos de teclado. Colabora además con
+ * {@link AuthService} para el cierre de sesión.
+ */
 export class PosComponent implements OnInit {
 
   // --- Dependencies ---
@@ -262,6 +273,12 @@ export class PosComponent implements OnInit {
   // --- Session ---
   private sessionId = this.getOrCreateSessionId();
 
+  /**
+   * Recupera el identificador de sesión de carrito de `localStorage` o genera
+   * uno nuevo (prefijo `cart-` + timestamp + aleatorio) si no existe,
+   * persistiéndolo para que sobreviva a recargas de página.
+   * @returns el identificador de sesión de carrito.
+   */
   private getOrCreateSessionId(): string {
     let id = localStorage.getItem('pos_session_id');
     if (!id) {
@@ -350,28 +367,51 @@ export class PosComponent implements OnInit {
 
   // --- Lifecycle ---
 
+  /** Hook de inicialización: carga el catálogo de productos al montar la vista. */
   ngOnInit(): void {
     this.loadProducts();
   }
 
   // --- Category helpers ---
 
+  /**
+   * Determina la categoría de un producto a partir del prefijo de su SKU
+   * (ej: `laptop-001` → `laptop`). Devuelve `default` si el prefijo no está
+   * mapeado.
+   * @param product producto a clasificar.
+   * @returns clave de categoría reconocida o `default`.
+   */
   getCategory(product: Product): string {
     const sku = product.sku.toLowerCase();
     const prefix = sku.split('-')[0];
     return this.categoryMap[prefix] ? prefix : 'default';
   }
 
+  /**
+   * Devuelve el emoji asociado a la categoría del producto.
+   * @param product producto del que obtener el icono.
+   * @returns emoji de la categoría (📦 por defecto).
+   */
   getCategoryIcon(product: Product): string {
     const cat = this.getCategory(product);
     return this.categoryMap[cat]?.icon ?? '📦';
   }
 
+  /**
+   * Devuelve la etiqueta legible de la categoría del producto.
+   * @param product producto del que obtener la etiqueta.
+   * @returns etiqueta de categoría ("Producto" por defecto).
+   */
   getCategoryLabel(product: Product): string {
     const cat = this.getCategory(product);
     return this.categoryMap[cat]?.label ?? 'Producto';
   }
 
+  /**
+   * Selecciona la categoría activa del filtro y reaplica el filtrado de
+   * productos.
+   * @param categoryId categoría seleccionada (`all` para todas).
+   */
   selectCategory(categoryId: string): void {
     this.selectedCategory.set(categoryId);
     this.filterProducts();
@@ -379,6 +419,11 @@ export class PosComponent implements OnInit {
 
   // --- Data ---
 
+  /**
+   * Carga el catálogo desde {@link StockService}: al recibir los productos
+   * actualiza el estado, reaplica el filtro, sincroniza el carrito con el
+   * servidor y quita el indicador de carga. Ante error muestra un toast.
+   */
   loadProducts(): void {
     this.stockService.getAll().subscribe({
       next: (products) => {
@@ -394,6 +439,13 @@ export class PosComponent implements OnInit {
     });
   }
 
+  /**
+   * Reconstruye el carrito local a partir de las reservas guardadas en el
+   * servidor para la sesión actual, cruzándolas con el catálogo cargado. Si
+   * hay ítems, los establece en el estado y abre el panel del carrito. No
+   * vuelve a sumar la cantidad reservada porque `reservedQuantity` del stock
+   * ya la incluye (evita doble conteo del stock disponible).
+   */
   syncCartFromServer(): void {
     const savedSessionId = localStorage.getItem('pos_session_id');
     if (!savedSessionId) return;
@@ -427,6 +479,10 @@ export class PosComponent implements OnInit {
     });
   }
 
+  /**
+   * Aplica el filtro combinado de categoría y término de búsqueda (por nombre
+   * o SKU) sobre el catálogo y actualiza la lista de productos mostrados.
+   */
   filterProducts(): void {
     let result = this.products();
     const term = this.searchTerm.toLowerCase().trim();
@@ -446,12 +502,27 @@ export class PosComponent implements OnInit {
     this.filteredProducts.set(result);
   }
 
+  /**
+   * Calcula el stock realmente disponible de un producto (cantidad total menos
+   * la cantidad reservada).
+   * @param product producto a evaluar.
+   * @returns unidades disponibles para vender.
+   */
   getAvailable(product: Product): number {
     return product.quantity - (product.reservedQuantity || 0);
   }
 
   // --- Cart Operations ---
 
+  /**
+   * Agrega un producto al carrito. Valida disponibilidad, incrementa la
+   * cantidad si ya existía (respetando el stock máximo), actualiza
+   * optimistamente la cantidad reservada local para reflejarlo en la UI, abre
+   * el carrito con animación y reserva el stock en el backend vía
+   * {@link CartService.addToCart}. Si la reserva falla, revierte el cambio
+   * local y muestra un toast de error.
+   * @param product producto a agregar al carrito.
+   */
   addToCart(product: Product): void {
     if (this.getAvailable(product) <= 0) {
       this.showToast('⛔ Producto sin stock', true);
@@ -505,6 +576,12 @@ export class PosComponent implements OnInit {
     });
   }
 
+  /**
+   * Incrementa en uno la cantidad de un ítem del carrito si hay stock
+   * disponible, actualiza la reserva local y persiste la cantidad absoluta en
+   * el backend vía {@link CartService.setQuantity}.
+   * @param item ítem del carrito a incrementar.
+   */
   increaseQty(item: CartItem): void {
     if (item.quantity >= this.getAvailable(item.product)) {
       this.showToast('⚠️ Stock máximo alcanzado', true);
@@ -536,6 +613,13 @@ export class PosComponent implements OnInit {
     }
   }
 
+  /**
+   * Decrementa en uno la cantidad de un ítem del carrito y libera la reserva
+   * local. Si la cantidad llega a cero elimina el ítem y su reserva en el
+   * backend; en caso contrario persiste la nueva cantidad absoluta vía
+   * {@link CartService.setQuantity}.
+   * @param item ítem del carrito a decrementar.
+   */
   decreaseQty(item: CartItem): void {
     const items = [...this.cartItems()];
     const target = items.find(i => i.product.id === item.product.id);
@@ -568,6 +652,12 @@ export class PosComponent implements OnInit {
     }
   }
 
+  /**
+   * Elimina por completo un producto del carrito, liberando toda su cantidad
+   * reservada tanto en el estado local como en el backend vía
+   * {@link CartService.removeFromCart}.
+   * @param item ítem del carrito a eliminar.
+   */
   removeFromCart(item: CartItem): void {
     // Release all reserved quantity for this item
     const updatedProducts = this.products().map(p =>
@@ -580,6 +670,11 @@ export class PosComponent implements OnInit {
     this.cartService.removeFromCart(this.sessionId, item.product.id).subscribe();
   }
 
+  /**
+   * Vacía el carrito: libera las reservas locales de todos los ítems, limpia
+   * el estado, borra el id de cliente y solicita al backend vaciar el carrito
+   * vía {@link CartService.clearCart}.
+   */
   clearCart(): void {
     const items = this.cartItems();
     const updatedProducts = this.products().map(p => {
@@ -599,6 +694,13 @@ export class PosComponent implements OnInit {
 
   // --- Checkout ---
 
+  /**
+   * Procesa el cobro del carrito: por cada ítem crea una orden de venta vía
+   * {@link VentaService.create} (que inicia la SAGA en el backend). Lleva la
+   * cuenta de completados y errores y, cuando todas las peticiones terminan,
+   * invoca {@link onCheckoutComplete}. Requiere carrito no vacío e id de
+   * cliente.
+   */
   checkout(): void {
     if (this.cartItems().length === 0 || !this.customerId.trim()) {
       return;
@@ -635,6 +737,15 @@ export class PosComponent implements OnInit {
     }
   }
 
+  /**
+   * Finaliza el proceso de cobro: muestra el resultado (éxito o parcial),
+   * libera las reservas propias del carrito para evitar doble reserva (la del
+   * carrito y la de la orden) y recarga el catálogo. Luego limpia el carrito y
+   * el cliente, genera un nuevo id de sesión para la próxima transacción y
+   * desactiva el estado "procesando".
+   * @param success número de órdenes procesadas correctamente.
+   * @param errors número de órdenes que fallaron.
+   */
   private onCheckoutComplete(success: number, errors: number): void {
     if (errors === 0) {
       this.showToast(`🎉 ¡Venta completada! ${this.cartTotalItems()} productos procesados`, false);
@@ -666,6 +777,12 @@ export class PosComponent implements OnInit {
   }
 
   // --- Keyboard Shortcuts ---
+  /**
+   * Maneja atajos de teclado globales del POS: F2 enfoca la búsqueda,
+   * Ctrl+Enter dispara el cobro si es posible, y Escape quita el foco de
+   * inputs/botones o pide confirmación para vaciar el carrito.
+   * @param event evento de teclado capturado en el documento.
+   */
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
     // F2 to focus search box
@@ -699,6 +816,10 @@ export class PosComponent implements OnInit {
 
   // --- Cart Toggle ---
 
+  /**
+   * Alterna la visibilidad del panel del carrito. Al cerrarlo, refresca el
+   * stock del catálogo para reflejar las reservas vigentes en el servidor.
+   */
   toggleCart(): void {
     const willClose = this.cartOpen();
     this.cartOpen.set(!willClose);
@@ -722,6 +843,7 @@ export class PosComponent implements OnInit {
 
   // --- Auth ---
 
+  /** Cierra la sesión del usuario y navega a la pantalla de login. */
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
@@ -729,6 +851,12 @@ export class PosComponent implements OnInit {
 
   // --- Toast ---
 
+  /**
+   * Muestra un mensaje emergente (toast) temporal que se oculta a los 3
+   * segundos.
+   * @param message texto a mostrar.
+   * @param isError true para estilo de error, false para éxito.
+   */
   private showToast(message: string, isError: boolean): void {
     this.toast.set(message);
     this.toastError.set(isError);

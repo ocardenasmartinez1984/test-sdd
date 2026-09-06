@@ -8,12 +8,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Fails fast at startup if the JWT secret is the documented placeholder or
- * shorter than 32 bytes (256 bits, the minimum for HS256).
+ * Validador que falla de forma temprana en el arranque si el secreto JWT es el
+ * marcador de posición documentado o si es más corto de 32 bytes (256 bits, el
+ * mínimo para HS256).
  *
- * <p>Without this guard, the application would happily boot with the default
- * placeholder baked into {@code application.yml} and produce tokens that
- * anyone with the source code can forge.
+ * <p>Sin esta protección, la aplicación arrancaría con el marcador de posición
+ * por defecto incluido en {@code application.yml} y produciría tokens que
+ * cualquiera con acceso al código fuente podría falsificar. Pertenece a la capa
+ * de infraestructura de seguridad.
  */
 @Configuration
 public class JwtSecretValidator {
@@ -23,6 +25,18 @@ public class JwtSecretValidator {
     private static final String PLACEHOLDER = "<change_me_at_least_256_bits_long>";
     private static final int MIN_SECRET_BYTES = 32;
 
+    /**
+     * Crea un {@link ApplicationRunner} que valida el secreto JWT al iniciar la
+     * aplicación: comprueba que esté presente, que no sea el marcador de
+     * posición y que tenga la longitud mínima requerida por HS256.
+     *
+     * @param secret el secreto JWT configurado ({@code jwt.secret}); vacío si no
+     *               se ha establecido
+     * @return el runner de arranque que ejecuta la validación
+     * @throws IllegalStateException (dentro del runner) si el secreto está
+     *                               ausente, es el marcador de posición o es
+     *                               demasiado corto
+     */
     @Bean
     public ApplicationRunner validateJwtSecret(
             @Value("${jwt.secret:}") String secret) {
@@ -43,6 +57,13 @@ public class JwtSecretValidator {
         };
     }
 
+    /**
+     * Aborta el arranque del servicio lanzando una excepción con el motivo
+     * indicado.
+     *
+     * @param reason descripción del problema de configuración detectado
+     * @throws IllegalStateException siempre, para impedir que el servicio inicie
+     */
     private static void fail(String reason) {
         throw new IllegalStateException(
                 "Refusing to start auth-service: " + reason

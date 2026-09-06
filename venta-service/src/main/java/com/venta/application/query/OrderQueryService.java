@@ -11,6 +11,14 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Servicio de aplicación (lado <i>query</i> de CQRS) para las operaciones de
+ * lectura sobre órdenes de venta.
+ *
+ * <p>Consulta MongoDB a través de {@link OrderRepository}. Cada método está
+ * protegido por un circuit breaker sobre MongoDB; los fallbacks devuelven flujos
+ * vacíos o repropagan un {@link OrderNotFoundException} legítimo.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -18,22 +26,46 @@ public class OrderQueryService {
 
     private final OrderRepository orderRepository;
 
+    /**
+     * Obtiene una orden por su identificador.
+     *
+     * @param orderId identificador de la orden
+     * @return {@link Mono} con la orden encontrada
+     * @throws OrderNotFoundException si la orden no existe
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "getVentaFallback")
     public Mono<Order> getVenta(String orderId) {
         return orderRepository.findById(orderId)
                 .switchIfEmpty(Mono.error(new OrderNotFoundException(orderId)));
     }
 
+    /**
+     * Lista todas las órdenes.
+     *
+     * @return flujo con todas las órdenes
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "listarVentasFallback")
     public Flux<Order> listarVentas() {
         return orderRepository.findAll();
     }
 
+    /**
+     * Lista las órdenes de un cliente.
+     *
+     * @param customerId identificador del cliente
+     * @return flujo de órdenes del cliente
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "ventasPorClienteFallback")
     public Flux<Order> ventasPorCliente(String customerId) {
         return orderRepository.findByCustomerId(customerId);
     }
 
+    /**
+     * Lista las órdenes que están en un estado dado.
+     *
+     * @param status estado por el que filtrar
+     * @return flujo de órdenes en ese estado
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "ventasPorEstadoFallback")
     public Flux<Order> ventasPorEstado(OrderStatus status) {
         return orderRepository.findByStatus(status);

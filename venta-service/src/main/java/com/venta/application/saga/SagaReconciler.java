@@ -19,17 +19,17 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Periodically sweeps orders that got stuck in an intermediate SAGA state and
- * re-drives them.
+ * Barre periódicamente las órdenes que quedaron atascadas en un estado
+ * intermedio de la SAGA y las vuelve a impulsar.
  *
- * <p>Even with retries and a dead-letter topic on the response consumers, an
- * order can still stall — for example if a downstream service crashed before
- * emitting its response, or a response landed in the DLQ. Such an order sits in
- * {@link OrderStatus#PENDING} (awaiting stock) or {@link OrderStatus#STOCK_RESERVED}
- * (awaiting dispatch) indefinitely. This reconciler finds orders that have not
- * changed for longer than {@code saga.reconciler.stuck-after} and re-emits the
- * command that should move them forward. Re-emission is safe because the
- * downstream handlers are idempotent on order id / status.
+ * <p>Aun con reintentos y tópico dead-letter en los consumidores de respuestas,
+ * una orden puede estancarse —por ejemplo, si un servicio aguas abajo se cayó
+ * antes de emitir su respuesta, o si esa respuesta acabó en la DLQ—. Tal orden
+ * queda indefinidamente en {@link OrderStatus#PENDING} (esperando stock) o
+ * {@link OrderStatus#STOCK_RESERVED} (esperando despacho). Este reconciliador
+ * detecta órdenes que no cambiaron durante más de {@code saga.reconciler.stuck-after}
+ * y reemite el comando que debería hacerlas avanzar. La reemisión es segura
+ * porque los manejadores aguas abajo son idempotentes por id/estado de orden.
  */
 @Slf4j
 @Component
@@ -52,6 +52,13 @@ public class SagaReconciler {
         this.stuckAfter = stuckAfter;
     }
 
+    /**
+     * Disparador programado del barrido de reconciliación.
+     *
+     * <p>Usa un flag atómico para evitar solapes: si un barrido anterior sigue en
+     * curso, omite este tick. Lanza {@link #reconcile()} de forma asíncrona y
+     * registra los errores sin propagarlos.
+     */
     @Scheduled(fixedDelayString = "${saga.reconciler.interval-ms:60000}")
     public void reconcileStuckOrders() {
         if (!running.compareAndSet(false, true)) {
@@ -66,7 +73,14 @@ public class SagaReconciler {
                         error -> log.error("SAGA reconciler sweep failed", error));
     }
 
-    /** Reactive sweep, extracted for deterministic unit testing. */
+    /**
+     * Barrido reactivo, extraído para poder testearse de forma determinista.
+     *
+     * <p>Calcula el umbral temporal y recupera las órdenes estancadas en
+     * {@code PENDING} o {@code STOCK_RESERVED} para re-impulsarlas.
+     *
+     * @return {@link Mono} que completa cuando se han procesado todas las órdenes estancadas
+     */
     Mono<Void> reconcile() {
         LocalDateTime threshold = LocalDateTime.now().minus(stuckAfter);
         return orderRepository
@@ -76,6 +90,13 @@ public class SagaReconciler {
                 .then();
     }
 
+    /**
+     * Reemite el comando SAGA adecuado según el estado en que se atascó la orden:
+     * una reserva de stock si está en {@code PENDING}, o una solicitud de despacho
+     * si está en {@code STOCK_RESERVED}. Para otros estados no hace nada.
+     *
+     * @param order orden estancada a re-impulsar
+     */
     private void redrive(Order order) {
         switch (order.getStatus()) {
             case PENDING -> {

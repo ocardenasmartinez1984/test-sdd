@@ -413,6 +413,15 @@ import { Dispatch, DispatchStatus } from '../../models/models';
     }
   `]
 })
+/**
+ * Componente de la vista de gestión de Despachos del mantenedor.
+ *
+ * Lista los despachos con estadísticas por estado, permite filtrarlos, buscar
+ * por número de seguimiento, cambiar su estado desde la tabla, el buscador o
+ * el modal de detalle, todo mediante {@link DespachoService}. Incluye
+ * helpers de presentación (etiqueta, icono y clase de badge por estado) y un
+ * sistema de mensajes de feedback.
+ */
 export class DespachosComponent implements OnInit {
   dispatches = signal<Dispatch[]>([]);
   filteredDispatches = signal<Dispatch[]>([]);
@@ -430,10 +439,16 @@ export class DespachosComponent implements OnInit {
 
   constructor(private despachoService: DespachoService) {}
 
+  /** Hook de inicialización: carga la lista de despachos. */
   ngOnInit() {
     this.loadDispatches();
   }
 
+  /**
+   * Carga todos los despachos desde {@link DespachoService}: actualiza el
+   * estado, reaplica el filtro e inicializa los selectores de estado por fila.
+   * Muestra un mensaje de error si la carga falla.
+   */
   loadDispatches() {
     this.despachoService.getAll().subscribe({
       next: (d) => {
@@ -449,6 +464,10 @@ export class DespachosComponent implements OnInit {
     });
   }
 
+  /**
+   * Establece el filtro de estado activo y reaplica el filtrado.
+   * @param status estado a filtrar, o null para mostrar todos.
+   */
   filterByStatus(status: DispatchStatus | null) {
     this.activeFilter.set(status);
     this.applyFilter();
@@ -463,10 +482,20 @@ export class DespachosComponent implements OnInit {
     }
   }
 
+  /**
+   * Cuenta cuántos despachos se encuentran en un estado dado.
+   * @param status estado a contar.
+   * @returns número de despachos en ese estado.
+   */
   countByStatus(status: DispatchStatus): number {
     return this.dispatches().filter(d => d.status === status).length;
   }
 
+  /**
+   * Busca un despacho por número de seguimiento vía
+   * {@link DespachoService.getByTracking}, muestra el resultado y prepara el
+   * estado editable; informa si no se encuentra.
+   */
   searchByTracking() {
     if (!this.searchTracking.trim()) return;
     this.despachoService.getByTracking(this.searchTracking.trim()).subscribe({
@@ -482,11 +511,18 @@ export class DespachosComponent implements OnInit {
     });
   }
 
+  /** Limpia el término de búsqueda y el resultado mostrado. */
   clearSearch() {
     this.searchTracking = '';
     this.searchResult.set(null);
   }
 
+  /**
+   * Aplica el cambio de estado seleccionado en la fila de un despacho vía
+   * {@link DespachoService.updateStatus}. Ignora la acción si el estado no
+   * cambió, informa el resultado y recarga la lista.
+   * @param dispatch despacho cuyo estado se actualiza.
+   */
   updateStatus(dispatch: Dispatch) {
     const newStatus = this.statusSelections[dispatch.id!];
     if (!newStatus || newStatus === dispatch.status) return;
@@ -500,6 +536,11 @@ export class DespachosComponent implements OnInit {
     });
   }
 
+  /**
+   * Actualiza el estado del despacho encontrado en la búsqueda vía
+   * {@link DespachoService.updateStatus}, refresca el resultado y recarga la
+   * lista.
+   */
   updateSearchResultStatus() {
     const dispatch = this.searchResult();
     if (!dispatch || !dispatch.id) return;
@@ -514,14 +555,25 @@ export class DespachosComponent implements OnInit {
     });
   }
 
+  /**
+   * Abre el modal de detalle con el despacho indicado.
+   * @param dispatch despacho a mostrar.
+   */
   showDetail(dispatch: Dispatch) {
     this.selectedDispatch.set(dispatch);
   }
 
+  /** Cierra el modal de detalle. */
   closeDetail() {
     this.selectedDispatch.set(null);
   }
 
+  /**
+   * Cambia el estado del despacho abierto en el modal de detalle vía
+   * {@link DespachoService.updateStatus}, actualiza el detalle y recarga la
+   * lista.
+   * @param status nuevo estado a aplicar.
+   */
   updateDetailStatus(status: DispatchStatus) {
     const dispatch = this.selectedDispatch();
     if (!dispatch || !dispatch.id || status === dispatch.status) return;
@@ -536,6 +588,11 @@ export class DespachosComponent implements OnInit {
     });
   }
 
+  /**
+   * Devuelve la clase CSS del badge correspondiente a un estado de despacho.
+   * @param status estado del despacho.
+   * @returns nombre de clase CSS del badge.
+   */
   getStatusClass(status: string): string {
     switch (status) {
       case 'ENTREGADO': return 'badge-success';
@@ -546,6 +603,11 @@ export class DespachosComponent implements OnInit {
     }
   }
 
+  /**
+   * Devuelve la etiqueta legible en español de un estado de despacho.
+   * @param status estado del despacho.
+   * @returns etiqueta legible.
+   */
   getStatusLabel(status: string): string {
     switch (status) {
       case 'PREPARANDO': return 'Preparando';
@@ -558,6 +620,11 @@ export class DespachosComponent implements OnInit {
     }
   }
 
+  /**
+   * Devuelve el icono asociado a un estado de despacho.
+   * @param status estado del despacho.
+   * @returns emoji del estado.
+   */
   getStatusIcon(status: string): string {
     switch (status) {
       case 'PREPARANDO': return '⏳';
@@ -570,10 +637,22 @@ export class DespachosComponent implements OnInit {
     }
   }
 
+  /**
+   * Devuelve la clase CSS del botón de estado, marcándolo como activo si
+   * coincide con el estado actual.
+   * @param status estado que representa el botón.
+   * @param currentStatus estado actual del despacho.
+   * @returns cadena de clases CSS del botón.
+   */
   getStatusBtnClass(status: string, currentStatus: string): string {
     return status === currentStatus ? 'status-btn status-btn-active' : 'status-btn';
   }
 
+  /**
+   * Muestra un mensaje de feedback temporal que se oculta a los 4 segundos.
+   * @param msg texto a mostrar.
+   * @param error true para estilo de error, false para éxito.
+   */
   showMessage(msg: string, error: boolean) {
     this.message.set(msg);
     this.isError.set(error);

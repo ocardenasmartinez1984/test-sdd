@@ -14,6 +14,14 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * Configuración de indicadores de salud (Actuator) para las dependencias de
+ * infraestructura del venta-service.
+ *
+ * <p>Expone health indicators reactivos para MongoDB y Kafka con timeouts, de
+ * modo que {@code /actuator/health} refleje la conectividad real a esas
+ * dependencias sin quedarse bloqueado.
+ */
 @Configuration
 @RequiredArgsConstructor
 public class HealthCheckConfig {
@@ -23,6 +31,14 @@ public class HealthCheckConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String kafkaBootstrapServers;
 
+    /**
+     * Indicador de salud de MongoDB.
+     *
+     * <p>Ejecuta un {@code ping} contra la base de datos; devuelve UP si responde
+     * y DOWN ante error o timeout de 3 segundos.
+     *
+     * @return indicador reactivo de salud de MongoDB
+     */
     @Bean
     public ReactiveHealthIndicator mongoHealthIndicator() {
         return () -> mongoTemplate.executeCommand("{ping: 1}")
@@ -41,6 +57,15 @@ public class HealthCheckConfig {
                         .build()));
     }
 
+    /**
+     * Indicador de salud de Kafka.
+     *
+     * <p>Crea un {@code AdminClient} y lista los tópicos para comprobar la
+     * conectividad con el broker; devuelve UP si responde y DOWN ante error o
+     * timeout de 5 segundos.
+     *
+     * @return indicador reactivo de salud de Kafka
+     */
     @Bean
     public ReactiveHealthIndicator kafkaHealthIndicator() {
         return () -> Mono.fromCallable(() -> {

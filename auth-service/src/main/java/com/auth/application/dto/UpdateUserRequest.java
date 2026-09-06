@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+/**
+ * DTO de entrada con los datos actualizables de un usuario. Los campos nulos se
+ * interpretan como "sin cambio", por lo que permite actualizaciones parciales.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -8,6 +8,17 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
+/**
+ * Evento pendiente de publicación siguiendo el patrón <b>Transactional
+ * Outbox</b>.
+ *
+ * <p>En lugar de publicar directamente a Kafka al modificar el estado, se guarda
+ * el evento en la colección {@code outbox_events} de MongoDB dentro de la misma
+ * operación de negocio; luego el {@code OutboxPublisher} lo relaya a Kafka de
+ * forma asíncrona y fiable, marcándolo como {@code SENT} o {@code FAILED}. Esto
+ * garantiza la entrega al menos una vez sin acoplar la persistencia con el envío.
+ * Lombok genera constructores, getters y setters.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -10,9 +10,29 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * Configuración de Redis reactivo (capa de infraestructura).
+ *
+ * <p>Define el {@link ReactiveRedisTemplate} usado por el
+ * {@link ProductCacheService} para la caché de productos, configurando la
+ * serialización de claves como texto y de valores como JSON.</p>
+ */
 @Configuration
 public class RedisCacheConfig {
 
+    /**
+     * Crea el template reactivo de Redis con serialización JSON de valores.
+     *
+     * <p>Configura un {@link ObjectMapper} con soporte para tipos de fecha/hora
+     * de Java 8 ({@link JavaTimeModule}) y typing por defecto (para preservar el
+     * tipo concreto de los objetos deserializados), y aplica un
+     * {@link StringRedisSerializer} a las claves y un
+     * {@link Jackson2JsonRedisSerializer} a valores y hash-values.</p>
+     *
+     * @param connectionFactory fábrica de conexiones reactivas a Redis inyectada
+     *                          por Spring
+     * @return el {@link ReactiveRedisTemplate} configurado
+     */
     @Bean
     public ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(
             ReactiveRedisConnectionFactory connectionFactory) {

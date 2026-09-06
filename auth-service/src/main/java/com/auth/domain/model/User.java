@@ -7,6 +7,14 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Entidad de dominio que representa a un usuario del sistema, persistida en la
+ * tabla {@code users}.
+ *
+ * <p>Es la raíz de agregado del contexto de autenticación: contiene las
+ * credenciales, el estado de la cuenta y la relación muchos-a-muchos con
+ * {@link Role} (cargada de forma eager) que define sus permisos efectivos.
+ */
 @Entity
 @Table(name = "users")
 @Getter

@@ -1,3 +1,7 @@
+/**
+ * Usuario del sistema tal como lo devuelve el backend, con su estado
+ * (habilitado), fecha de creación y roles asignados.
+ */
 export interface User {
   id: number;
   username: string;
@@ -8,6 +12,9 @@ export interface User {
   roles: string[];
 }
 
+/**
+ * Datos necesarios para crear un nuevo usuario.
+ */
 export interface CreateUserRequest {
   username: string;
   email: string;
@@ -16,6 +23,10 @@ export interface CreateUserRequest {
   roles: string[];
 }
 
+/**
+ * Datos para actualizar un usuario existente; todos los campos son opcionales
+ * (solo se envían los que se desean modificar).
+ */
 export interface UpdateUserRequest {
   email?: string;
   fullName?: string;

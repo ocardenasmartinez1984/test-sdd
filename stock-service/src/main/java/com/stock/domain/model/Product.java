@@ -10,6 +10,16 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Entidad de dominio (agregado) que representa un producto del inventario.
+ *
+ * <p>Es el aggregate root de la capa de dominio del stock-service y se persiste
+ * como documento en la colección {@code products} de MongoDB. Contiene el stock
+ * físico ({@code quantity}), el stock comprometido ({@code reservedQuantity}) y
+ * un desglose de las reservas por pedido en {@code reservedByOrder}, lo que
+ * permite calcular el stock disponible y aplicar reservas idempotentes durante
+ * la SAGA de ventas.</p>
+ */
 @Data
 @Builder
 @NoArgsConstructor

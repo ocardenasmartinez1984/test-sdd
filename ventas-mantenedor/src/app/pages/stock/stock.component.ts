@@ -124,6 +124,14 @@ import { Product } from '../../models/models';
     .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
   `]
 })
+/**
+ * Componente de la vista de gestión de Stock del mantenedor.
+ *
+ * Lista los productos del inventario con estadísticas agregadas (total,
+ * reservado), permite crear y editar productos mediante un modal, y refresca
+ * los datos por polling (cada 5 s) usando {@link StockService}. Muestra
+ * mensajes de feedback al usuario.
+ */
 export class StockComponent implements OnInit, OnDestroy {
   products = signal<Product[]>([]);
   showModal = signal(false);
@@ -136,27 +144,53 @@ export class StockComponent implements OnInit, OnDestroy {
 
   constructor(private stockService: StockService) {}
 
+  /** Hook de inicialización: carga los productos y arranca el polling (5 s). */
   ngOnInit() {
     this.loadProducts();
     this.pollInterval = setInterval(() => this.loadProducts(), 5000);
   }
 
+  /** Hook de destrucción: detiene el temporizador de polling. */
   ngOnDestroy() {
     if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
+  /**
+   * Suma la cantidad total en stock de todos los productos.
+   * @returns stock total agregado.
+   */
   totalStock() { return this.products().reduce((sum, p) => sum + p.quantity, 0); }
+  /**
+   * Suma la cantidad reservada de todos los productos.
+   * @returns stock reservado agregado.
+   */
   totalReserved() { return this.products().reduce((sum, p) => sum + (p.reservedQuantity || 0), 0); }
 
+  /** Carga el listado de productos desde {@link StockService}; informa error si falla. */
   loadProducts() {
     this.stockService.getAll().subscribe({ next: (d) => this.products.set(d), error: () => this.showMessage('Error al cargar', true) });
   }
+  /** Abre el modal en modo alta, reiniciando el formulario. */
   openModal() { this.form = { sku: '', name: '', quantity: 0, price: 0 }; this.editing.set(false); this.showModal.set(true); }
+  /**
+   * Abre el modal en modo edición, precargando el formulario con el producto.
+   * @param p producto a editar.
+   */
   editProduct(p: Product) { this.form = { ...p }; this.editingId = p.id!; this.editing.set(true); this.showModal.set(true); }
+  /** Cierra el modal de producto. */
   closeModal() { this.showModal.set(false); }
+  /**
+   * Guarda el formulario: crea o actualiza el producto vía {@link StockService}
+   * según el modo, notifica el resultado, cierra el modal y recarga la lista.
+   */
   save() {
     const obs = this.editing() ? this.stockService.update(this.editingId, this.form) : this.stockService.create(this.form);
     obs.subscribe({ next: () => { this.showMessage(this.editing() ? 'Actualizado' : 'Creado', false); this.closeModal(); this.loadProducts(); }, error: () => this.showMessage('Error', true) });
   }
+  /**
+   * Muestra un mensaje de feedback temporal que se oculta a los 4 segundos.
+   * @param msg texto a mostrar.
+   * @param error true para error, false para éxito.
+   */
   showMessage(msg: string, error: boolean) { this.message.set(msg); this.isError.set(error); setTimeout(() => this.message.set(''), 4000); }
 }

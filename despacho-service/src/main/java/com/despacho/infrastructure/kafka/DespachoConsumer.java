@@ -11,6 +11,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * Consumidor Kafka del servicio de despacho.
+ *
+ * <p>Pertenece a la capa de infraestructura y actúa como adaptador de entrada
+ * del flujo SAGA: escucha los comandos de creación de despacho, delega la lógica
+ * de negocio en {@link DespachoApplicationService} y publica el resultado a
+ * través de {@link DespachoProducer}.</p>
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -20,6 +28,25 @@ public class DespachoConsumer {
     private final DespachoProducer despachoProducer;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Procesa los comandos recibidos en el tópico
+     * {@code saga.despacho.create-command}.
+     *
+     * <p>Convierte el mensaje (mapa) a {@link DespachoRequestEvent} y solicita la
+     * creación del despacho de forma reactiva. Al suscribirse:</p>
+     * <ul>
+     *   <li>Si tiene éxito, construye un {@link DespachoResponseEvent} con
+     *       {@code success = true} y el número de seguimiento, y lo publica.</li>
+     *   <li>Si el flujo reactivo emite error, publica una respuesta con
+     *       {@code success = false} y el motivo del fallo.</li>
+     * </ul>
+     * <p>Si falla la conversión inicial u otra excepción síncrona, extrae el
+     * {@code orderId}/{@code sagaId} del mensaje crudo (o valores por defecto) y
+     * publica igualmente una respuesta de fallo, de modo que la saga siempre
+     * reciba una respuesta.</p>
+     *
+     * @param message mensaje recibido de Kafka como mapa clave-valor
+     */
     @KafkaListener(topics = "saga.despacho.create-command", groupId = "despacho-group")
     public void consumeDespachoRequest(Map<String, Object> message) {
         log.info("Mensaje recibido en saga.despacho.create-command: {}", message);

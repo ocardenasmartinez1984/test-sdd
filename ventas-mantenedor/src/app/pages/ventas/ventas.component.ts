@@ -461,6 +461,17 @@ import { Order, OrderCreateRequest, OrderStatus, Product } from '../../models/mo
     }
   `]
 })
+/**
+ * Componente de la vista de gestión de Ventas del mantenedor.
+ *
+ * Lista las órdenes de venta con estadísticas por estado SAGA, permite
+ * filtrarlas, crear nuevas ventas (que inician la SAGA), cambiar su estado y
+ * cancelarlas, todo mediante {@link VentaService}. Refresca periódicamente los
+ * datos (polling cada 5 s), calcula el total del formulario a partir del
+ * catálogo de {@link StockService} y notifica al usuario con
+ * {@link NotificationService}. Usa {@link OrderStatusService} para la
+ * presentación de los estados.
+ */
 export class VentasComponent implements OnInit, OnDestroy {
 
   // --- Dependencies (Dependency Inversion) ---
@@ -492,17 +503,27 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   private pollInterval: any;
 
+  /**
+   * Hook de inicialización: carga las órdenes y arranca el polling periódico
+   * (cada 5 segundos) para mantener la lista actualizada.
+   */
   ngOnInit(): void {
     this.loadOrders();
     this.pollInterval = setInterval(() => this.loadOrders(), 5000);
   }
 
+  /** Hook de destrucción: detiene el temporizador de polling. */
   ngOnDestroy(): void {
     if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
   // --- Data Loading (Single Responsibility: only fetches and sets state) ---
 
+  /**
+   * Carga todas las órdenes desde {@link VentaService}: actualiza el estado,
+   * reaplica el filtro activo y sincroniza los selectores de estado. Notifica
+   * error si la carga falla.
+   */
   loadOrders(): void {
     this.ventaService.getAll().subscribe({
       next: (orders) => {
@@ -524,11 +545,21 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   // --- Filtering ---
 
+  /**
+   * Establece el filtro de estado activo y reaplica el filtrado sobre las
+   * órdenes.
+   * @param status estado a filtrar, o null para mostrar todas.
+   */
   filterByStatus(status: OrderStatus | null): void {
     this.activeFilter.set(status);
     this.applyFilter();
   }
 
+  /**
+   * Cuenta cuántas órdenes se encuentran en un estado dado.
+   * @param status estado a contar.
+   * @returns número de órdenes en ese estado.
+   */
   countByStatus(status: OrderStatus): number {
     return this.orders().filter(o => o.status === status).length;
   }
@@ -544,6 +575,12 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   // --- Status Update Actions ---
 
+  /**
+   * Aplica el cambio de estado seleccionado en la fila de una orden vía
+   * {@link VentaService.updateStatus}. Ignora la acción si el estado no cambió,
+   * notifica el resultado y recarga la lista.
+   * @param order orden cuyo estado se actualiza.
+   */
   updateStatus(order: Order): void {
     const newStatus = this.statusSelections[order.id!];
     if (!newStatus || newStatus === order.status) {
@@ -561,6 +598,12 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Cambia el estado de la orden abierta en el modal de detalle vía
+   * {@link VentaService.updateStatus}, actualiza el detalle mostrado, notifica
+   * y recarga la lista.
+   * @param status nuevo estado a aplicar.
+   */
   updateDetailStatus(status: OrderStatus): void {
     const order = this.selectedOrder();
     if (!order?.id || status === order.status) {
@@ -577,6 +620,11 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Cancela una orden vía {@link VentaService.cancel} (disparando las
+   * compensaciones de la SAGA), notifica el resultado y recarga la lista.
+   * @param id identificador de la orden a cancelar.
+   */
   cancelOrder(id: string): void {
     this.ventaService.cancel(id).subscribe({
       next: () => {
@@ -589,16 +637,25 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   // --- Detail Modal ---
 
+  /**
+   * Abre el modal de detalle con la orden indicada.
+   * @param order orden a mostrar en detalle.
+   */
   openDetailModal(order: Order): void {
     this.selectedOrder.set(order);
   }
 
+  /** Cierra el modal de detalle. */
   closeDetailModal(): void {
     this.selectedOrder.set(null);
   }
 
   // --- Create Modal ---
 
+  /**
+   * Abre el modal de nueva venta: reinicia el formulario y carga el catálogo
+   * de productos disponibles desde {@link StockService}.
+   */
   openCreateModal(): void {
     this.createForm = this.getEmptyForm();
     this.selectedProduct = null;
@@ -608,10 +665,15 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.showCreateModal.set(true);
   }
 
+  /** Cierra el modal de nueva venta. */
   closeCreateModal(): void {
     this.showCreateModal.set(false);
   }
 
+  /**
+   * Reacciona al cambio de producto en el formulario: guarda el producto
+   * seleccionado y recalcula el total.
+   */
   onProductChange(): void {
     this.selectedProduct = this.availableProducts().find(
       p => p.id === this.createForm.productId
@@ -619,12 +681,22 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.recalculateTotal();
   }
 
+  /**
+   * Recalcula el importe total del formulario como precio del producto
+   * seleccionado por la cantidad indicada.
+   */
   recalculateTotal(): void {
     if (this.selectedProduct) {
       this.createForm.totalAmount = this.selectedProduct.price * this.createForm.quantity;
     }
   }
 
+  /**
+   * Envía el formulario para crear una nueva venta vía
+   * {@link VentaService.create} (inicia la SAGA), notifica, cierra el modal y
+   * recarga la lista (con una recarga adicional diferida para reflejar el
+   * avance de la SAGA).
+   */
   submitCreateOrder(): void {
     this.ventaService.create(this.createForm).subscribe({
       next: () => {
@@ -639,14 +711,30 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   // --- Pure UI Helpers (no side effects) ---
 
+  /**
+   * Indica si una orden puede cancelarse (solo en estado pendiente o con stock
+   * reservado).
+   * @param order orden a evaluar.
+   * @returns true si es cancelable.
+   */
   isCancellable(order: Order): boolean {
     return order.status === 'PENDING' || order.status === 'STOCK_RESERVED';
   }
 
+  /**
+   * Calcula la cantidad disponible de un producto (total menos reservado).
+   * @param product producto a evaluar.
+   * @returns unidades disponibles.
+   */
   getAvailableQuantity(product: Product): number {
     return product.quantity - (product.reservedQuantity || 0);
   }
 
+  /**
+   * Devuelve el mensaje a mostrar cuando la tabla está vacía, según haya o no
+   * un filtro de estado activo.
+   * @returns texto del estado vacío.
+   */
   getEmptyMessage(): string {
     const filter = this.activeFilter();
     if (filter) {

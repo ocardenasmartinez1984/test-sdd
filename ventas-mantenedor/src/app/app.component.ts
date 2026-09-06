@@ -224,10 +224,19 @@ import { AuthService } from './services/auth.service';
     }
   `]
 })
+/**
+ * Componente raíz del mantenedor de Ventas.
+ *
+ * Actúa como shell de la aplicación: muestra la barra lateral de navegación
+ * (Stock, Ventas, Despachos) y los datos del usuario cuando hay sesión activa,
+ * y delega el contenido al `<router-outlet>`. Colabora con {@link AuthService}
+ * para conocer el estado de autenticación y cerrar sesión.
+ */
 export class AppComponent {
   authService = inject(AuthService);
   private router = inject(Router);
 
+  /** Cierra la sesión del usuario y navega a la pantalla de login. */
   logout() {
     this.authService.logout();
     this.router.navigate(['/login']);

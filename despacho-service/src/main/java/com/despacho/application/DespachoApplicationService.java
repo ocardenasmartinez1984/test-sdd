@@ -15,6 +15,17 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Servicio de aplicación que orquesta los casos de uso del despacho.
+ *
+ * <p>Es la pieza central de la capa de aplicación (DDD): coordina la creación y
+ * actualización de despachos delegando la persistencia en
+ * {@link DispatchRepository} (MongoDB reactivo) y publicando eventos en Kafka
+ * mediante {@link KafkaTemplate}. Todas las operaciones que tocan MongoDB o
+ * Kafka están protegidas con Resilience4j {@code @CircuitBreaker} y cuentan con
+ * un método de fallback que degrada la respuesta de forma controlada cuando la
+ * dependencia falla.</p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +34,21 @@ public class DespachoApplicationService {
     private final DispatchRepository dispatchRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
+    /**
+     * Crea un nuevo despacho a partir de una solicitud recibida del flujo SAGA.
+     *
+     * <p>Genera un número de seguimiento único con prefijo {@code TRK-},
+     * construye la entidad {@link Dispatch} en estado inicial
+     * {@link DispatchStatus#PREPARANDO} con las marcas de tiempo actuales y la
+     * persiste de forma reactiva en MongoDB. Registra en el log el tracking y la
+     * orden cuando el guardado tiene éxito.</p>
+     *
+     * <p>Protegido por el circuit breaker {@code mongoDB}; ante fallo se delega
+     * en {@code crearDespachoFallback}.</p>
+     *
+     * @param request evento con los datos de la orden, producto, cantidad y cliente
+     * @return {@link Mono} con el despacho persistido
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "crearDespachoFallback")
     public Mono<Dispatch> crearDespacho(DespachoRequestEvent request) {
         String trackingNumber = "TRK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -42,6 +68,21 @@ public class DespachoApplicationService {
                 .doOnSuccess(saved -> log.info("Despacho creado con tracking: {} para orden: {}", trackingNumber, request.getOrderId()));
     }
 
+    /**
+     * Actualiza el estado de un despacho existente.
+     *
+     * <p>Busca el despacho por su identificador, le asigna el nuevo estado y la
+     * marca de tiempo de actualización, y lo vuelve a persistir. Si el estado
+     * resultante es {@link DispatchStatus#ENTREGADO}, dispara la notificación de
+     * entrega vía Kafka mediante {@link #notifyDelivered(String)}.</p>
+     *
+     * <p>Protegido por el circuit breaker {@code mongoDB}; ante fallo se delega
+     * en {@code actualizarEstadoFallback}.</p>
+     *
+     * @param id          identificador del despacho a actualizar
+     * @param nuevoEstado estado al que se debe transicionar el despacho
+     * @return {@link Mono} con el despacho actualizado, o vacío si no existe
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "actualizarEstadoFallback")
     public Mono<Dispatch> actualizarEstado(String id, DispatchStatus nuevoEstado) {
         return dispatchRepository.findById(id)
@@ -60,6 +101,18 @@ public class DespachoApplicationService {
                 });
     }
 
+    /**
+     * Publica en Kafka la notificación de que una orden ha sido entregada.
+     *
+     * <p>Construye un mensaje con el {@code orderId} y lo envía al tópico
+     * {@code saga.despacho.delivered}. Captura y registra cualquier excepción
+     * para no interrumpir el flujo de actualización de estado.</p>
+     *
+     * <p>Protegido por el circuit breaker {@code kafkaProducer}; ante fallo se
+     * delega en {@code notifyDeliveredFallback}.</p>
+     *
+     * @param orderId identificador de la orden entregada
+     */
     @CircuitBreaker(name = "kafkaProducer", fallbackMethod = "notifyDeliveredFallback")
     private void notifyDelivered(String orderId) {
         try {
@@ -75,21 +128,56 @@ public class DespachoApplicationService {
         log.error("CircuitBreaker OPEN [kafkaProducer] - Failed to notify delivery for order: {}. Error: {}", orderId, t.getMessage());
     }
 
+    /**
+     * Recupera el despacho asociado a un número de seguimiento.
+     *
+     * <p>Protegido por el circuit breaker {@code mongoDB}; ante fallo se delega
+     * en {@code buscarPorTrackingFallback}, que devuelve un {@link Mono} vacío.</p>
+     *
+     * @param trackingNumber número de tracking del envío
+     * @return {@link Mono} con el despacho encontrado, o vacío si no existe
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "buscarPorTrackingFallback")
     public Mono<Dispatch> buscarPorTracking(String trackingNumber) {
         return dispatchRepository.findByTrackingNumber(trackingNumber);
     }
 
+    /**
+     * Recupera el despacho asociado a una orden de venta.
+     *
+     * <p>Protegido por el circuit breaker {@code mongoDB}; ante fallo se delega
+     * en {@code buscarPorOrdenFallback}, que devuelve un {@link Mono} vacío.</p>
+     *
+     * @param orderId identificador de la orden
+     * @return {@link Mono} con el despacho encontrado, o vacío si no existe
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "buscarPorOrdenFallback")
     public Mono<Dispatch> buscarPorOrden(String orderId) {
         return dispatchRepository.findByOrderId(orderId);
     }
 
+    /**
+     * Lista los despachos que se encuentran en un estado determinado.
+     *
+     * <p>Protegido por el circuit breaker {@code mongoDB}; ante fallo se delega
+     * en {@code listarPorEstadoFallback}, que devuelve un {@link Flux} vacío.</p>
+     *
+     * @param status estado del ciclo de vida por el que filtrar
+     * @return {@link Flux} con los despachos en el estado indicado
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "listarPorEstadoFallback")
     public Flux<Dispatch> listarPorEstado(DispatchStatus status) {
         return dispatchRepository.findByStatus(status);
     }
 
+    /**
+     * Lista todos los despachos registrados.
+     *
+     * <p>Protegido por el circuit breaker {@code mongoDB}; ante fallo se delega
+     * en {@code listarTodosFallback}, que devuelve un {@link Flux} vacío.</p>
+     *
+     * @return {@link Flux} con todos los despachos existentes
+     */
     @CircuitBreaker(name = "mongoDB", fallbackMethod = "listarTodosFallback")
     public Flux<Dispatch> listarTodos() {
         return dispatchRepository.findAll();

@@ -10,9 +10,25 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
+/**
+ * Configuración del manejo de errores de los listeners de Kafka.
+ *
+ * <p>Define un {@link DefaultErrorHandler} con reintentos y publicación en
+ * dead-letter, base del mecanismo de tolerancia a fallos de la SAGA.
+ */
 @Configuration
 public class KafkaErrorHandlerConfig {
 
+    /**
+     * Crea el manejador de errores común de los listeners.
+     *
+     * <p>Reintenta cada registro fallido 3 veces con back-off fijo de 1 segundo y,
+     * al agotarse, lo publica en el tópico dead-letter {@code <topic>.dlt}
+     * mediante un {@link DeadLetterPublishingRecoverer}.
+     *
+     * @param kafkaTemplate plantilla usada para publicar los registros al tópico DLT
+     * @return manejador de errores configurado para los listeners
+     */
     @Bean
     public CommonErrorHandler errorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate,

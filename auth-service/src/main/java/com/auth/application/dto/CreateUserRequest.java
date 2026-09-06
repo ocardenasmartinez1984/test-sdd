@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+/**
+ * DTO de entrada con los datos necesarios para crear un usuario desde la API de
+ * gestión, incluyendo el conjunto de nombres de rol a asignar.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
