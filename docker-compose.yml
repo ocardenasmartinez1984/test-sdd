@@ -490,8 +490,11 @@ services:
       - "8888:8080"
       - "50000:50000"
     environment:
-      JAVA_OPTS: "-Xmx1024m -Xms512m"
+      JAVA_OPTS: "-Xmx1024m -Xms512m -Djenkins.install.runSetupWizard=false"
       GRADLE_USER_HOME: "/var/jenkins_home/.gradle"
+      # Admin seed user (used by the Groovy init script when the wizard is off)
+      JENKINS_ADMIN_ID: "admin"
+      JENKINS_ADMIN_PASSWORD: "admin123"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock

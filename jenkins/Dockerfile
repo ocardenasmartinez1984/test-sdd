@@ -50,3 +50,31 @@ ENV GRADLE_OPTS="-Dorg.gradle.daemon=true -Dorg.gradle.caching=true -Dorg.gradle
 RUN groupadd -f docker && usermod -aG docker jenkins
 
 USER jenkins
+
+# Pre-install the plugins needed for the pipeline so the first boot does not
+# depend on the setup wizard downloading them (which fails if the container has
+# no/intermittent internet, e.g. "No such plugin: cloudbees-folder"). Plugins
+# are baked into the image at build time (build needs internet once).
+RUN jenkins-plugin-cli --plugins \
+    cloudbees-folder \
+    configuration-as-code \
+    git \
+    workflow-aggregator \
+    pipeline-stage-view \
+    docker-workflow \
+    gradle \
+    nodejs \
+    credentials-binding \
+    timestamper \
+    ws-cleanup \
+    junit \
+    matrix-auth
+
+# Skip the interactive setup wizard: plugins are already baked in and an admin
+# user is provisioned via env (see docker-compose.yml). This avoids the
+# "initial setup is required" / plugin-download step entirely.
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+
+# Groovy init hook that creates the admin user / security realm on first boot
+# (needed because the setup wizard is disabled).
+COPY jenkins/init.groovy.d/ /usr/share/jenkins/ref/init.groovy.d/
