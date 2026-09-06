@@ -1,0 +1,111 @@
+// Jenkinsfile — Pipeline dedicado a venta-service
+//
+// Etapas: Checkout → Build → Unit Tests → SonarQube → Docker Image.
+// Compila y prueba SOLO el módulo :venta-service (no el resto del monorepo)
+// y construye su imagen Docker. Sigue las convenciones del Jenkinsfile raíz
+// (mismo JAVA_HOME, GRADLE_USER_HOME, SONAR_URL y credencial 'sonar-token').
+
+pipeline {
+    agent any
+
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/temurin-21-jdk'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        GRADLE_OPTS = '-Dorg.gradle.caching=true -Dorg.gradle.parallel=true -Dorg.gradle.configureondemand=true -Xmx2048m'
+        GRADLE_USER_HOME = '/var/jenkins_home/.gradle'
+        SONAR_URL = 'http://sonarqube:9000'
+        REGISTRY = 'ocardenasmartinez1984'
+        SERVICE = 'venta-service'
+        IMAGE = "ocardenasmartinez1984/venta-service"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        // Enable BuildKit so the Docker build reuses the shared Gradle cache mount.
+        DOCKER_BUILDKIT = '1'
+        COMPOSE_DOCKER_CLI_BUILD = '1'
+    }
+
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git url: 'https://github.com/ocardenasmartinez1984/test-sdd.git', branch: 'main'
+                sh 'chmod +x gradlew'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Compile only venta-service (and the modules it depends on to
+                // resolve on the classpath). -x test so tests run in their own
+                // reportable stage below.
+                sh './gradlew :venta-service:assemble --build-cache -x test'
+            }
+        }
+
+        stage('Unit Tests') {
+            steps {
+                // The default `test` task already excludes Testcontainers
+                // integration tests (tagged 'integration'), so this runs the
+                // unit tests only, and finalizes with the JaCoCo report.
+                sh './gradlew :venta-service:test :venta-service:jacocoTestReport --build-cache'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: 'venta-service/build/test-results/test/*.xml'
+                    // Publish coverage HTML if the HTML Publisher plugin is present.
+                    publishHTML(target: [
+                        allowMissing: true,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'venta-service/build/reports/jacoco/test/html',
+                        reportFiles: 'index.html',
+                        reportName: 'JaCoCo Coverage — venta-service'
+                    ])
+                }
+            }
+        }
+
+        stage('SonarQube') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    // Analyze the venta-service module and feed the JaCoCo report.
+                    sh '''
+                        ./gradlew :venta-service:sonar \
+                          -Dsonar.host.url=$SONAR_URL \
+                          -Dsonar.token=$SONAR_TOKEN \
+                          --build-cache
+                    '''
+                }
+            }
+        }
+
+        stage('Docker Image') {
+            steps {
+                // The service Dockerfile is multi-stage and pulls the Gradle
+                // wrapper + root build files from an additional build context
+                // named 'gradle-root' (= repo root). BuildKit is required.
+                sh '''
+                    docker build \
+                      -f venta-service/Dockerfile \
+                      --build-context gradle-root=. \
+                      -t ${IMAGE}:${IMAGE_TAG} \
+                      -t ${IMAGE}:latest \
+                      venta-service
+                '''
+                sh 'docker image ls ${IMAGE} --format "table {{.Repository}}\\t{{.Tag}}\\t{{.Size}}"'
+            }
+        }
+    }
+
+    post {
+        success { echo "✅ venta-service pipeline OK — image ${IMAGE}:${IMAGE_TAG}" }
+        failure { echo '❌ venta-service pipeline failed' }
+        always  { sh 'docker system prune -f --filter "until=24h" 2>/dev/null || true' }
+    }
+}
