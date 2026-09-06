@@ -137,6 +137,74 @@ Windows.
 > allow it for the current session:
 > `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
 
+### Phased startup scripts (`services-script/`)
+
+The `services-script/` directory holds the granular bash scripts that power the
+phased startup. They share a common helper (`lib.sh`) that auto-detects
+`docker compose` v2/v1, enables BuildKit, targets the repo's
+`docker-compose.yml`, and waits for each service to become healthy before
+continuing. Add `--build` to any `*-up.sh` script to rebuild images first (using
+the shared BuildKit cache), or `--help` to print its usage.
+
+**Whole stack:**
+
+```bash
+# Bring the whole stack up, phase by phase (infra -> backend -> frontends)
+./services-script/up-all.sh
+./services-script/up-all.sh --build   # rebuild images first
+
+# Tear the whole stack down (reverse phase order); data volumes preserved
+./services-script/down-all.sh
+./services-script/down-all.sh --volumes   # DESTRUCTIVE: also removes named volumes (deletes data)
+```
+
+**Individual phases** (each phase requires the previous one to be up):
+
+```bash
+# Phase 1/3 - Infrastructure: postgres, mongodb, kafka, redis
+./services-script/phase1-up.sh
+./services-script/phase1-down.sh
+
+# Phase 2/3 - Backend: eureka, api-gateway, auth, stock, venta, despacho
+./services-script/phase2-up.sh
+./services-script/phase2-down.sh
+
+# Phase 3/3 - Frontends: pos-frontend, ventas-mantenedor, users-mantenedor
+./services-script/phase3-up.sh
+./services-script/phase3-down.sh
+```
+
+**CI/CD tooling** (behind the `tooling`/`sonar`/`ci` Compose profiles):
+
+```bash
+# Jenkins + SonarQube together
+./services-script/tooling-up.sh
+./services-script/tooling-down.sh
+
+# Individually
+./services-script/sonar-up.sh      # SonarQube + its dedicated Postgres
+./services-script/sonar-down.sh
+./services-script/jenkins-up.sh    # Jenkins CI server
+./services-script/jenkins-down.sh
+```
+
+> Jenkins: http://localhost:8888 (admin / admin123) &nbsp;·&nbsp;
+> SonarQube: http://localhost:9000 (admin / admin)
+
+**Desktop GUI (`stack_gui.py`):** a native GTK 3 window (PyGObject) to manage
+the stack without the terminal. It runs the same `services-script/` scripts and
+adds live monitoring:
+
+- **Control** tab - buttons to bring phases / the whole stack / tooling up & down, with live output.
+- **Logs** tab - logs of every `saga-*` container.
+- **Resources** tab - live CPU / RAM usage per container, with high-usage alerts.
+
+```bash
+python3 services-script/stack_gui.py
+# Requires PyGObject (GTK 3). On Debian/Ubuntu:
+#   sudo apt install python3-gi gir1.2-gtk-3.0
+```
+
 ### Manual startup with Docker Compose
 
 The heavy tooling services (Jenkins, SonarQube) are
@@ -435,6 +503,7 @@ pos-test/
 ├── build-images-fast.sh  # Fast local image build (host Gradle + slim images)
 ├── seed-products.sh      # Seed the product catalog via the API gateway
 ├── start-stack.sh / .ps1 # Phased startup helpers
+├── services-script/      # Granular phased up/down scripts + GTK desktop GUI (stack_gui.py)
 └── strip-bom.sh          # UTF-8 BOM guard for source files
 ```
 

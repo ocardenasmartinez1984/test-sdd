@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Spring Security (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Spring Security</h1>
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">0. Warm-up — Spring Security en el proyecto</a></li>
+      <li><a href="#s1">1. Fundamentos</a></li>
+      <li><a href="#s2">2. La SecurityFilterChain</a></li>
+      <li><a href="#s3">3. JWT con jjwt</a></li>
+      <li><a href="#s4">4. Autenticación, usuarios y roles</a></li>
+      <li><a href="#s5">5. Seguridad dura y operación</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <blockquote><p>Guía de estudio en formato entrevista · uso de <strong>Spring Security + JWT</strong> en el</p></blockquote>
+  <p>sistema POS (<code>auth-service</code> :8084 · PostgreSQL · jjwt 0.12.6 · BCrypt).</p>
+  <blockquote><p>Cada sección incluye la <strong>pregunta del entrevistador</strong>, una <strong>respuesta modelo</strong></p></blockquote>
+  <p>anclada al código real de este proyecto y, cuando aplica, <strong>preguntas de
+ seguimiento</strong> (follow-ups).</p>
+  <blockquote><p>Formato sugerido: 45–60 min. Bloques: fundamentos (10'), la SecurityFilterChain</p></blockquote>
+  <p>(10'), JWT con jjwt (15'), autenticación y usuarios (10'), operación/seguridad
+ dura (10').</p>
+  <h2 id="s0">0. Warm-up — Spring Security en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Dónde y para qué se usa Spring Security en este sistema POS?</div>
+  <div class="a"><span class="tag tag-a">R</span> Vive en el <strong><code>auth-service</code></strong> (<code>:8084</code>), el servicio de autenticación con
+ <strong>PostgreSQL</strong>. Su <code>build.gradle</code> incluye <code>spring-boot-starter-security</code> más la
+ librería <strong>jjwt 0.12.6</strong> (<code>jjwt-api</code>/<code>jjwt-impl</code>/<code>jjwt-jackson</code>). Cubre tres cosas:
+ <strong>cifrado de contraseñas</strong> con <code>BCryptPasswordEncoder</code>, <strong>emisión/validación de
+ JWT</strong> (<code>JwtService</code>) y la <strong>configuración del filtro de seguridad</strong>
+ (<code>SecurityConfig</code>). Expone <code>POST /api/v1/auth/login</code>, <code>/register</code> y
+ <code>GET /api/v1/auth/validate</code> a través del <code>AuthController</code>.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿El API Gateway valida el token? — <strong>No</strong> en el código actual: el
+ <code>api-gateway</code> solo aplica CORS (<code>CorsConfig</code>) y rate limiting; no hay un filtro
+ que verifique el JWT antes de enrutar. Es una brecha conocida (ver sección 5).</div>
+  <h2 id="s1">1. Fundamentos</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué diferencia hay entre autenticación y autorización, y dónde aparece cada una aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> <strong>Autenticación</strong> = quién eres; ocurre en <code>AuthApplicationService.login()</code>,
+ que valida credenciales contra PostgreSQL. <strong>Autorización</strong> = qué puedes hacer; se
+ modela con <strong>roles y permisos</strong> (<code>ROLE_ADMIN</code>, <code>ROLE_USER</code>) que se embeben como
+ claims <code>roles</code> y <code>permissions</code> dentro del JWT. Hoy el proyecto <strong>autentica</strong> de
+ forma sólida pero <strong>no aplica autorización por endpoint</strong> (la cadena permite todo,
+ ver sección 2).</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Por qué <code>BCryptPasswordEncoder</code> y no un hash como SHA-256?</div>
+  <div class="a"><span class="tag tag-a">R</span> BCrypt es un <strong>hash adaptativo con salt</strong> diseñado para contraseñas: es
+ deliberadamente lento (factor de coste configurable) para resistir fuerza bruta y
+ rainbow tables. SHA-256 es rápido, justo lo contrario de lo que quieres para
+ contraseñas. En el repo se declara como bean en <code>SecurityConfig.passwordEncoder()</code>
+ y se usa en <code>register</code> (<code>passwordEncoder.encode(...)</code>) y en <code>login</code>
+ (<code>passwordEncoder.matches(raw, hash)</code>).</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Se compara la contraseña con <code>equals</code>? — No: se usa
+ <code>passwordEncoder.matches()</code>, que re-aplica BCrypt con el salt embebido en el hash
+ y compara en tiempo constante.</div>
+  <h2 id="s2">2. La SecurityFilterChain</h2>
+  <div class="q"><span class="tag tag-q">P</span> Explica la configuración de <code>SecurityConfig</code>.</div>
+  <div class="a"><span class="tag tag-a">R</span> Es una clase <code>@Configuration @EnableWebSecurity</code> que expone un bean
+ <code>SecurityFilterChain</code> (<code>@Order(1)</code>). En él:
+ desactiva <strong>CSRF</strong> (<code>csrf.disable()</code>), <strong>httpBasic</strong>, <strong>formLogin</strong> y <strong>logout</strong>
+ porque es una API <strong>stateless</strong>; fija
+ <code>SessionCreationPolicy.STATELESS</code> (sin <code>HttpSession</code>, sin <code>JSESSIONID</code>);
+ configura <strong>CORS</strong> con un <code>CorsConfigurationSource</code>; y termina con
+ <code>authorizeHttpRequests(auth -&gt; auth.anyRequest().permitAll())</code>.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Por qué CSRF deshabilitado es aceptable aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> CSRF protege flujos basados en <strong>cookies de sesión</strong> que el navegador envía
+ automáticamente. Esta API es <strong>stateless con JWT en el header <code>Authorization</code></strong>,
+ que no se envía solo: el atacante no puede forzar al navegador a adjuntarlo. Por
+ eso deshabilitar CSRF es correcto para una API de tokens.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Qué implica <code>STATELESS</code>? — Spring Security no crea ni consulta
+ <code>HttpSession</code>; cada request se autentica por sí misma (idealmente por el token),
+ lo que encaja con el escalado horizontal de microservicios.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Ves algún problema en <code>anyRequest().permitAll()</code>?</div>
+  <div class="a"><span class="tag tag-a">R</span> Sí: <strong>abre todos los endpoints</strong>. Como no hay un filtro JWT que popule el
+ <code>SecurityContext</code>, la cadena no autoriza nada por rol/permiso. Para el <code>auth-service</code>
+ tiene cierto sentido (login/register deben ser públicos), pero los endpoints de
+ gestión de usuarios (<code>UserController</code>) quedan sin protección a nivel de framework.
+ Lo correcto sería <code>authorizeHttpRequests</code> con reglas (<code>permitAll</code> solo para
+ <code>/api/v1/auth/**</code> y <code>authenticated()</code>/<code>hasRole(...)</code> para el resto) más un filtro
+ que valide el token.</div>
+  <h2 id="s3">3. JWT con jjwt</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se genera un token en <code>JwtService</code>?</div>
+  <div class="a"><span class="tag tag-a">R</span> Con el builder de jjwt 0.12.x: <code>Jwts.builder()</code> fija <code>subject(username)</code>,
+ añade claims <code>userId</code>, <code>email</code>, <code>roles</code> y <code>permissions</code> (roles y permisos se
+ aplanan a CSV desde <code>user.getRoles()</code>), <code>issuedAt</code>, <code>expiration</code> (now +
+ <code>jwt.expiration</code>, por defecto <strong>86400000 ms</strong> = 24 h) y firma con
+ <code>signWith(getSigningKey())</code>. La clave se deriva de <code>jwt.secret</code> vía
+ <code>Keys.hmacShaKeyFor(secret.getBytes(UTF_8))</code> → algoritmo <strong>HS256</strong>.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se valida y se lee el token?</div>
+  <div class="a"><span class="tag tag-a">R</span> <code>validateToken</code> hace <code>Jwts.parser().verifyWith(getSigningKey()).build()
+ .parseSignedClaims(token)</code> dentro de un try/catch: si la firma o la expiración
+ fallan, lanza excepción y devuelve <code>false</code>. <code>getUsernameFromToken</code> parsea y
+ devuelve <code>claims.getSubject()</code>. Es firma <strong>simétrica</strong> (HMAC), así que el mismo
+ secreto firma y verifica.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿HS256 vs RS256? — HS256 es simétrico (un secreto compartido); simple
+ pero todo el que verifica puede también firmar. RS256 es asimétrico (clave privada
+ firma, pública verifica), preferible cuando varios servicios deben <strong>verificar</strong>
+ sin poder <strong>emitir</strong>. Aquí, si el gateway validara tokens, RS256 evitaría
+ repartir el secreto de firma.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo protege el proyecto el secreto de firma?</div>
+  <div class="a"><span class="tag tag-a">R</span> Con <code>JwtSecretValidator</code>, un <code>ApplicationRunner</code> que <strong>falla al arrancar</strong>
+ (<code>IllegalStateException</code>) si <code>jwt.secret</code> está vacío, es el placeholder documentado
+ (<code>&lt;change_me_at_least_256_bits_long&gt;</code>) o mide <strong>menos de 32 bytes</strong> (256 bits, el
+ mínimo para HS256). Es un "fail-fast": evita arrancar con un secreto forjable. El
+ valor real llega por la variable de entorno <code>JWT_SECRET</code> (<code>application.yml</code>:
+ <code>jwt.secret: ${JWT_SECRET}</code>).</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué 32 bytes? — HS256 usa HMAC-SHA-256; una clave más corta que
+ el tamaño de bloque debilita la seguridad, y jjwt directamente rechaza claves por
+ debajo de 256 bits.</div>
+  <h2 id="s4">4. Autenticación, usuarios y roles</h2>
+  <div class="q"><span class="tag tag-q">P</span> Recorre el flujo de <code>login</code>.</div>
+  <div class="a"><span class="tag tag-a">R</span> En <code>AuthApplicationService.login(LoginRequest)</code>:
+ busca el usuario por username (<code>userRepository.findByUsername</code>), si no existe
+ lanza <code>"Invalid credentials"</code>;
+ valida la contraseña con <code>passwordEncoder.matches</code>;
+ comprueba <code>user.isEnabled()</code> (si no, <code>"User account is disabled"</code>);
+ genera el JWT con <code>jwtService.generateToken(user)</code> y devuelve un <code>AuthResponse</code>
+ con token, username, fullName, roles y permisos.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Cómo se traducen esos errores a HTTP? — El <code>@ExceptionHandler</code> del
+ <code>AuthController</code> mapea <code>"Invalid credentials"</code>/<code>"disabled"</code> → <strong>401</strong>,
+ <code>"already exists"</code> → <strong>409</strong> y <code>"not found"</code> → <strong>404</strong>.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿El modelo <code>User</code> implementa <code>UserDetails</code>?</div>
+  <div class="a"><span class="tag tag-a">R</span> <strong>No.</strong> <code>User</code> es una <code>@Entity</code> JPA pura (tabla <code>users</code>) con <code>username</code>,
+ <code>email</code>, <code>password</code>, <code>enabled</code>, <code>createdAt</code> y un <code>@ManyToMany</code> a <code>Role</code> (tabla de
+ unión <code>user_roles</code>, fetch EAGER). El proyecto <strong>no</strong> usa el flujo estándar de
+ <code>UserDetailsService</code>/<code>AuthenticationManager</code> de Spring Security: valida
+ credenciales manualmente en el service. Es funcional, pero se aparta del camino
+ idiomático de Spring Security.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Qué ganaría con <code>UserDetailsService</code>? — Integrar
+ <code>AuthenticationManager</code>, <code>@PreAuthorize</code>, method security y un
+ <code>SecurityContext</code> poblado, reutilizando la maquinaria del framework.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿De dónde salen el usuario admin y los roles?</div>
+  <div class="a"><span class="tag tag-a">R</span> De <code>DataInitializer</code> (<code>ApplicationRunner</code>): crea <code>ROLE_ADMIN</code> y <code>ROLE_USER</code>
+ si no existen y, si no hay un usuario <code>admin</code>, crea <strong>admin / admin123</strong> (password
+ codificado con BCrypt, rol <code>ROLE_ADMIN</code>). Son las credenciales de prueba del stack.</div>
+  <h2 id="s5">5. Seguridad dura y operación</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cuál es el mayor riesgo de seguridad del diseño actual?</div>
+  <div class="a"><span class="tag tag-a">R</span> Que <strong>el JWT no se valida en el borde</strong>. El <code>api-gateway</code> enruta hacia
+ stock/venta/despacho aplicando solo CORS y rate limiting; ningún filtro verifica
+ el token. Un cliente podría llamar a servicios downstream sin un JWT válido si
+ alcanza el gateway o el servicio directamente. La emisión de tokens es sólida
+ (HS256 + secreto validado), pero <strong>falta la aplicación</strong> (enforcement).</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Cómo lo cerrarías? — Un <code>GlobalFilter</code>/<code>WebFilter</code> en el gateway
+ (WebFlux) que valide firma y expiración y propague identidad en headers, o un
+ filtro JWT por servicio; idealmente pasar a <strong>RS256</strong> para que el gateway
+ verifique con la clave pública sin poder emitir.</div>
+  <div class="q"><span class="tag tag-q">P</span> El token vive 24 h y no hay logout real. ¿Qué problema hay y cómo se mitiga?</div>
+  <div class="a"><span class="tag tag-a">R</span> Un JWT es <strong>stateless</strong>: una vez emitido es válido hasta expirar; no se puede
+ "revocar" sin estado extra. Con 24 h, un token filtrado sirve un día. Mitigaciones:
+ acortar la expiración y añadir <strong>refresh tokens</strong>, o una <strong>denylist</strong> de tokens
+ revocados (encaja con el <strong>Redis</strong> que ya usa el gateway) consultada en cada
+ validación. Hoy <code>logout</code> está deshabilitado en <code>SecurityConfig</code>, coherente con no
+ tener sesión, pero deja la revocación sin resolver.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Qué claims ayudarían a revocar? — Un <code>jti</code> (id único de token) para
+ marcarlo en la denylist, y versionado de credenciales para invalidar todos los
+ tokens de un usuario al cambiar contraseña.</div>
+  <div class="q"><span class="tag tag-q">P</span> CORS está en <code>allowedOriginPatterns("*")</code> con credenciales. ¿Es seguro?</div>
+  <div class="a"><span class="tag tag-a">R</span> Es <strong>permisivo</strong>: en <code>auth-service</code> se permite cualquier origen con
+ <code>allowCredentials(true)</code>. Para desarrollo local vale, pero en producción se debe
+ restringir a los orígenes reales de los frontends (<code>:4200</code>, <code>:4300</code>, <code>:4400</code>), ya
+ que orígenes comodín + credenciales amplían la superficie de ataque.</div>
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+<thead>
+<tr>
+<th>Tema</th>
+<th>Punto clave (real en el repo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ubicación</td>
+<td><code>auth-service</code> :8084, PostgreSQL, <code>spring-boot-starter-security</code> + jjwt 0.12.6</td>
+</tr>
+<tr>
+<td>Config</td>
+<td><code>SecurityConfig</code>: <code>@EnableWebSecurity</code>, STATELESS, CSRF/formLogin/basic off, <code>anyRequest().permitAll()</code></td>
+</tr>
+<tr>
+<td>Passwords</td>
+<td><code>BCryptPasswordEncoder</code> (<code>encode</code> en register, <code>matches</code> en login)</td>
+</tr>
+<tr>
+<td>JWT emisión</td>
+<td><code>JwtService.generateToken</code>: HS256, claims <code>userId/email/roles/permissions</code>, exp 24h</td>
+</tr>
+<tr>
+<td>JWT validación</td>
+<td><code>parseSignedClaims</code> con <code>verifyWith</code>; <code>subject</code> = username</td>
+</tr>
+<tr>
+<td>Secreto</td>
+<td><code>JwtSecretValidator</code> falla si vacío/placeholder/&lt;32 bytes; <code>JWT_SECRET</code> env</td>
+</tr>
+<tr>
+<td>Endpoints</td>
+<td><code>AuthController</code> → <code>/api/v1/auth/login\|register\|validate</code></td>
+</tr>
+<tr>
+<td>Errores</td>
+<td><code>@ExceptionHandler</code>: 401 credenciales/disabled, 409 exists, 404 not found</td>
+</tr>
+<tr>
+<td>Usuarios</td>
+<td><code>User</code> (JPA, <strong>no</strong> <code>UserDetails</code>) + <code>Role</code>/<code>Permission</code>; <code>DataInitializer</code>: admin/admin123</td>
+</tr>
+<tr>
+<td>Brecha clave</td>
+<td>El <strong>gateway no valida el JWT</strong> (solo CORS + rate limit) → falta enforcement</td>
+</tr>
+<tr>
+<td>Mejoras</td>
+<td>Filtro JWT en gateway, RS256, expiración corta + refresh, denylist en Redis, CORS restringido</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>

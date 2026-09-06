@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Domain-Driven Design (DDD) (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Domain-Driven Design (DDD)</h1>
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">0. Warm-up — DDD en el proyecto</a></li>
+      <li><a href="#s1">1. Fundamentos</a></li>
+      <li><a href="#s2">2. Building blocks tácticos</a></li>
+      <li><a href="#s3">3. Puertos y adaptadores (hexagonal)</a></li>
+      <li><a href="#s4">4. Diseño estratégico</a></li>
+      <li><a href="#s5">5. Crítica y mejoras</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <blockquote><p>Guía de estudio en formato entrevista · aplicación de **DDD y arquitectura</p></blockquote>
+  <p>hexagonal** en el sistema POS (<code>venta-service</code>, <code>stock-service</code>, ... con capas
+ <code>domain</code> / <code>application</code> / <code>infrastructure</code> / <code>interfaces</code>).</p>
+  <blockquote><p>Cada sección incluye la <strong>pregunta del entrevistador</strong>, una <strong>respuesta modelo</strong></p></blockquote>
+  <p>anclada al código real de este proyecto y, cuando aplica, <strong>preguntas de
+ seguimiento</strong> (follow-ups).</p>
+  <blockquote><p>Formato sugerido: 45–60 min. Bloques: fundamentos (10'), building blocks</p></blockquote>
+  <p>tácticos (15'), puertos y adaptadores (15'), diseño estratégico (10'),
+ crítica/mejoras (10').</p>
+  <h2 id="s0">0. Warm-up — DDD en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se refleja DDD en la estructura de este sistema POS?</div>
+  <div class="a"><span class="tag tag-a">R</span> Cada microservicio organiza el paquete raíz (<code>com.venta</code>, <code>com.stock</code>, ...)
+ en <strong>cuatro capas</strong> al estilo hexagonal:
+ <strong><code>domain</code></strong> — el modelo de negocio: <code>model</code> (entidades como <code>Order</code>, <code>Product</code>),
+ <code>event</code>, <code>port</code> (interfaces), <code>repository</code>, <code>exception</code> y <code>saga</code>;
+ <strong><code>application</code></strong> — casos de uso y orquestación: en <code>venta-service</code> hay
+ <code>command</code> (<code>OrderCommandService</code>), <code>query</code> (<code>OrderQueryService</code>), <code>saga</code>
+ (<code>SagaOrchestrator</code>) y <code>cart</code> (<code>CartService</code>);
+ <strong><code>infrastructure</code></strong> — adaptadores técnicos: <code>kafka</code> (<code>VentaProducer</code>/<code>VentaConsumer</code>),
+ <code>config</code>;
+ <strong><code>interfaces/rest</code></strong> — los controllers (<code>VentaController</code>, <code>CartController</code>).
+ La dependencia apunta <strong>hacia adentro</strong>: <code>infrastructure</code> e <code>interfaces</code> conocen
+ al <code>domain</code>, no al revés.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Es DDD "táctico" o "estratégico"? — Ambos: <strong>táctico</strong> en los building
+ blocks (entidades, repositorios, puertos, eventos) y <strong>estratégico</strong> en que cada
+ microservicio es un <strong>bounded context</strong> con su propia base de datos.</div>
+  <h2 id="s1">1. Fundamentos</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué es un bounded context y cómo se materializa aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> Un <strong>bounded context</strong> es una frontera dentro de la cual un modelo y su
+ lenguaje ubicuo son consistentes. En este sistema cada <strong>microservicio es un
+ bounded context</strong>: <code>venta-service</code> (ventas/órdenes/carrito), <code>stock-service</code>
+ (inventario), <code>despacho-service</code> (despachos), <code>auth-service</code> (usuarios). Cada uno
+ tiene su <strong>base por servicio</strong> (MongoDB para venta/stock/despacho, PostgreSQL para
+ auth), así que el mismo concepto puede modelarse distinto en cada contexto sin
+ acoplarse.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿"Producto" es el mismo concepto en venta y en stock? — No exactamente:
+ en <code>stock-service</code> <code>Product</code> tiene <code>sku</code>, <code>quantity</code>, <code>reservedQuantity</code>,
+ <code>reservedByOrder</code>; en <code>venta-service</code> solo se referencia por <code>productId</code> dentro de
+ <code>Order</code>/<code>CartItem</code>. Cada contexto modela lo que necesita.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué es el lenguaje ubicuo y dónde se ve en el código?</div>
+  <div class="a"><span class="tag tag-a">R</span> Es el vocabulario compartido entre negocio y código. Aquí aparece en nombres
+ de dominio: estados <code>PENDING</code>, <code>STOCK_RESERVED</code>, <code>DISPATCHING</code>, <code>COMPLETED</code>,
+ <code>CANCELLED</code> (enum <code>Order.OrderStatus</code>), operaciones como <code>reserveStock</code>,
+ <code>compensateStock</code>, <code>confirmStock</code> (interfaz <code>StockEventPublisher</code>), y estados de
+ carrito <code>RESERVED</code>/<code>RESERVE_FAILED</code>/<code>RELEASED</code> (<code>CartItem</code>). Los métodos del
+ service usan el idioma del negocio (<code>crearVenta</code>, <code>cancelarVenta</code>).</div>
+  <h2 id="s2">2. Building blocks tácticos</h2>
+  <div class="q"><span class="tag tag-q">P</span> Distingue Entity y Value Object. ¿Cuáles hay en el repo?</div>
+  <div class="a"><span class="tag tag-a">R</span> Una <strong>Entity</strong> tiene identidad propia y ciclo de vida (dos entidades con los
+ mismos datos pero distinto id son distintas). <code>Order</code> (<code>@Document("orders")</code> con
+ <code>@Id String id</code>) y <code>Product</code> (<code>@Document("products")</code>) son entidades. Un <strong>Value
+ Object</strong> se define solo por sus atributos, sin identidad, e idealmente es inmutable
+ (p. ej. un <code>Money</code>/<code>Address</code>). En el proyecto el modelo es más plano: se usan tipos
+ como <code>BigDecimal totalAmount</code> en <code>Order</code> en vez de un VO <code>Money</code> dedicado.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿<code>CartItem</code> es entity o value object? — Es una <strong>entity</strong> (tiene <code>@Id</code>
+ y estado propio: <code>status</code>, <code>reservationId</code>, <code>expiresAt</code>), persistida en la
+ colección <code>cart_items</code>.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué es un Aggregate y quién es la raíz aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> Un <strong>aggregate</strong> es un grupo de objetos tratados como una unidad de
+ consistencia, accedido solo por su <strong>aggregate root</strong>. En <code>venta-service</code>, <code>Order</code>
+ actúa como raíz del agregado de la venta: las transiciones de estado y la
+ consistencia de la orden se gestionan a través de ella (vía <code>OrderCommandService</code>).
+ <code>Product</code> es la raíz del agregado de inventario en <code>stock-service</code>, y encapsula
+ <code>reservedByOrder</code> (reservas por orden) para mantener su invariante de stock.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué <code>Product.reservedByOrder</code> es un <code>Map&lt;String,Integer&gt;</code>? — Para
+ hacer la reserva <strong>idempotente y actualizable</strong>: un mensaje Kafka reentregado con
+ la misma cantidad da un delta cero, y al cambiar la cantidad solo se aplica el
+ <strong>delta</strong> frente a lo ya reservado. Es una invariante del agregado documentada en
+ el propio <code>Product</code>.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se protegen las invariantes de negocio?</div>
+  <div class="a"><span class="tag tag-a">R</span> Con <strong>excepciones de dominio</strong> y guardas en la capa de aplicación. Por ejemplo,
+ <code>OrderCommandService.cancelarVenta</code> lanza <code>InvalidOrderStateException</code> si la orden
+ está <code>COMPLETED</code> o <code>CANCELLED</code> ("solo se puede cancelar lo que no es terminal"), y
+ <code>OrderNotFoundException</code> si no existe. Son clases en <code>com.venta.domain.exception</code>,
+ parte del modelo de dominio, no excepciones técnicas.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué patrón representan <code>OrderRepository</code> / <code>ProductRepository</code>?</div>
+  <div class="a"><span class="tag tag-a">R</span> El patrón <strong>Repository</strong>: una abstracción de colección de agregados. Aquí son
+ interfaces en <code>domain.repository</code> (<code>OrderRepository extends
+ ReactiveMongoRepository&lt;Order,String&gt;</code>) con métodos con lenguaje de negocio como
+ <code>findByStatus</code> o <code>findByStatusInAndUpdatedAtBefore</code> (usado por el <code>SagaReconciler</code>
+ para detectar órdenes atascadas). El dominio depende de la <strong>interfaz</strong>; Spring Data
+ provee la implementación en tiempo de ejecución.</div>
+  <h2 id="s3">3. Puertos y adaptadores (hexagonal)</h2>
+  <div class="q"><span class="tag tag-q">P</span> Explica cómo aplica el proyecto puertos y adaptadores.</div>
+  <div class="a"><span class="tag tag-a">R</span> Los <strong>puertos</strong> son interfaces en <code>domain.port</code>: <code>StockEventPublisher</code>
+ (<code>reserveStock</code>, <code>compensateStock</code>, <code>confirmStock</code>) y <code>DespachoEventPublisher</code>.
+ El <strong>adaptador</strong> es <code>VentaProducer</code> en <code>infrastructure.kafka</code>, que <strong>implementa
+ ambos puertos</strong> y traduce las llamadas de dominio a <code>kafkaTemplate.send(...)</code> sobre
+ topics concretos (<code>saga.stock.reserve-command</code>, etc.). Así el dominio expresa
+ <em>"reserva stock"</em> sin saber que por debajo es Kafka: podrías cambiar a otro
+ transporte reemplazando solo el adaptador.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué esto es inversión de dependencias? — Porque la capa de
+ aplicación (<code>OrderCommandService</code>) depende de la <strong>abstracción</strong> <code>StockEventPublisher</code>
+ (inyectada por constructor con <code>@RequiredArgsConstructor</code>), no de la clase Kafka
+ concreta. La flecha de dependencia queda invertida: la infraestructura depende del
+ dominio.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Los <code>@Document</code> de MongoDB en las entidades no acoplan el dominio a la infraestructura?</div>
+  <div class="a"><span class="tag tag-a">R</span> Sí, es una <strong>concesión pragmática</strong>: <code>Order</code> y <code>Product</code> llevan anotaciones de
+ Spring Data (<code>@Document</code>, <code>@Id</code>) directamente en el modelo de dominio. Un DDD
+ purista separaría la entidad de dominio del documento de persistencia (con un
+ mapper). El proyecto elige simplicidad sobre pureza; el coste es que si cambiaras de
+ MongoDB tendrías que tocar las clases de dominio.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Cómo lo harías "más puro"? — Con un modelo de dominio POJO puro y una
+ clase <code>OrderDocument</code> en infraestructura, más un mapper en el adaptador de
+ repositorio. Aumenta el boilerplate; se justifica cuando el dominio es rico y
+ volátil.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Dónde encaja <code>SagaOrchestrator</code> en las capas?</div>
+  <div class="a"><span class="tag tag-a">R</span> En <code>application.saga</code>: es un <strong>caso de uso de orquestación</strong>, no dominio puro.
+ Coordina la transacción de negocio (reservar stock → pedir despacho → completar o
+ compensar) usando los puertos y repositorios. La lógica de coordinación vive en
+ aplicación; las reglas de cada agregado, en el dominio.</div>
+  <h2 id="s4">4. Diseño estratégico</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué relación (context mapping) hay entre los bounded contexts?</div>
+  <div class="a"><span class="tag tag-a">R</span> Se comunican por <strong>eventos asíncronos vía Kafka</strong>, un acoplamiento débil. El
+ mapa es tipo <strong>cliente-proveedor / eventos de integración</strong>: <code>venta-service</code>
+ (orquestador SAGA) emite comandos/eventos que <code>stock-service</code> y <code>despacho-service</code>
+ consumen y responden. No hay llamadas síncronas de dominio entre contextos; la
+ integración es por mensajes, lo que preserva la autonomía de cada contexto.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Diferencia entre evento de dominio y evento de integración aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> Un <strong>evento de dominio</strong> es algo relevante dentro de un contexto ("la orden
+ pasó a STOCK_RESERVED"). Un <strong>evento de integración</strong> cruza fronteras entre
+ contextos. En el repo los eventos que viajan por Kafka (<code>StockReserveEvent</code>,
+ <code>DespachoRequestEvent</code>, <code>StockReserveResponseEvent</code>) son de <strong>integración</strong>, y se
+ publican de forma fiable con el patrón <strong>Outbox</strong> (<code>OutboxEvent</code> + <code>OutboxPublisher</code>)
+ para evitar el dual-write entre la base y el broker.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué Outbox? — Para no perder eventos si el commit en Mongo tiene
+ éxito pero el envío a Kafka falla (o viceversa): se escribe el evento en la misma
+ transacción que el cambio de estado y un publisher lo despacha después.</div>
+  <h2 id="s5">5. Crítica y mejoras</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Ves modelos de dominio anémicos? ¿Es un problema?</div>
+  <div class="a"><span class="tag tag-a">R</span> Sí, hay tendencia anémica: <code>Order</code>, <code>Product</code>, <code>CartItem</code> usan Lombok
+ (<code>@Data</code>/<code>@Builder</code>) y son básicamente estructuras de datos; la lógica de negocio
+ (transiciones de estado, reglas de cancelación) vive en los <em>services</em>
+ (<code>OrderCommandService</code>). En DDD idiomático esa lógica iría <strong>dentro del agregado</strong>
+ (p. ej. <code>order.cancel()</code> que valide el estado). No es "malo" per se —es un estilo
+ orientado a servicios— pero dispersa las invariantes y las hace más fáciles de
+ saltarse.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Cómo lo enriquecerías sin romper todo? — Mover las guardas a métodos de
+ la entidad (<code>Order.reserveStock()</code>, <code>Order.cancel()</code>), dejando el service como
+ coordinador que orquesta persistencia y publicación de eventos.</div>
+  <div class="q"><span class="tag tag-q">P</span> El estado se maneja con un enum plano <code>OrderStatus</code>. ¿Qué mejora propondrías?</div>
+  <div class="a"><span class="tag tag-a">R</span> Modelarlo como <strong>máquina de estados explícita</strong> con transiciones válidas
+ (PENDING→STOCK_RESERVED→DISPATCHING→COMPLETED; y ramas a STOCK_FAILED/
+ DISPATCH_FAILED/CANCELLED). Hoy la validez de transición se comprueba de forma
+ dispersa (p. ej. el chequeo de cancelación). Centralizarla en la entidad evitaría
+ estados imposibles y documentaría el ciclo de vida del agregado.</div>
+  <div class="q"><span class="tag tag-q">P</span> Si tuvieras que enseñar la separación de capas a alguien nuevo, ¿qué regla darías?</div>
+  <div class="a"><span class="tag tag-a">R</span> "Sigue las importaciones": una clase de <code>domain</code> <strong>nunca</strong> debe importar de
+ <code>infrastructure</code> o <code>interfaces</code>. El dominio define <strong>puertos</strong> (interfaces) y la
+ infraestructura los <strong>implementa</strong>. Si te ves importando <code>KafkaTemplate</code> o
+ <code>ReactiveMongoRepository</code> desde el dominio, algo está en la capa equivocada.</div>
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+<thead>
+<tr>
+<th>Concepto DDD</th>
+<th>Dónde vive en el repo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Capas</td>
+<td><code>domain</code> / <code>application</code> / <code>infrastructure</code> / <code>interfaces</code> por servicio</td>
+</tr>
+<tr>
+<td>Bounded context</td>
+<td>Cada microservicio + su base propia (venta/stock/despacho = Mongo, auth = PG)</td>
+</tr>
+<tr>
+<td>Aggregate root</td>
+<td><code>Order</code> (venta), <code>Product</code> (stock)</td>
+</tr>
+<tr>
+<td>Entity</td>
+<td><code>Order</code>, <code>Product</code>, <code>CartItem</code> (<code>@Document</code> + <code>@Id</code>)</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td><code>OrderRepository</code>/<code>ProductRepository</code> (interfaces en <code>domain.repository</code>)</td>
+</tr>
+<tr>
+<td>Puerto</td>
+<td><code>StockEventPublisher</code>, <code>DespachoEventPublisher</code> (<code>domain.port</code>)</td>
+</tr>
+<tr>
+<td>Adaptador</td>
+<td><code>VentaProducer</code> (<code>infrastructure.kafka</code>) implementa los puertos</td>
+</tr>
+<tr>
+<td>Caso de uso</td>
+<td><code>OrderCommandService</code> (CQRS: command) / <code>OrderQueryService</code> (query)</td>
+</tr>
+<tr>
+<td>Orquestación</td>
+<td><code>SagaOrchestrator</code>, <code>SagaReconciler</code> (<code>application.saga</code>)</td>
+</tr>
+<tr>
+<td>Excepción de dominio</td>
+<td><code>InvalidOrderStateException</code>, <code>OrderNotFoundException</code></td>
+</tr>
+<tr>
+<td>Eventos integración</td>
+<td><code>StockReserveEvent</code>, <code>DespachoRequestEvent</code> + Outbox (<code>OutboxEvent</code>)</td>
+</tr>
+<tr>
+<td>Concesión</td>
+<td>Anotaciones Mongo en el dominio; modelo algo anémico (lógica en services)</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>
