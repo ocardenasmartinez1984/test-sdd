@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de Entrevista Técnica — Testing (POS Microservices)</title>
+<style>
+  :root {
+    --bg:#0f1420; --panel:#161d2b; --panel2:#1d2636; --fg:#e6edf3;
+    --muted:#9aa7b8; --accent:#3b82f6; --green:#22c55e; --yellow:#eab308;
+    --red:#ef4444; --border:#2a3446; --code:#0a0e16; --codefg:#c9d4e0;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:16px;
+  }
+  .wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 8px; }
+  h2 {
+    font-size:22px; margin:44px 0 16px; padding-bottom:8px;
+    border-bottom:2px solid var(--border);
+  }
+  .subtitle { color:var(--muted); font-size:14px; margin-bottom:24px; }
+  blockquote {
+    margin:0 0 28px; padding:16px 20px; background:var(--panel);
+    border-left:4px solid var(--accent); border-radius:0 8px 8px 0;
+    color:var(--fg);
+  }
+  blockquote p { margin:0 0 8px; }
+  blockquote p:last-child { margin-bottom:0; }
+  .q, .a, .followup {
+    padding:14px 18px; border-radius:10px; margin:14px 0;
+    border:1px solid var(--border);
+  }
+  .q { background:var(--panel2); border-left:4px solid var(--accent); }
+  .a { background:var(--panel); border-left:4px solid var(--green); }
+  .followup {
+    background:rgba(234,179,8,.06); border-left:4px solid var(--yellow);
+    font-size:15px;
+  }
+  .tag {
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.05em;
+    text-transform:uppercase; padding:2px 8px; border-radius:20px; margin-right:8px;
+    vertical-align:middle;
+  }
+  .tag-q { background:rgba(59,130,246,.18); color:#93c5fd; }
+  .tag-a { background:rgba(34,197,94,.18); color:#86efac; }
+  .tag-f { background:rgba(234,179,8,.18); color:#fde047; }
+  code {
+    background:var(--code); color:var(--codefg); padding:2px 6px;
+    border-radius:5px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:13.5px;
+  }
+  pre {
+    background:var(--code); color:var(--codefg); padding:14px 16px;
+    border-radius:10px; overflow:auto; border:1px solid var(--border);
+    font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px;
+    line-height:1.5;
+  }
+  pre code { background:none; padding:0; }
+  ul, ol { margin:10px 0; padding-left:24px; }
+  li { margin:4px 0; }
+  strong { color:#fff; }
+  table {
+    width:100%; border-collapse:collapse; margin:16px 0; font-size:14.5px;
+    background:var(--panel); border-radius:10px; overflow:hidden;
+  }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--panel2); color:#fff; font-weight:600; }
+  tr:last-child td { border-bottom:none; }
+  td code, th code { font-size:13px; }
+  hr { border:none; border-top:1px solid var(--border); margin:36px 0; }
+  .toc {
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:16px 20px; margin-bottom:32px;
+  }
+  .toc h3 { margin:0 0 10px; font-size:14px; color:var(--muted);
+            text-transform:uppercase; letter-spacing:.05em; }
+  .toc ol { margin:0; padding-left:20px; }
+  .toc a { color:#93c5fd; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+  @media print {
+    :root { --bg:#fff; --panel:#f5f6f8; --panel2:#eef0f3; --fg:#1a1a1a;
+            --muted:#555; --border:#bbb; --code:#f0f0f0; --codefg:#222; }
+    @page { size:A4; margin:16mm 15mm; }
+    html, body { background:#fff; }
+    body { font-size:10.5pt; line-height:1.5; }
+    .wrap { max-width:none; padding:0; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#1d4ed8; text-decoration:none; }
+    strong, h1, h2, th { color:#111 !important; }
+    code { color:#222 !important; }
+    .tag-q { background:#dbeafe !important; color:#1e40af !important; }
+    .tag-a { background:#dcfce7 !important; color:#166534 !important; }
+    .tag-f { background:#fef9c3 !important; color:#854d0e !important; }
+    h1 { font-size:20pt; }
+    h2 { font-size:14pt; margin-top:18pt; break-after:avoid; page-break-after:avoid; }
+    .q, .a, .followup, blockquote, table, pre { break-inside:avoid; page-break-inside:avoid; }
+    .q { break-after:avoid; page-break-after:avoid; }
+    .toc { display:none; }
+    tr, li { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Simulación de Entrevista Técnica — Testing</h1>
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <ol>
+      <li><a href="#s0">0. Warm-up — Testing en el proyecto</a></li>
+      <li><a href="#s1">1. Pirámide de tests y fundamentos</a></li>
+      <li><a href="#s2">2. Tests unitarios con Mockito</a></li>
+      <li><a href="#s3">3. Tests de código reactivo (StepVerifier)</a></li>
+      <li><a href="#s4">4. Tests de controladores y de Kafka</a></li>
+      <li><a href="#s5">5. Tests de integración con Testcontainers</a></li>
+      <li><a href="#s6">6. Cobertura (JaCoCo) y calidad (SonarQube)</a></li>
+      <li><a href="#s7">7. Pruebas de carga con Gatling</a></li>
+      <li><a href="#s8">8. Diseño abierto / escenarios</a></li>
+      <li><a href="#apx">Apéndice — Chuleta rápida</a></li>
+    </ol>
+  </nav>
+
+  <blockquote><p>Guía de estudio en formato entrevista · JUnit 5, Mockito, Reactor Test</p></blockquote>
+  <p>(StepVerifier), Testcontainers, JaCoCo y Gatling en el sistema POS</p>
+  <blockquote><p>Guía de estudio en formato entrevista sobre la <strong>estrategia de testing</strong> del</p></blockquote>
+  <p>sistema POS de microservicios: <strong>tests unitarios</strong> con JUnit 5 + Mockito +
+ StepVerifier, <strong>tests de integración</strong> con Testcontainers, <strong>cobertura</strong> con
+ JaCoCo, <strong>calidad</strong> con SonarQube y <strong>pruebas de carga</strong> con Gatling. Cada
+ sección incluye la <strong>pregunta del entrevistador</strong>, una <strong>respuesta modelo</strong>
+ anclada al repo y <strong>follow-ups</strong>.</p>
+  <blockquote><p>Formato sugerido: 50–60 min. Bloques: pirámide y fundamentos (10'), unit tests</p></blockquote>
+  <p>reactivos (15'), Testcontainers (15'), cobertura/CI (10'), Gatling y escenarios (10').</p>
+  <h2 id="s0">0. Warm-up — Testing en el proyecto</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo está organizada la estrategia de testing en este sistema POS?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Hay <strong>tres capas</strong> verificadas en el repo:</p>
+<ol>
+<li><strong>Tests unitarios (JUnit 5 + Mockito + Reactor Test)</strong>: son la gran mayoría —
+    <strong>22 clases de test</strong> con unos <strong>219 métodos <code>@Test</code></strong> en <code>stock-service</code>,
+    <code>venta-service</code> y <code>despacho-service</code>. Se etiquetan con <code>@Tag("unit")</code> y
+    aíslan la lógica con mocks (p. ej. <code>SagaOrchestratorTest</code>,
+    <code>VentaControllerTest</code>, <code>SagaReconcilerTest</code>).</li>
+<li><strong>Tests de integración (Testcontainers)</strong>: <code>StockServiceIntegrationTest</code>
+    con <code>@SpringBootTest</code> + <code>@Testcontainers</code>, etiquetado <code>@Tag("integration")</code>,
+    que levanta <strong>MongoDB, Kafka y Redis</strong> reales en contenedores.</li>
+<li><strong>Pruebas de carga (Gatling)</strong>: módulo <code>stress-test/</code> con 6 simulaciones
+    (<code>SagaEndToEndSimulation</code>, <code>VentaServiceSimulation</code>, etc.) contra el gateway
+    en <code>:8080</code>.</li>
+</ol>
+<p>Todo se orquesta desde Gradle: <code>./gradlew test</code> (unit), <code>./gradlew
+ integrationTest</code> (Testcontainers), <code>./gradlew :stress-test:gatlingRun</code>
+ (carga), con <strong>JaCoCo</strong> para cobertura y <strong>SonarQube</strong> para calidad.</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Los tres frontends Angular tienen tests? — Hoy <strong>no</strong>: no hay
+ archivos <code>*.spec.ts</code> en <code>pos-frontend</code>, <code>ventas-mantenedor</code> ni
+ <code>users-mantenedor</code>. Es una brecha real: el foco de pruebas está en el backend.</div>
+  <h2 id="s1">1. Pirámide de tests y fundamentos</h2>
+  <div class="q"><span class="tag tag-q">P</span> Explica la pirámide de tests y dónde se sitúa este proyecto.</div>
+  <div class="a"><span class="tag tag-a">R</span> La <strong>pirámide</strong> propone muchos <strong>tests unitarios</strong> (rápidos, baratos,
+ aislados) en la base, menos <strong>tests de integración</strong> en el medio y muy pocos
+ <strong>end-to-end</strong> en la cima (lentos y frágiles). El POS la respeta: ~219 tests
+ unitarios con Mockito frente a <strong>una</strong> clase de integración con Testcontainers
+ y un puñado de simulaciones Gatling E2E. Los unit tests corren en cada <code>build</code>;
+ los de integración y carga se ejecutan aparte por su coste.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué framework y qué librerías de test usa el backend? ¿Dónde se declaran?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>En el <code>build.gradle</code> raíz, el bloque <code>subprojects</code> declara para todos los
+ servicios reactivos:</p>
+<ul>
+<li><code>spring-boot-starter-test</code> (trae <strong>JUnit 5</strong>, <strong>Mockito</strong>, <strong>AssertJ</strong>).</li>
+<li><code>spring-kafka-test</code> (utilidades de test para Kafka).</li>
+<li><code>io.projectreactor:reactor-test</code> (<strong>StepVerifier</strong> para <code>Mono</code>/<code>Flux</code>).</li>
+<li><code>org.testcontainers:testcontainers/junit-jupiter/mongodb/kafka/postgresql</code>
+   versión <strong>1.19.8</strong>.</li>
+<li>Lombok también en el classpath de test (<code>testCompileOnly</code> +
+   <code>testAnnotationProcessor</code>).</li>
+</ul>
+<p>La tarea <code>test</code> usa <code>useJUnitPlatform()</code>, es decir <strong>JUnit 5 (Jupiter)</strong>.</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué AssertJ y no solo asserts de JUnit? — AssertJ da un API
+ fluido y legible (<code>assertThat(created.getReservedQuantity()).isEqualTo(0)</code>) con
+ mejores mensajes de fallo. Se ve por todo el repo.</div>
+  <h2 id="s2">2. Tests unitarios con Mockito</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se estructura un test unitario típico aquí? Pon un ejemplo real.</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>El patrón es <strong>JUnit 5 + Mockito</strong> sin arrancar Spring. Ejemplo:
+ <code>SagaOrchestratorTest</code>.</p>
+<pre><code class="language-java">@Tag(&quot;unit&quot;)
+@ExtendWith(MockitoExtension.class)
+class SagaOrchestratorTest {
+    @Mock  private OrderRepository orderRepository;
+    @Mock  private StockEventPublisher stockEventPublisher;
+    @Mock  private DespachoEventPublisher despachoEventPublisher;
+    @InjectMocks private SagaOrchestrator sagaOrchestrator;
+    // ...
+}
+</code></pre>
+<p><code>@ExtendWith(MockitoExtension.class)</code> habilita Mockito; <code>@Mock</code> crea dobles de
+ las dependencias y <code>@InjectMocks</code> los inyecta en la clase bajo prueba. Se
+ programa el comportamiento con <code>when(...).thenReturn(...)</code> y se verifica con
+ <code>verify(...)</code>. Así el test es <strong>rápido y determinista</strong>, sin base ni Kafka.</p></div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se organizan los casos dentro de una clase de test?</div>
+  <div class="a"><span class="tag tag-a">R</span> Con <code>@Nested</code> y <code>@DisplayName</code> para agrupar escenarios y darles nombres
+ legibles. En <code>SagaOrchestratorTest</code> hay grupos como
+ <code>@Nested @DisplayName("Handle Stock Response Tests")</code>,
+ <code>"Handle Despacho Response Tests"</code>, <code>"Concurrent Saga Events Tests"</code> y
+ <code>"CircuitBreaker Fallback Tests"</code>. Cada <code>@Test</code> lleva su <code>@DisplayName</code>
+ descriptivo ("Should set STOCK_RESERVED and send despacho request on success"),
+ lo que produce informes muy legibles.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo verificas que un evento <strong>no</strong> se emitió? Da un caso del repo.</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Con <code>verify(mock, never())</code>. En el caso de stock insuficiente de
+ <code>SagaOrchestratorTest</code>, tras procesar un <code>StockReserveResponseEvent</code> con
+ <code>success(false)</code> se comprueba que la orden pasa a <strong>STOCK_FAILED</strong> y que <strong>no</strong>
+ se pide despacho:</p>
+<pre><code class="language-java">verify(despachoEventPublisher, never()).requestDespacho(any());
+</code></pre>
+<p>Esto valida la regla de negocio: sin stock reservado no se solicita despacho.</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Y para capturar el argumento con que se llamó un mock? — Con
+ <code>ArgumentCaptor</code>. En <code>SagaReconcilerTest</code> se captura el <code>StockReserveEvent</code>
+ re-emitido y se asegura <code>captor.getValue().getOrderId()).isEqualTo("order-1")</code>.</div>
+  <h2 id="s3">3. Tests de código reactivo (StepVerifier)</h2>
+  <div class="q"><span class="tag tag-q">P</span> El backend es reactivo (<code>Mono</code>/<code>Flux</code>). ¿Cómo se testea eso?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Con <strong><code>StepVerifier</code></strong> de <code>reactor-test</code>. No se puede hacer un <code>assertEquals</code>
+ directo sobre un <code>Mono</code> porque es perezoso; hay que <strong>suscribirse y verificar</strong>
+ la señal. Patrón real de <code>SagaOrchestratorTest</code>:</p>
+<pre><code class="language-java">StepVerifier.create(sagaOrchestrator.handleStockResponse(event))
+        .verifyComplete();
+</code></pre>
+<p>Para un flujo con valor, se usa <code>.assertNext(...)</code> como en el test de
+ integración de stock:</p>
+<pre><code class="language-java">StepVerifier.create(stockApplicationService.createProduct(newProduct))
+        .assertNext(created -&gt; {
+            assertThat(created.getId()).isNotNull();
+            assertThat(created.getReservedQuantity()).isEqualTo(0);
+        })
+        .verifyComplete();
+</code></pre></div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se verifica que un <code>Mono</code> <strong>falla</strong> con cierto error?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Con <code>.expectErrorMatches(...)</code>. Cuando la orden no existe,
+ <code>handleStockResponse</code> propaga un error y el test lo comprueba:</p>
+<pre><code class="language-java">StepVerifier.create(sagaOrchestrator.handleStockResponse(event))
+        .expectErrorMatches(e -&gt; e instanceof RuntimeException &amp;&amp;
+                e.getMessage().contains(&quot;Order not found: nonexistent&quot;))
+        .verify();
+</code></pre>
+<p>Distinto de <code>verifyComplete()</code> (terminación normal), aquí se exige la señal
+ <code>onError</code>. En los tests de fallback del circuit breaker se distingue incluso
+ entre un error <strong>transitorio</strong> que se <strong>propaga</strong> (para retry/DLQ) y una
+ <code>OrderNotFoundException</code> <strong>terminal</strong> que <strong>completa vacío</strong>.</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué no usar <code>.block()</code> y comparar? — <code>block()</code> funciona en
+ casos simples (el test de integración lo usa una vez con
+ <code>createProduct(product).block()</code>), pero StepVerifier verifica el <strong>contrato
+ reactivo</strong> completo: número de elementos, orden, señal terminal y errores.</div>
+  <h2 id="s4">4. Tests de controladores y de Kafka</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se prueban los controladores REST reactivos aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>En <code>VentaControllerTest</code> se prueba el controlador como un <strong>POJO</strong> con
+ Mockito, sin <code>@WebFluxTest</code>: se mockean <code>OrderCommandService</code> y
+ <code>OrderQueryService</code>, se invoca el método y se verifica el <code>ResponseEntity</code> con
+ StepVerifier:</p>
+<pre><code class="language-java">when(orderCommandService.crearVenta(any(Order.class))).thenReturn(Mono.just(testOrder));
+
+StepVerifier.create(ventaController.crearVenta(testOrder))
+        .assertNext(response -&gt; {
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(response.getBody().getId()).isEqualTo(&quot;order-1&quot;);
+        })
+        .verifyComplete();
+</code></pre>
+<p>Es un unit test puro: valida el mapeo a <code>HttpStatus.CREATED</code> y la propagación
+ de errores sin levantar servidor HTTP.</p></div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Y los consumidores/productores de Kafka?</div>
+  <div class="a"><span class="tag tag-a">R</span> También como unit tests con Mockito. En <code>VentaConsumerTest</code> se mockean
+ <code>SagaOrchestrator</code>, <code>CartRepository</code> y <code>ObjectMapper</code>; se simula el mensaje
+ entrante (un <code>Map</code>) y se verifica que se convierte al evento y se delega en el
+ orquestador. Un caso clave: <strong>propagar la excepción</strong> de conversión para que
+ Kafka pueda reintentar/DLQ (<code>@DisplayName("Should PROPAGATE conversion
+ exception so Kafka can retry/DLQ")</code>). Hay clases análogas
+ <code>VentaProducerTest</code>, <code>StockConsumerTest</code>, <code>DespachoProducerTest</code>, etc.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> Entonces <code>spring-kafka-test</code> casi no se usa. ¿Por qué? — Está en el
+ classpath para poder usar <code>@EmbeddedKafka</code> si hiciera falta, pero la estrategia
+ elegida es <strong>mockear</strong> el orquestador y probar el broker de verdad solo en el
+ test de integración con Testcontainers. Menos superficie lenta.</div>
+  <h2 id="s5">5. Tests de integración con Testcontainers</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué son los tests de integración con Testcontainers y cómo se usan aquí?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Testcontainers levanta <strong>infraestructura real en contenedores Docker</strong>
+ durante el test, en vez de mocks o embebidos. La única clase es
+ <code>StockServiceIntegrationTest</code>:</p>
+<pre><code class="language-java">@Tag(&quot;integration&quot;)
+@SpringBootTest
+@Testcontainers
+class StockServiceIntegrationTest {
+    @Container static MongoDBContainer mongoDBContainer =
+        new MongoDBContainer(DockerImageName.parse(&quot;mongo:7.0&quot;));
+    @Container static KafkaContainer kafkaContainer =
+        new KafkaContainer(DockerImageName.parse(&quot;confluentinc/cp-kafka:7.6.1&quot;));
+    @Container static GenericContainer&lt;?&gt; redisContainer =
+        new GenericContainer&lt;&gt;(DockerImageName.parse(&quot;redis:7.2-alpine&quot;)).withExposedPorts(6379);
+</code></pre>
+<p>Levanta <strong>MongoDB 7.0</strong>, <strong>Kafka (cp-kafka 7.6.1)</strong> y <strong>Redis 7.2</strong> reales,
+ arranca el contexto Spring completo (<code>@SpringBootTest</code>) y prueba de punta a
+ punta el <code>StockApplicationService</code> (crear producto, cache hit en segunda
+ lectura, etc.).</p></div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo conecta la app a esos contenedores si sus puertos son aleatorios?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Con <code>@DynamicPropertySource</code>: Testcontainers asigna puertos efímeros y el
+ método inyecta las URLs reales en el <code>Environment</code> de Spring <strong>antes</strong> de
+ arrancar el contexto:</p>
+<pre><code class="language-java">@DynamicPropertySource
+static void configureProperties(DynamicPropertyRegistry registry) {
+    registry.add(&quot;spring.data.mongodb.uri&quot;, mongoDBContainer::getReplicaSetUrl);
+    registry.add(&quot;spring.kafka.bootstrap-servers&quot;, kafkaContainer::getBootstrapServers);
+    registry.add(&quot;spring.data.redis.host&quot;, redisContainer::getHost);
+    registry.add(&quot;spring.data.redis.port&quot;, () -&gt; redisContainer.getMappedPort(6379));
+    registry.add(&quot;eureka.client.enabled&quot;, () -&gt; &quot;false&quot;);
+}
+</code></pre>
+<p>Nota el <code>eureka.client.enabled=false</code>: se <strong>desactiva el service discovery</strong> en
+ test para no depender de Eureka.</p></div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Por qué el <code>test</code> normal <strong>excluye</strong> los tests de integración?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Por el coste y la fiabilidad de Docker en CI. En el <code>build.gradle</code> raíz:</p>
+<pre><code class="language-groovy">tasks.named('test') {
+    useJUnitPlatform {
+        if (!project.hasProperty('includeIntegration')) {
+            excludeTags 'integration'
+        }
+    }
+}
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform { includeTags 'integration' }
+}
+</code></pre>
+<p>El comentario del propio build lo dice: los tests de integración necesitan un
+ <strong>daemon Docker fiable</strong>, que no está garantizado en Jenkins/Docker Desktop, así
+ que se <strong>excluyen del <code>build</code></strong> de CI y se corren localmente con <code>./gradlew
+ integrationTest</code> (o <code>./gradlew test -PincludeIntegration</code>).</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Contenedores estáticos o por método? — Aquí son <code>static</code>, así que
+ se comparten entre todos los <code>@Test</code> de la clase (una sola arrancada de
+ MongoDB/Kafka/Redis), que es más rápido que recrearlos por método.</div>
+  <h2 id="s6">6. Cobertura (JaCoCo) y calidad (SonarQube)</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo se mide la cobertura y qué umbral se exige?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Con <strong>JaCoCo</strong> (<code>toolVersion "0.8.12"</code>), aplicado a todos los subproyectos.
+ La tarea <code>test</code> dispara el reporte por <code>finalizedBy jacocoTestReport</code>, y hay una
+ <strong>verificación de umbral</strong>:</p>
+<pre><code class="language-groovy">jacocoTestCoverageVerification {
+    violationRules { rule { limit { minimum = 0.70 } } }
+}
+tasks.named('check') { dependsOn jacocoTestCoverageVerification }
+</code></pre>
+<p>Es decir, el mínimo <strong>real</strong> en el build es <strong>0.70 (70%)</strong>, atado a la tarea
+ <code>check</code>. El reporte HTML queda en
+ <code>&lt;service&gt;/build/reports/jacoco/test/html/index.html</code>.</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> El README dice "80%". ¿Cuál manda? — El <strong>build</strong> manda: 70%. El
+ README documenta una meta de 80% que <strong>no</strong> coincide con la regla configurada;
+ lo señalaría como una inconsistencia a alinear.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo integra el proyecto la cobertura con SonarQube?</div>
+  <div class="a"><span class="tag tag-a">R</span> El plugin <code>org.sonarqube</code> (7.4.0.8496) está en el <code>build.gradle</code> raíz con
+ <code>sonar.projectKey = "saga-microservices"</code> y
+ <code>sonar.java.coveragePlugin = "jacoco"</code>, así que Sonar consume el XML de JaCoCo.
+ Se ejecuta con <code>./gradlew sonar -Dsonar.host.url=http://localhost:9000</code> y el
+ token se pasa por <code>SONAR_TOKEN</code> (variable de entorno, <strong>nunca</strong> hardcodeado).</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Dónde encaja el testing en el pipeline de CI?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>En el <code>Jenkinsfile</code> raíz, el stage <strong>Build &amp; Test</strong> ejecuta:</p>
+<pre><code>./gradlew build --build-cache -x jacocoTestCoverageVerification \
+                -x :stress-test:test -x :stress-test:build
+</code></pre>
+<p>Corre los <strong>unit tests</strong> (parte de <code>build</code>), publica resultados con
+ <code>junit testResults: '**/build/test-results/test/*.xml'</code>, y <strong>excluye</strong> la
+ verificación de umbral y el módulo Gatling para que el pipeline sea rápido y no
+ dependa de un entorno de carga.</p></div>
+  <h2 id="s7">7. Pruebas de carga con Gatling</h2>
+  <div class="q"><span class="tag tag-q">P</span> ¿Para qué usa el proyecto Gatling y dónde vive?</div>
+  <div class="a"><span class="tag tag-a">R</span> Para <strong>pruebas de carga/estrés</strong> de las APIs a través del gateway. Vive en
+ el módulo <code>stress-test/</code> con el plugin <code>io.gatling.gradle</code> (3.11.5.2) y Java 21.
+ Hay 6 simulaciones: <code>SagaEndToEndSimulation</code>, <code>VentaServiceSimulation</code>,
+ <code>StockServiceSimulation</code>, <code>DespachoServiceSimulation</code>, <code>AuthServiceSimulation</code>
+ y <code>ResilienceSimulation</code>. Se lanza con <code>./gradlew :stress-test:gatlingRun</code>.</div>
+  <div class="q"><span class="tag tag-q">P</span> Describe un escenario E2E de Gatling anclado al repo.</div>
+  <div class="a"><span class="tag tag-a">R</span> <p><code>SagaEndToEndSimulation</code> recorre la SAGA completa contra
+ <code>gatewayUrl</code> (<code>:8080</code> por defecto):</p>
+<ol>
+<li><strong>Login</strong>: <code>POST /api/v1/auth/login</code>, guarda <code>$.token</code>.</li>
+<li><strong>Crear producto</strong>: <code>POST /api/v1/stock</code>, guarda <code>$.id</code> → <code>productId</code>.</li>
+<li><strong>Crear orden (dispara SAGA)</strong>: <code>POST /api/v1/ventas</code>, guarda <code>orderId</code>.</li>
+<li><strong>Poll de estado</strong>: <code>GET /api/v1/ventas/#{orderId}</code> tras una pausa.</li>
+<li><strong>Verificar despacho</strong>: <code>GET /api/v1/despachos/order/#{orderId}</code>.</li>
+</ol>
+<p>Incluye un escenario de <strong>rate limit</strong> (<code>repeat(50)</code> esperando <code>200</code> o <strong>429</strong>)
+ y otro de <strong>stock insuficiente</strong> que pide 9999 unidades y verifica
+ <code>jsonPath("$.status").is("STOCK_FAILED")</code>.</p></div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Cómo modela la carga y qué SLAs valida?</div>
+  <div class="a"><span class="tag tag-a">R</span> <p>Con inyección abierta (<code>injectOpen</code>): <code>rampUsers(20).during(15s)</code> seguido
+ de <code>constantUsersPerSec(5).during(30s)</code>, más otros escenarios concurrentes.
+ Al final define <strong>assertions</strong> globales que hacen fallar la simulación si no se
+ cumplen:</p>
+<pre><code class="language-java">global().responseTime().max().lt(15000),
+global().responseTime().percentile(95.0).lt(5000),
+global().successfulRequests().percent().gt(90.0)
+</code></pre>
+<p>O sea: tiempo máximo &lt; 15 s, <strong>p95 &lt; 5 s</strong> y &gt; <strong>90% de peticiones exitosas</strong>.</p></div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Por qué Gatling no está en el pipeline principal? — El <code>Jenkinsfile</code>
+ raíz <strong>excluye</strong> <code>:stress-test:test</code> y <code>:stress-test:build</code>; las pruebas de
+ carga necesitan el stack corriendo y son de otra naturaleza (rendimiento, no
+ corrección), así que se ejecutan aparte/bajo demanda.</div>
+  <h2 id="s8">8. Diseño abierto / escenarios</h2>
+  <div class="q"><span class="tag tag-q">P</span> Tienes que testear una regla de reconciliación de SAGAs colgadas. ¿Cómo?</div>
+  <div class="a"><span class="tag tag-a">R</span> Como en <code>SagaReconcilerTest</code>: es un unit test con Mockito que construye el
+ <code>SagaReconciler</code> con un <code>Duration.ofMinutes(2)</code> de umbral. Se mockea
+ <code>orderRepository.findByStatusInAndUpdatedAtBefore(...)</code> devolviendo una orden
+ <strong>PENDING</strong> vieja, se corre <code>reconcile()</code> con StepVerifier
+ (<code>.verifyComplete()</code>) y con un <code>ArgumentCaptor&lt;StockReserveEvent&gt;</code> se verifica
+ que se <strong>re-emitió</strong> el evento correcto. Otro test asegura que solo se consultan
+ los estados intermedios <code>PENDING</code> y <code>STOCK_RESERVED</code>
+ (<code>containsExactlyInAnyOrder</code>). Determinista, sin Kafka ni Mongo.</div>
+  <div class="q"><span class="tag tag-q">P</span> El equipo quiere subir la cobertura de 70% a 85%. ¿Qué harías?</div>
+  <div class="a"><span class="tag tag-a">R</span> Primero, <strong>alinear</strong> la contradicción build (70%) vs README (80%). Luego
+ subir <code>jacocoTestCoverageVerification { minimum }</code> gradualmente y atacar los
+ huecos que revele el reporte de JaCoCo: la brecha más obvia es
+ <strong><code>auth-service</code>, que hoy no tiene <code>src/test</code></strong> pese a manejar JWT y seguridad —
+ ahí añadiría tests de <code>JwtService</code>, <code>AuthApplicationService</code> y el
+ <code>SecurityConfig</code>. Evitaría subir el número con tests triviales sin asserts.</div>
+  <div class="q"><span class="tag tag-q">P</span> ¿Qué le falta a esta estrategia de testing y cómo lo priorizarías?</div>
+  <div class="a"><span class="tag tag-a">R</span> Tres brechas reales, por prioridad: (1) <strong>tests de <code>auth-service</code></strong> (0
+ tests hoy en un servicio de seguridad); (2) <strong>tests de frontend</strong> — los tres
+ proyectos Angular no tienen <code>*.spec.ts</code> (la diapositiva menciona Jest/Jasmine
+ pero no hay nada); (3) <strong>más tests de integración con Testcontainers</strong> — solo
+ <code>stock-service</code> los tiene, faltarían en <code>venta</code> y <code>despacho</code> para cubrir el flujo
+ SAGA con Kafka real. Priorizaría auth por riesgo de seguridad.</div>
+  <div class="followup"><span class="tag tag-f">Follow-up</span> ¿Contract testing entre servicios? — Buen siguiente paso: con Kafka
+ de por medio, un enfoque de <strong>contratos</strong> (p. ej. sobre los esquemas de eventos
+ <code>StockReserveEvent</code>/<code>DespachoResponseEvent</code>) evitaría romper consumidores al
+ cambiar productores, algo que hoy solo cubre el E2E de Gatling.</div>
+  <h2 id="apx">Apéndice — Chuleta rápida</h2>
+  <table>
+<thead>
+<tr>
+<th>Concepto</th>
+<th>En este repo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td><strong>JUnit 5 (Jupiter)</strong> vía <code>useJUnitPlatform()</code></td>
+</tr>
+<tr>
+<td>Mocking</td>
+<td><strong>Mockito</strong> (<code>@ExtendWith(MockitoExtension.class)</code>, <code>@Mock</code>, <code>@InjectMocks</code>)</td>
+</tr>
+<tr>
+<td>Aserciones</td>
+<td><strong>AssertJ</strong> (<code>assertThat(...)</code>)</td>
+</tr>
+<tr>
+<td>Reactivo</td>
+<td><strong>StepVerifier</strong> (<code>reactor-test</code>): <code>assertNext</code>, <code>verifyComplete</code>, <code>expectErrorMatches</code></td>
+</tr>
+<tr>
+<td>Captura de args</td>
+<td><code>ArgumentCaptor</code> (<code>SagaReconcilerTest</code>)</td>
+</tr>
+<tr>
+<td>Organización</td>
+<td><code>@Nested</code> + <code>@DisplayName</code></td>
+</tr>
+<tr>
+<td>Etiquetas</td>
+<td><code>@Tag("unit")</code> / <code>@Tag("integration")</code></td>
+</tr>
+<tr>
+<td>Integración</td>
+<td><code>@SpringBootTest</code> + <code>@Testcontainers</code> (<code>StockServiceIntegrationTest</code>)</td>
+</tr>
+<tr>
+<td>Contenedores</td>
+<td><code>mongo:7.0</code>, <code>confluentinc/cp-kafka:7.6.1</code>, <code>redis:7.2-alpine</code></td>
+</tr>
+<tr>
+<td>Config dinámica</td>
+<td><code>@DynamicPropertySource</code> (uri Mongo, bootstrap Kafka, Redis, <code>eureka.client.enabled=false</code>)</td>
+</tr>
+<tr>
+<td>Escala del backend</td>
+<td><strong>22 clases</strong>, ~<strong>219</strong> <code>@Test</code></td>
+</tr>
+<tr>
+<td>Cobertura</td>
+<td><strong>JaCoCo 0.8.12</strong>, umbral <strong>0.70</strong> vía <code>jacocoTestCoverageVerification</code></td>
+</tr>
+<tr>
+<td>Calidad</td>
+<td><strong>SonarQube</strong> <code>projectKey=saga-microservices</code>, <code>coveragePlugin=jacoco</code></td>
+</tr>
+<tr>
+<td>Carga</td>
+<td><strong>Gatling</strong> en <code>stress-test/</code> (6 simulaciones), assertions p95&lt;5s, éxito&gt;90%</td>
+</tr>
+<tr>
+<td>Comandos</td>
+<td><code>./gradlew test</code> · <code>./gradlew integrationTest</code> · <code>./gradlew jacocoTestReport</code> · <code>./gradlew sonar</code> · <code>./gradlew :stress-test:gatlingRun</code></td>
+</tr>
+<tr>
+<td>CI (Jenkins)</td>
+<td><code>./gradlew build -x jacocoTestCoverageVerification -x :stress-test:test</code>; publica <code>**/build/test-results/test/*.xml</code></td>
+</tr>
+<tr>
+<td>Brechas</td>
+<td><code>auth-service</code> sin tests · frontends Angular sin <code>*.spec.ts</code> · integración solo en <code>stock</code></td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>
