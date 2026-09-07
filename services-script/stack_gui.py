@@ -613,6 +613,8 @@ class StackWindow(Gtk.Window):
     def _set_logbox(self, text):
         self.logbox_buf.set_text(text)
         # Auto-scroll to the bottom so the newest log lines stay visible.
+        # A "bottom" mark with left_gravity=False keeps sticking to the end as
+        # text is (re)inserted.
         mark = self.logbox_buf.get_mark("log_bottom")
         if mark is None:
             mark = self.logbox_buf.create_mark(
@@ -620,8 +622,18 @@ class StackWindow(Gtk.Window):
             )
         else:
             self.logbox_buf.move_mark(mark, self.logbox_buf.get_end_iter())
-        self.logbox.scroll_to_mark(mark, 0.0, True, 0.0, 1.0)
+        # Scrolling right after set_text() often fails in GTK 3: the TextView
+        # hasn't validated the new lines yet, so the vertical adjustment still
+        # reports the old (short) height and the view stays at the top. Defer
+        # the scroll to an idle callback so it runs after the layout pass.
+        GLib.idle_add(self._scroll_logbox_to_bottom, priority=GLib.PRIORITY_LOW)
         return False
+
+    def _scroll_logbox_to_bottom(self):
+        mark = self.logbox_buf.get_mark("log_bottom")
+        if mark is not None:
+            self.logbox.scroll_to_mark(mark, 0.0, True, 0.0, 1.0)
+        return False  # run once
 
     # ---- Resources tab ----------------------------------------------------
     def _build_resources_tab(self):
