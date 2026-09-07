@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Guía de Preparación para tu Entrevista Técnica — Versión Imprimible</title>
+<style>
+  :root { --ink:#000; --muted:#333; --line:#000; }
+  * { box-sizing: border-box; }
+  html, body { background:#fff; color:var(--ink); }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.5pt;
+    line-height: 1.45;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  h1 { font-size: 22pt; margin: 0 0 4px; }
+  h2 {
+    font-size: 15pt;
+    margin: 0 0 2px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 4px;
+  }
+  h3 { font-size: 12pt; margin: 14px 0 4px; }
+  .kicker {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 8.5pt;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 2px;
+  }
+  .subtitle { font-style: italic; color: var(--muted); margin: 2px 0 0; }
+  .lead { margin: 8px 0 12px; }
+  ul { margin: 6px 0 10px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  .tip {
+    border: 1px solid var(--line);
+    padding: 8px 10px;
+    margin: 12px 0;
+    font-size: 10.5pt;
+  }
+  .tip strong { text-transform: uppercase; font-size: 9pt; letter-spacing: 1px; }
+  .cols { display: flex; gap: 24px; }
+  .cols > div { flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+  th, td { border: 1px solid var(--line); padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #eee; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; }
+  .timeline b { font-family: Arial, Helvetica, sans-serif; }
+  .num { font-weight: bold; }
+  .matrix { font-family: "Courier New", monospace; border-collapse: collapse; margin: 8px 0; }
+  .matrix td { border: 1px solid var(--line); width: 28px; height: 28px; text-align: center; }
+  section { page-break-inside: avoid; margin-bottom: 22px; }
+  .page-break { page-break-before: always; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
+  footer { margin-top: 24px; font-size: 9pt; color: var(--muted); text-align: center; font-style: italic; }
+  @media print {
+    body { padding: 0; max-width: none; }
+    a { color: inherit; text-decoration: none; }
+    .tip, th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<section>
+  <p class="kicker">Prepará tu entrevista con confianza</p>
+  <h1>Guía de Preparación para tu Entrevista Técnica</h1>
+  <p class="subtitle">Perfil Desarrollador Backend · Proyecto de transformación CORE Banca y Seguros</p>
+  <p class="lead">Todo lo que necesitás saber para llegar preparado y con confianza. Recursos y consejos para maximizar tus posibilidades de éxito.</p>
+</section>
+
+<hr>
+
+<section>
+  <p class="kicker">01 · Bienvenida</p>
+  <h2>¡Felicitaciones por llegar hasta acá!</h2>
+  <p class="lead">Fuiste seleccionado/a para una entrevista técnica para un puesto de Desarrollador Backend en un proyecto de transformación tecnológica de gran escala. Esta guía te va a ayudar a llegar preparado/a, entender qué esperar y mostrar lo mejor de vos.</p>
+  <h3>Repasá conceptos clave</h3>
+  <p>Refrescá los temas técnicos más probables antes del día de la entrevista.</p>
+  <h3>Practicá en vivo</h3>
+  <p>Familiarizate con el formato del ejercicio práctico y cómo comunicarlo.</p>
+  <h3>Mostrate con confianza</h3>
+  <p>Conocé la dinámica de la entrevista para reducir la incertidumbre y los nervios.</p>
+  <div class="tip"><strong>Recordá esto</strong><br>El equipo no solo evalúa lo técnico: también valora cómo pensás, cómo comunicás tu razonamiento y cómo trabajás en equipo.</div>
+</section>
+
+<section>
+  <p class="kicker">02 · Contexto</p>
+  <h2>Con quién vas a hablar y en qué proyecto</h2>
+  <h3>El proyecto</h3>
+  <p>Transformación del sistema CORE de banca y seguros, en marcha hace más de 5 años.</p>
+  <h3>Chile ya lo hizo</h3>
+  <p>La implementación en Chile está en etapa de pruebas y certificaciones previas a producción.</p>
+  <h3>Ahora es el turno de Colombia</h3>
+  <p>Buscan un/a desarrollador/a backend que se sume para levantar los productos de seguros en el nuevo CORE.</p>
+  <h3>Por qué importa para vos</h3>
+  <p>Podés mostrar interés genuino preguntando sobre el proyecto y conectando tu experiencia con este desafío.</p>
+
+  <h3>Quién te va a entrevistar</h3>
+  <ul>
+    <li><b>Un/a líder o DEA</b> — modera la reunión, da el contexto inicial y explica la dinámica.</li>
+    <li><b>2 a 3 desarrolladores backend</b> — con distintos años de experiencia; hacen preguntas técnicas.</li>
+    <li><b>Equipo multidisciplinario</b> — frontend, backend, legislación/cobranza y configuración de producto.</li>
+  </ul>
+  <div class="tip"><strong>Tip</strong><br>No te preocupes si son varias personas — cada una suele preguntar sobre su especialidad. Es normal.</div>
+</section>
+
+<section>
+  <p class="kicker">03 · Qué esperar</p>
+  <h2>Así va a transcurrir la entrevista (~90 min)</h2>
+  <ul class="timeline">
+    <li><b>0:00 – 0:05 · Bienvenida.</b> Te van a dar contexto del proyecto y te van a explicar cómo va a ser la dinámica.</li>
+    <li><b>0:05 – 0:15 · Presentación del equipo.</b> Cada entrevistador se va a presentar brevemente: quién es y qué hace.</li>
+    <li><b>0:15 – 0:30 · Tu turno de presentarte.</b> Contás tu trayectoria y responden preguntas técnicas conversacionales.</li>
+    <li><b>0:30 – 1:25 · Ejercicio práctico.</b> Vas a compartir pantalla y resolver 2 ejercicios de programación en vivo.</li>
+    <li><b>1:25 – 1:30 · Cierre.</b> Espacio para tus preguntas y próximos pasos del proceso.</li>
+  </ul>
+  <div class="tip"><strong>Tip</strong><br>El bloque práctico suele ser el más largo. Si sentís que el tiempo se ajusta, no te apures — priorizá explicar bien tu razonamiento.</div>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Bloque 1</p>
+  <h2>Cómo presentarte y generar buena impresión</h2>
+  <p class="lead">Antes de lo técnico, vas a tener espacio para contar tu historia. Este momento es clave: marca el tono del resto de la entrevista. Preparate para responder con naturalidad estas preguntas típicas:</p>
+  <div class="cols">
+    <div>
+      <h3>Sobre tu trayectoria</h3>
+      <ul>
+        <li>¿Cuántos años de experiencia tenés y en qué tipo de empresas?</li>
+        <li>¿Cuál fue tu rol en tu último trabajo?</li>
+        <li>¿En qué te especializás o qué industrias conocés mejor?</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Sobre tu motivación</h3>
+      <ul>
+        <li>¿Por qué estás buscando trabajo actualmente?</li>
+        <li>¿Por qué te interesa este proyecto en particular?</li>
+        <li>¿Preferís trabajar en equipo o de forma individual?</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Tu costado humano</h3>
+      <ul>
+        <li>¿Qué hacés en tu tiempo libre?</li>
+        <li>¿Tenés proyectos personales o de estudio en paralelo?</li>
+        <li>¿Qué es lo que más te motiva de tu profesión?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="tip"><strong>Tip clave</strong><br>Preparate una historia corta (1–2 min) que conecte tu experiencia con lo que este proyecto necesita. Practicala en voz alta antes del día de la entrevista.</div>
+</section>
+
+<section>
+  <p class="kicker">Bloque 2</p>
+  <h2>Temas técnicos que te conviene repasar</h2>
+  <ul>
+    <li><b>Arquitectura:</b> arquitectura hexagonal, microservicios y el patrón BFF (Backend for Frontend).</li>
+    <li><b>Frontend / Backend:</b> Angular, TypeScript, Node.js, Spring Boot y conceptos básicos de React.</li>
+    <li><b>Base de datos:</b> SQL, procedimientos almacenados, uso de ORMs y buenas prácticas de seguridad.</li>
+    <li><b>Seguridad de APIs:</b> JWT, patrón BFF, WAF y buenas prácticas para exponer servicios.</li>
+    <li><b>Testing:</b> pruebas unitarias con Jest, Jasmine o JUnit — tené ejemplos concretos preparados.</li>
+    <li><b>Metodologías ágiles:</b> Scrum, dailies, Kanban y herramientas como Jira.</li>
+  </ul>
+  <div class="tip"><strong>Nota</strong><br>No hace falta ser experto en todo — priorizá los temas donde tengas experiencia real y podés dar ejemplos concretos.</div>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Bloque 2</p>
+  <h2>Practicá estas preguntas antes del día D</h2>
+  <table>
+    <thead>
+      <tr><th>Categoría</th><th>Pregunta que te pueden hacer</th><th>Cómo prepararte</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Base de datos</td><td>¿Qué experiencia tenés con bases de datos? ¿Usás procedimientos almacenados?</td><td>Tené un ejemplo concreto de una consulta u optimización que hayas hecho.</td></tr>
+      <tr><td>APIs</td><td>¿Trabajaste con APIs backend? ¿Usaste patrón BFF o microservicios?</td><td>Explicá un caso real donde diseñaste o consumiste una API.</td></tr>
+      <tr><td>Arquitectura</td><td>¿Qué estructura usás para tus servicios backend? ¿Arquitectura hexagonal?</td><td>Practicá explicar en 1 minuto cómo organizás tu código.</td></tr>
+      <tr><td>Testing</td><td>¿Qué framework de pruebas unitarias conocés?</td><td>Mencioná herramientas específicas (Jest, Jasmine, JUnit) con ejemplos.</td></tr>
+      <tr><td>Métodos HTTP</td><td>¿Qué método HTTP usarías en cada caso? Dame un ejemplo por cada uno.</td><td>Repasá GET, POST, PUT, PATCH, DELETE y cuándo usar cada uno.</td></tr>
+      <tr><td>Metodologías</td><td>¿Trabajaste con Scrum o Kanban? ¿Cómo era la daily?</td><td>Contá cómo participabas en las ceremonias ágiles de tu equipo.</td></tr>
+      <tr><td>Seguridad</td><td>¿Qué seguridad implementaste en tus APIs?</td><td>Mencioná JWT, WAF o BFF si los usaste, con un ejemplo concreto.</td></tr>
+      <tr><td>ORM / datos</td><td>¿Qué ORM usás para conexión y administración de la BD?</td><td>Nombrá el ORM que conocés (TypeORM, etc.) y por qué lo elegiste.</td></tr>
+      <tr><td>Herramientas</td><td>¿Usás Postman u otra herramienta similar para testear APIs?</td><td>Comentá tu flujo de trabajo habitual para probar endpoints.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Bloque 3 · Clave</p>
+  <h2>Cómo abordar el ejercicio práctico en vivo</h2>
+  <p class="lead">Vas a compartir pantalla y resolver ejercicios de programación mientras te observan. Lo más importante NO es llegar a la solución perfecta — es mostrar cómo pensás. Estas prácticas marcan la diferencia:</p>
+  <div class="cols">
+    <div>
+      <h3>Hacé esto</h3>
+      <ul>
+        <li>Pensá en voz alta: explicá cada paso de tu razonamiento, aunque te parezca obvio.</li>
+        <li>Usá documentación oficial libremente — está permitido y bien visto.</li>
+        <li>Preguntá si algo del enunciado no te queda claro, antes de empezar a codear.</li>
+        <li>Preparate un entorno local (VS Code) por si el editor online falla.</li>
+        <li>Si algo no funciona (ej. una API externa), decilo y proponé cómo lo resolverías.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Evitá esto</h3>
+      <ul>
+        <li>No te quedes en silencio pensando por mucho tiempo — verbalizá tus dudas.</li>
+        <li>No te obsesiones con la sintaxis perfecta — priorizá la lógica correcta.</li>
+        <li>No uses asistentes de IA generativa para resolver el ejercicio por vos.</li>
+        <li>No te frustres si no llegás a terminar — es más común de lo que pensás.</li>
+        <li>No dejes de mencionar casos borde o mejoras que harías con más tiempo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Practicá antes · Ejercicio 1</p>
+  <h2>Conversión de UF a pesos chilenos</h2>
+  <h3>Enunciado tipo</h3>
+  <p>Se te va a pedir una función que reciba una cantidad de UF y devuelva su equivalente en pesos chilenos, consumiendo el valor referencial del día desde una API pública.</p>
+  <h3>Ejemplo</h3>
+  <ul>
+    <li>Entrada (UF): <b>6</b></li>
+    <li>Valor UF del día: <b>$28.908,92</b></li>
+    <li>Salida esperada: <b>$173.453,52</b></li>
+  </ul>
+  <h3>Antes de la entrevista, practicá</h3>
+  <ul>
+    <li>Consumir una API pública con fetch/axios y manejar la respuesta.</li>
+    <li>Redondear números y formatearlos sin decimales (Chile no usa decimales para pesos).</li>
+    <li>Manejar errores si la API falla o devuelve un dato inesperado.</li>
+  </ul>
+  <h3>Para destacar</h3>
+  <ul>
+    <li>Verbalizá que vas a buscar el valor del día antes de hacer el cálculo.</li>
+    <li>Mencioná que validarías la entrada (¿y si te pasan un número negativo?).</li>
+    <li>Si la API falla, no te bloquees: proponé un plan B (mock, caché, otra fuente).</li>
+    <li>Explicá tu elección de redondeo (Math.round vs. truncar).</li>
+  </ul>
+  <div class="tip"><strong>Tip</strong><br>Practicá este ejercicio en tu casa antes del día de la entrevista, con calma y sin presión de tiempo.</div>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Practicá antes · Ejercicio 2</p>
+  <h2>Suma máxima en submatriz 2×2</h2>
+  <h3>Enunciado tipo</h3>
+  <p>Dada una matriz 3×3, hay que recorrer cada submatriz contigua de 2×2, calcular la suma de sus elementos, y devolver el valor más alto entre todas las sumas.</p>
+  <h3>Ejemplo de matriz</h3>
+  <table class="matrix">
+    <tr><td>2</td><td>5</td><td>7</td></tr>
+    <tr><td>3</td><td>4</td><td>5</td></tr>
+    <tr><td>4</td><td>1</td><td>3</td></tr>
+  </table>
+  <p>Sumas posibles: 14, 21, 12, 13 → <b>Resultado esperado: 21 (el máximo)</b></p>
+  <h3>Antes de la entrevista, practicá</h3>
+  <ul>
+    <li>Recorrer una matriz con dos índices anidados (filas y columnas).</li>
+    <li>Identificar los límites válidos para que la ventana 2×2 no se salga de la matriz.</li>
+  </ul>
+  <h3>Para destacar</h3>
+  <ul>
+    <li>Explicá primero tu estrategia general antes de escribir código ("voy a recorrer con dos loops...").</li>
+    <li>Mencioná si tu solución funcionaría para una matriz NxM, no solo 3×3 — muestra pensamiento generalizable.</li>
+    <li>Comentá la complejidad de tu solución (ej. "esto es O(n·m)").</li>
+    <li>Probá tu solución con el ejemplo antes de darla por terminada.</li>
+  </ul>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Manejo del tiempo</p>
+  <h2>¿Y si no llegás a terminar? Tranquilo/a</h2>
+  <p class="lead">Es más común de lo que pensás que el tiempo no alcance para resolver todo. Esto NO te descalifica si lo manejás bien. Seguí estos pasos:</p>
+  <ol>
+    <li><b>Mantené la calma.</b> Si ves que el tiempo se acaba, no te apures ni te pongas nervioso/a. Es parte normal del proceso.</li>
+    <li><b>Comunicá tu estado.</b> Decí en voz alta hasta dónde llegaste y qué harías a continuación si tuvieras más tiempo.</li>
+    <li><b>Pedí el detalle de entrega.</b> Anotá los correos o canal donde debés enviar el desarrollo, y confirmá el plazo acordado.</li>
+    <li><b>Documentá tu razonamiento.</b> Al enviar el ejercicio, explicá tu proceso de análisis, incluso en las partes no resueltas.</li>
+  </ol>
+  <div class="tip"><strong>Recordá</strong><br>Los entrevistadores valoran tanto el proceso de pensamiento como el resultado final. Mostrar cómo razonás puede pesar tanto como la solución completa.</div>
+</section>
+
+<section class="page-break">
+  <p class="kicker">Checklist</p>
+  <h2>Antes del día de la entrevista</h2>
+  <div class="cols">
+    <div>
+      <h3>Preparación técnica</h3>
+      <ul>
+        <li>☐ Probá tu cámara, micrófono y conexión a internet con anticipación.</li>
+        <li>☐ Tené instalado y probado tu editor de código local (VS Code u otro).</li>
+        <li>☐ Practicá los 2 ejercicios de ejemplo de esta guía, sin presión de tiempo.</li>
+        <li>☐ Preparate una breve historia personal que conecte tu experiencia con el rol.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Preparación personal</h3>
+      <ul>
+        <li>☐ Buscá un lugar tranquilo, con buena luz y sin interrupciones.</li>
+        <li>☐ Tené a mano tu CV y anotaciones sobre tus proyectos más relevantes.</li>
+        <li>☐ Pensá 2–3 preguntas propias para hacerle al equipo al final.</li>
+        <li>☐ Descansá bien la noche anterior — la claridad mental importa más que memorizar.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="kicker">Para tener en cuenta</p>
+  <h2>4 consejos clave para maximizar tu éxito</h2>
+  <ul>
+    <li><b>Comunicá tu pensamiento.</b> Verbalizar tu razonamiento vale tanto como el código en sí. No pienses en silencio.</li>
+    <li><b>Usá la documentación.</b> Está permitido y bien visto consultar documentación oficial durante el ejercicio.</li>
+    <li><b>Gestioná tu tiempo.</b> Si algo se extiende, priorizá explicar tu enfoque antes que perseguir la solución perfecta.</li>
+    <li><b>Sé auténtico/a.</b> Además de lo técnico, evalúan cómo trabajás en equipo y comunicás — sé vos mismo/a.</li>
+  </ul>
+  <p class="lead"><b>¡Mucho éxito!</b> Confiá en tu preparación y en tu experiencia.</p>
+</section>
+
+<footer>Guía de Preparación · Entrevista Técnica Backend CORE Banca y Seguros</footer>
+
+</body>
+</html>
