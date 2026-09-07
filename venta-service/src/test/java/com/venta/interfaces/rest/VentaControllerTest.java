@@ -54,6 +54,8 @@ class VentaControllerTest {
     @DisplayName("Crear Venta Tests")
     class CrearVentaTests {
 
+        // Verifica que crearVenta responde 201 CREATED con la orden: el servicio devuelve la
+        // orden y se comprueba el status CREATED y que el cuerpo tiene el id "order-1".
         @Test
         @DisplayName("Should create venta and return CREATED status")
         void shouldCreateVenta() {
@@ -68,6 +70,9 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que crearVenta propaga el error del servicio: el servicio devuelve un
+        // Mono.error y se comprueba que el controlador propaga el RuntimeException con
+        // mensaje "Sales service temporarily unavailable".
         @Test
         @DisplayName("Should propagate error when service fails to create venta")
         void shouldPropagateErrorWhenServiceFails() {
@@ -85,6 +90,8 @@ class VentaControllerTest {
     @DisplayName("Get Venta Tests")
     class GetVentaTests {
 
+        // Verifica que getVenta responde 200 OK con la orden: el servicio devuelve la orden
+        // por id y se comprueba el status OK y que el cuerpo tiene el id "order-1".
         @Test
         @DisplayName("Should get venta by id")
         void shouldGetVenta() {
@@ -99,6 +106,9 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que getVenta propaga el error cuando la orden no existe: el servicio
+        // devuelve un Mono.error y se comprueba que el controlador propaga el RuntimeException
+        // con mensaje "Order not found".
         @Test
         @DisplayName("Should propagate error when venta not found")
         void shouldPropagateErrorWhenVentaNotFound() {
@@ -116,6 +126,8 @@ class VentaControllerTest {
     @DisplayName("Listar Ventas Tests")
     class ListarVentasTests {
 
+        // Verifica que listarVentas devuelve el flujo de órdenes: el servicio devuelve una
+        // orden y se comprueba que el controlador la emite con el id "order-1".
         @Test
         @DisplayName("Should list all ventas")
         void shouldListVentas() {
@@ -126,6 +138,8 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que listarVentas devuelve un flujo vacío cuando no hay ventas: el servicio
+        // devuelve Flux vacío y se comprueba que el controlador completa sin emitir elementos.
         @Test
         @DisplayName("Should return empty flux when no ventas exist")
         void shouldReturnEmptyFluxWhenNoVentasExist() {
@@ -140,6 +154,8 @@ class VentaControllerTest {
     @DisplayName("Ventas Por Cliente Tests")
     class VentasPorClienteTests {
 
+        // Verifica que ventasPorCliente devuelve las ventas del cliente: el servicio devuelve
+        // una orden y se comprueba que el controlador la emite con el customerId "customer-1".
         @Test
         @DisplayName("Should list ventas by customer")
         void shouldListVentasByCustomer() {
@@ -150,6 +166,8 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que ventasPorCliente devuelve vacío cuando el cliente no tiene ventas: el
+        // servicio devuelve Flux vacío y se comprueba que el controlador completa sin emitir.
         @Test
         @DisplayName("Should return empty flux when customer has no ventas")
         void shouldReturnEmptyFluxWhenCustomerHasNoVentas() {
@@ -164,6 +182,8 @@ class VentaControllerTest {
     @DisplayName("Ventas Por Estado Tests")
     class VentasPorEstadoTests {
 
+        // Verifica que ventasPorEstado devuelve las ventas de un estado: el servicio devuelve
+        // una orden PENDING y se comprueba que el controlador la emite con estado PENDING.
         @Test
         @DisplayName("Should list ventas by status")
         void shouldListVentasByStatus() {
@@ -174,6 +194,8 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que ventasPorEstado devuelve vacío cuando no hay ventas en ese estado: el
+        // servicio devuelve Flux vacío y se comprueba que el controlador completa sin emitir.
         @Test
         @DisplayName("Should return empty flux when no ventas with given status")
         void shouldReturnEmptyFluxWhenNoVentasWithStatus() {
@@ -188,6 +210,8 @@ class VentaControllerTest {
     @DisplayName("Cancelar Venta Tests")
     class CancelarVentaTests {
 
+        // Verifica que cancelarVenta responde 200 OK con la orden cancelada: el servicio
+        // devuelve la orden en CANCELLED y se comprueba el status OK y el estado CANCELLED.
         @Test
         @DisplayName("Should cancel venta")
         void shouldCancelVenta() {
@@ -205,6 +229,9 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que cancelarVenta propaga el error cuando la cancelación falla: el servicio
+        // devuelve un Mono.error y se comprueba que el controlador propaga el RuntimeException
+        // con mensaje "Cannot cancel order in status".
         @Test
         @DisplayName("Should propagate error when cancellation fails")
         void shouldPropagateErrorWhenCancellationFails() {
@@ -222,6 +249,8 @@ class VentaControllerTest {
     @DisplayName("Actualizar Estado Tests")
     class ActualizarEstadoTests {
 
+        // Verifica que actualizarEstado responde 200 OK con la orden actualizada: el servicio
+        // devuelve la orden en COMPLETED y se comprueba el status OK y el estado COMPLETED.
         @Test
         @DisplayName("Should update venta status")
         void shouldUpdateVentaStatus() {
@@ -240,6 +269,9 @@ class VentaControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que actualizarEstado propaga el error cuando la actualización falla: el
+        // servicio devuelve un Mono.error y se comprueba que el controlador propaga el
+        // RuntimeException con mensaje "Order not found".
         @Test
         @DisplayName("Should propagate error when status update fails")
         void shouldPropagateErrorWhenStatusUpdateFails() {

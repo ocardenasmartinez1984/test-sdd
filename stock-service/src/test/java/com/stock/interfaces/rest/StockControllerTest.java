@@ -47,6 +47,8 @@ class StockControllerTest {
                 .build();
     }
 
+    // Simula que el servicio devuelve un producto e invoca getAllProducts() del controlador;
+    // verifica que el Flux emite el producto esperado con su id y nombre.
     @Test
     @DisplayName("Should get all products")
     void shouldGetAllProducts() {
@@ -60,6 +62,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el servicio encuentra el producto e invoca getProduct(); verifica que la
+    // respuesta es HTTP 200 con el cuerpo del producto solicitado.
     @Test
     @DisplayName("Should get product by id")
     void shouldGetProductById() {
@@ -74,6 +78,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el servicio no encuentra el producto e invoca getProduct(); verifica que
+    // la respuesta es HTTP 404 NOT_FOUND.
     @Test
     @DisplayName("Should return 404 when product not found")
     void shouldReturn404WhenProductNotFound() {
@@ -84,6 +90,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el producto existe y tiene 90 disponibles e invoca getAvailableQuantity();
+    // verifica que la respuesta es HTTP 200 con la entrada availableQuantity = 90.
     @Test
     @DisplayName("Should get available quantity")
     void shouldGetAvailableQuantity() {
@@ -98,6 +106,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el producto no existe e invoca getAvailableQuantity(); verifica que la
+    // respuesta es HTTP 404 NOT_FOUND.
     @Test
     @DisplayName("Should return 404 for available quantity of non-existent product")
     void shouldReturn404ForAvailableQuantityOfNonExistentProduct() {
@@ -108,6 +118,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el producto existe e invoca exists() del controlador; verifica que la
+    // respuesta es HTTP 200 con la entrada exists = true.
     @Test
     @DisplayName("Should check if product exists")
     void shouldCheckIfProductExists() {
@@ -121,6 +133,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el servicio crea el producto e invoca createProduct(); verifica que la
+    // respuesta es HTTP 200 con el cuerpo del producto creado.
     @Test
     @DisplayName("Should create product")
     void shouldCreateProduct() {
@@ -135,6 +149,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Invoca updateStock() con un mapa {quantity:200}; verifica que la respuesta es HTTP 200
+    // y que el producto devuelto refleja la nueva cantidad 200.
     @Test
     @DisplayName("Should update stock quantity")
     void shouldUpdateStockQuantity() {
@@ -149,6 +165,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Invoca updateStock() con un mapa vacío (sin quantity); verifica que la respuesta es
+    // HTTP 400 BAD_REQUEST por falta del campo requerido.
     @Test
     @DisplayName("Should return bad request when quantity is missing")
     void shouldReturnBadRequestWhenQuantityMissing() {
@@ -157,6 +175,8 @@ class StockControllerTest {
                 .verifyComplete();
     }
 
+    // Simula que el servicio no encuentra el producto al actualizar e invoca updateStock();
+    // verifica que la respuesta es HTTP 404 NOT_FOUND.
     @Test
     @DisplayName("Should return 404 when updating non-existent product")
     void shouldReturn404WhenUpdatingNonExistentProduct() {

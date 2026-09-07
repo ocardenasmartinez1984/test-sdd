@@ -39,6 +39,8 @@ class OutboxPublisherTest {
     @DisplayName("publishPendingEvents Tests")
     class PublishPendingEventsTests {
 
+        // Verifica que cuando no hay eventos pendientes en el outbox, publishPendingEvents solo
+        // consulta el repositorio y no publica nada en Kafka ni guarda ningún evento.
         @Test
         @DisplayName("Should do nothing when no pending events exist")
         void shouldDoNothingWhenNoPendingEvents() {
@@ -52,6 +54,8 @@ class OutboxPublisherTest {
             verify(outboxRepository, never()).save(any(OutboxEvent.class));
         }
 
+        // Verifica que ante un evento pendiente, publishPendingEvents lo publica en su topic con
+        // aggregateId como clave y el payload, y luego lo guarda con estado SENT y processedAt no nulo.
         @Test
         @DisplayName("Should publish one event and mark as SENT")
         void shouldPublishOneEventAndMarkAsSent() {
@@ -84,6 +88,8 @@ class OutboxPublisherTest {
             assertThat(savedEvent.getProcessedAt()).isNotNull();
         }
 
+        // Verifica que si el envío a Kafka falla, publishPendingEvents incrementa el retryCount a 1
+        // y mantiene el evento en estado PENDING para reintentarlo más tarde.
         @Test
         @DisplayName("Should increment retryCount when Kafka throws exception")
         void shouldIncrementRetryCountWhenKafkaThrows() {
@@ -115,6 +121,8 @@ class OutboxPublisherTest {
             assertThat(savedEvent.getStatus()).isEqualTo(OutboxEvent.STATUS_PENDING);
         }
 
+        // Verifica que cuando un evento con retryCount=4 vuelve a fallar al enviarse a Kafka, el
+        // reintento lo lleva a retryCount=5 y el evento se marca con estado FAILED (agotados los reintentos).
         @Test
         @DisplayName("Should mark as FAILED when retryCount reaches 5")
         void shouldMarkAsFailedWhenRetryCountReachesFive() {

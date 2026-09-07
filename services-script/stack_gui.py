@@ -10,6 +10,8 @@ It lets you:
                     (runs the same scripts in services-script/), with live output.
   * Logs tab      - logs of every saga-* container (docker logs).
   * Resources tab - live CPU / RAM usage per container with high-usage alerts.
+  * Datos tab     - wipe the data of the MongoDB service databases
+                    (stock_db / venta_db / despacho_db) with confirmation.
 
 All Docker interaction is identical to before; only the presentation layer
 changed from a local web app to a native GTK window.
@@ -207,6 +209,120 @@ def docker_prune():
     return _run(["docker", "system", "prune", "-f"], timeout=120)
 
 
+# --- MongoDB data management ----------------------------------------------
+# The MongoDB container is "saga-mongodb" (see docker-compose.yml). Each backend
+# service owns one logical database inside it. These are the ONLY databases the
+# Datos tab is allowed to clear; Mongo's internal DBs (admin/config/local) are
+# never touched.
+MONGO_CONTAINER = "saga-mongodb"
+MONGO_DATABASES = ["stock_db", "venta_db", "despacho_db"]
+
+# mongosh invocation run *inside* the container. Credentials are read from the
+# container's own environment (MONGO_INITDB_ROOT_USERNAME/PASSWORD, set by the
+# mongo image), so no secrets are passed from the host or logged here.
+#
+# IMPORTANT: the target database is passed as mongosh's positional DB argument
+# (…admin <db> --eval "db.<coll>…") instead of getSiblingDB() inside the eval.
+# The getSiblingDB()+forEach() one-liner was being SIGKILLed (rc=137) when the
+# mongodb container was under load (the 5s healthcheck spawns its own mongosh),
+# so `db` is bound directly and each collection is handled in its own light
+# eval. Auth still targets the admin DB via --authenticationDatabase.
+_MONGO_AUTH = (
+    'mongosh --quiet '
+    '-u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" '
+    '--authenticationDatabase admin'
+)
+
+
+def _valid_mongo_db(db):
+    """Guard: only the known service databases may be targeted."""
+    return db in MONGO_DATABASES
+
+
+def _mongo_eval(db, js, timeout=60):
+    """Run a JS snippet against `db` via mongosh inside the saga-mongodb container.
+
+    `db` is bound as mongosh's positional database argument, so the snippet can
+    use `db.<collection>` directly. Returns (rc, output). Credentials are
+    expanded inside the container by `sh -c`, never interpolated on the host.
+    Only whitelisted service databases are accepted.
+    """
+    if not _valid_mongo_db(db):
+        return 2, f"refusing to target unknown database: {db}"
+    inner = f"{_MONGO_AUTH} {db} --eval {json.dumps(js)}"
+    return _run(
+        ["docker", "exec", MONGO_CONTAINER, "sh", "-c", inner], timeout=timeout
+    )
+
+
+def mongo_is_running():
+    """True if the saga-mongodb container is currently running."""
+    return docker_states().get("mongodb") == "running"
+
+
+def mongo_collection_stats(db):
+    """Return a list of {name, count} for the collections in `db`.
+
+    Used to show the user what (and how much) they are about to delete. Returns
+    an empty list on any error or if the database has no collections.
+    """
+    if not _valid_mongo_db(db):
+        return []
+    # `db` is bound positionally by _mongo_eval, so use it directly.
+    js = (
+        "const out = db.getCollectionNames().map(function(c) "
+        "{ return { name: c, count: db.getCollection(c).countDocuments({}) }; }); "
+        "print(JSON.stringify(out));"
+    )
+    rc, out = _mongo_eval(db, js, timeout=45)
+    if rc != 0:
+        return []
+    for line in out.splitlines():
+        line = line.strip()
+        if line.startswith("["):
+            try:
+                return json.loads(line)
+            except json.JSONDecodeError:
+                return []
+    return []
+
+
+def mongo_clear_database(db):
+    """Delete all documents from every collection in one service database.
+
+    This empties the collections (deleteMany({})) rather than dropping the
+    database, so collections and indexes created by the services survive. Only
+    the whitelisted service databases can be targeted. Returns (rc, output).
+    """
+    if not _valid_mongo_db(db):
+        return 2, f"refusing to clear unknown database: {db}"
+    # `db` is bound positionally by _mongo_eval, so use it directly (no
+    # getSiblingDB). Kept as a single light eval that iterates the collections.
+    js = (
+        "let total = 0; "
+        "db.getCollectionNames().forEach(function(c) "
+        "{ total += db.getCollection(c).deleteMany({}).deletedCount; }); "
+        f"print('cleared {db}: ' + total + ' documents deleted');"
+    )
+    return _mongo_eval(db, js, timeout=120)
+
+
+def mongo_clear_all():
+    """Clear every whitelisted service database. Returns (rc, combined_output).
+
+    Runs each clear sequentially and aggregates the output. rc is non-zero if
+    any single clear failed.
+    """
+    final_rc = 0
+    chunks = []
+    for db in MONGO_DATABASES:
+        rc, out = mongo_clear_database(db)
+        chunks.append(f"[{db}] {out.strip()}")
+        if rc != 0:
+            final_rc = rc
+    return final_rc, "\n".join(chunks)
+
+
 def run_action(action):
     """Run a whitelisted script action; return (rc, output)."""
     spec = ACTIONS.get(action)
@@ -282,6 +398,8 @@ class StackWindow(Gtk.Window):
         self._action_buttons = []
         self._status_labels = {}   # card key -> Gtk.Label showing up/down state
         self._containers_loaded = False
+        self._data_buttons = []           # all buttons in the Datos tab
+        self._data_count_labels = {}      # db name -> Gtk.Label with doc counts
 
         notebook = Gtk.Notebook()
         self.add(notebook)
@@ -289,6 +407,7 @@ class StackWindow(Gtk.Window):
         notebook.append_page(self._build_control_tab(), Gtk.Label(label="Control"))
         notebook.append_page(self._build_logs_tab(), Gtk.Label(label="Logs"))
         notebook.append_page(self._build_resources_tab(), Gtk.Label(label="Recursos"))
+        notebook.append_page(self._build_data_tab(), Gtk.Label(label="Datos"))
 
         # Periodic refresh timers (in the GTK main loop).
         GLib.timeout_add_seconds(4, self._tick_resources)
@@ -634,6 +753,214 @@ class StackWindow(Gtk.Window):
         if mark is not None:
             self.logbox.scroll_to_mark(mark, 0.0, True, 0.0, 1.0)
         return False  # run once
+
+    # ---- Datos tab (MongoDB data wipe) -----------------------------------
+    def _build_data_tab(self):
+        """Tab to delete data from the MongoDB service databases.
+
+        One card per service database (stock_db / venta_db / despacho_db) with a
+        destructive "Vaciar" button, plus a "Vaciar TODAS" button. Every wipe
+        asks for confirmation first and streams its result to a console below.
+        Clearing empties the collections (deleteMany) but keeps the databases
+        and indexes, and never touches Mongo's internal admin/config/local DBs.
+        """
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        outer.set_border_width(16)
+
+        warn = Gtk.Label(xalign=0)
+        warn.set_markup(
+            "<b>Borrado de datos de MongoDB</b>\n"
+            "<small>Vacía las colecciones de las bases de los servicios "
+            "(stock, venta, despacho) en el contenedor <tt>saga-mongodb</tt>. "
+            "Esta acción es <b>irreversible</b>; no afecta a PostgreSQL ni a "
+            "las bases internas de Mongo.</small>"
+        )
+        warn.set_line_wrap(True)
+        outer.pack_start(warn, False, False, 0)
+
+        # Toolbar: refresh counts + wipe-all.
+        toolrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        refresh_btn = Gtk.Button(label="Actualizar conteos")
+        refresh_btn.connect("clicked", lambda *_: self._refresh_data_counts())
+        self._data_buttons.append(refresh_btn)
+        toolrow.pack_start(refresh_btn, False, False, 0)
+
+        wipe_all_btn = Gtk.Button(label="Vaciar TODAS")
+        wipe_all_btn.get_style_context().add_class("destructive-action")
+        wipe_all_btn.connect("clicked", self._on_wipe_all_clicked)
+        self._data_buttons.append(wipe_all_btn)
+        toolrow.pack_start(wipe_all_btn, False, False, 0)
+        outer.pack_start(toolrow, False, False, 0)
+
+        # One card per service database.
+        flow = Gtk.FlowBox()
+        flow.set_valign(Gtk.Align.START)
+        flow.set_max_children_per_line(3)
+        flow.set_min_children_per_line(1)
+        flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        flow.set_row_spacing(12)
+        flow.set_column_spacing(12)
+
+        titles = {
+            "stock_db": "Stock", "venta_db": "Ventas", "despacho_db": "Despacho",
+        }
+        for db in MONGO_DATABASES:
+            flow.add(self._make_data_card(db, titles.get(db, db)))
+        outer.pack_start(flow, False, False, 0)
+
+        # Result console.
+        con_label = Gtk.Label(label="Salida", xalign=0)
+        outer.pack_start(con_label, False, False, 0)
+
+        self.data_console = Gtk.TextView()
+        self.data_console.set_editable(False)
+        self.data_console.set_cursor_visible(False)
+        self.data_console.set_monospace(True)
+        self.data_console.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.data_console_buf = self.data_console.get_buffer()
+        self.data_console_buf.set_text(
+            "Listo. Usa «Vaciar» para borrar los datos de una base."
+        )
+        con_scroll = Gtk.ScrolledWindow()
+        con_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.ALWAYS)
+        con_scroll.set_min_content_height(120)
+        con_scroll.set_shadow_type(Gtk.ShadowType.IN)
+        con_scroll.add(self.data_console)
+        outer.pack_start(con_scroll, True, True, 0)
+
+        # Populate the per-card counts once at startup.
+        self._refresh_data_counts()
+        return outer
+
+    def _make_data_card(self, db, title):
+        frame = Gtk.Frame()
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        box.set_border_width(12)
+
+        t = Gtk.Label(xalign=0)
+        t.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
+        box.pack_start(t, False, False, 0)
+
+        sub = Gtk.Label(label=db, xalign=0)
+        sub.get_style_context().add_class("dim-label")
+        box.pack_start(sub, False, False, 0)
+
+        count = Gtk.Label(xalign=0)
+        count.set_markup("<small>Documentos: comprobando…</small>")
+        self._data_count_labels[db] = count
+        box.pack_start(count, False, False, 0)
+
+        btn = Gtk.Button(label="Vaciar")
+        btn.get_style_context().add_class("destructive-action")
+        btn.connect("clicked", self._on_wipe_db_clicked, db)
+        self._data_buttons.append(btn)
+        box.pack_start(btn, False, False, 0)
+
+        frame.add(box)
+        return frame
+
+    def _refresh_data_counts(self):
+        """Refresh the per-database document counts shown on each card."""
+        if not mongo_is_running():
+            for lbl in self._data_count_labels.values():
+                lbl.set_markup(
+                    "<small><span foreground='#ef4444'>MongoDB no está en "
+                    "ejecución</span></small>"
+                )
+            return
+
+        def worker():
+            counts = {}
+            for db in MONGO_DATABASES:
+                stats = mongo_collection_stats(db)
+                counts[db] = sum(c.get("count", 0) for c in stats)
+            GLib.idle_add(self._render_data_counts, counts)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _render_data_counts(self, counts):
+        for db, lbl in self._data_count_labels.items():
+            total = counts.get(db, 0)
+            lbl.set_markup(f"<small>Documentos: <b>{total}</b></small>")
+        return False
+
+    def _confirm(self, title, message):
+        """Show a modal yes/no confirmation dialog. Returns True if confirmed."""
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            modal=True,
+            message_type=Gtk.MessageType.WARNING,
+            buttons=Gtk.ButtonsType.OK_CANCEL,
+            text=title,
+        )
+        dialog.format_secondary_text(message)
+        response = dialog.run()
+        dialog.destroy()
+        return response == Gtk.ResponseType.OK
+
+    def _on_wipe_db_clicked(self, _btn, db):
+        if not mongo_is_running():
+            self._set_data_console(
+                "✖ El contenedor saga-mongodb no está en ejecución. "
+                "Sube la Fase 1 (Infraestructura) primero.\n"
+            )
+            return
+        if not self._confirm(
+            f"¿Vaciar la base «{db}»?",
+            "Se eliminarán TODOS los documentos de esta base. "
+            "La acción no se puede deshacer.",
+        ):
+            return
+        self._run_data_task(
+            f"Vaciando {db} …", lambda: mongo_clear_database(db)
+        )
+
+    def _on_wipe_all_clicked(self, _btn):
+        if not mongo_is_running():
+            self._set_data_console(
+                "✖ El contenedor saga-mongodb no está en ejecución. "
+                "Sube la Fase 1 (Infraestructura) primero.\n"
+            )
+            return
+        if not self._confirm(
+            "¿Vaciar TODAS las bases?",
+            "Se eliminarán TODOS los documentos de stock_db, venta_db y "
+            "despacho_db. La acción no se puede deshacer.",
+        ):
+            return
+        self._run_data_task("Vaciando todas las bases …", mongo_clear_all)
+
+    def _run_data_task(self, header, fn):
+        """Disable the Datos buttons, run `fn` in a thread, show its result."""
+        for b in self._data_buttons:
+            b.set_sensitive(False)
+        self._set_data_console(f"▶ {header}\n" + "─" * 50 + "\n")
+
+        def worker():
+            rc, out = fn()
+            GLib.idle_add(self._data_task_done, rc, out)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _data_task_done(self, rc, out):
+        self._append_data_console((out or "").strip() + "\n")
+        tail = "─" * 50 + "\n" + (
+            "✔ OK" if rc == 0 else f"✖ Terminó con rc={rc}"
+        ) + "\n"
+        self._append_data_console(tail)
+        for b in self._data_buttons:
+            b.set_sensitive(True)
+        # Reflect the new (emptied) counts.
+        self._refresh_data_counts()
+        return False
+
+    def _set_data_console(self, text):
+        self.data_console_buf.set_text(text)
+
+    def _append_data_console(self, text):
+        end = self.data_console_buf.get_end_iter()
+        self.data_console_buf.insert(end, text)
+        return False
 
     # ---- Resources tab ----------------------------------------------------
     def _build_resources_tab(self):

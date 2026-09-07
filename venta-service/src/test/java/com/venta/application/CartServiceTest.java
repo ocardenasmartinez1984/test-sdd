@@ -54,6 +54,9 @@ class CartServiceTest {
     @DisplayName("Add To Cart Tests")
     class AddToCartTests {
 
+        // Verifica que al agregar un producto que aún no está en el carrito se cree un
+        // nuevo CartItem: prepara el repositorio sin coincidencia previa, invoca addToCart
+        // y comprueba que se guarda el item RESERVED y se publica el evento de reserva de stock.
         @Test
         @DisplayName("Should add new item to cart when product not in cart")
         void shouldAddNewItemToCart() {
@@ -76,6 +79,9 @@ class CartServiceTest {
             verify(stockEventPublisher).reserveStock(any());
         }
 
+        // Verifica que al agregar un producto ya presente en el carrito se incremente la
+        // cantidad en lugar de crear otro item: parte de un item existente (2), agrega 3 e
+        // invoca addToCart, comprobando que la cantidad resultante es 5 y se reserva stock.
         @Test
         @DisplayName("Should increment quantity when product already in cart")
         void shouldIncrementQuantityWhenProductAlreadyInCart() {
@@ -122,6 +128,9 @@ class CartServiceTest {
     @DisplayName("Remove From Cart Tests")
     class RemoveFromCartTests {
 
+        // Verifica que al quitar un producto existente del carrito se publique el evento de
+        // compensación de stock y se elimine el item: prepara el repositorio con el item,
+        // invoca removeFromCart y comprueba que se llama a compensateStock y a delete.
         @Test
         @DisplayName("Should send compensate event and delete item from cart")
         void shouldSendCompensateAndDeleteItem() {
@@ -137,6 +146,9 @@ class CartServiceTest {
             verify(cartRepository).delete(testCartItem);
         }
 
+        // Verifica que si el item a quitar no existe, removeFromCart completa sin efectos:
+        // el repositorio devuelve vacío, y se comprueba que NO se llama a compensateStock
+        // ni a delete.
         @Test
         @DisplayName("Should complete without action when item not found")
         void shouldCompleteWithoutActionWhenItemNotFound() {
@@ -155,6 +167,9 @@ class CartServiceTest {
     @DisplayName("Get Cart Tests")
     class GetCartTests {
 
+        // Verifica que getCart devuelve únicamente los items en estado RESERVED de la sesión:
+        // prepara el repositorio con un item RESERVED, invoca getCart y comprueba que el item
+        // emitido tiene estado RESERVED y el productId esperado.
         @Test
         @DisplayName("Should return only RESERVED items for session")
         void shouldReturnOnlyReservedItems() {
@@ -177,6 +192,9 @@ class CartServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que getCart devuelve un flujo vacío cuando la sesión no tiene items
+        // RESERVED: el repositorio devuelve Flux vacío y se comprueba que el resultado
+        // completa sin emitir elementos.
         @Test
         @DisplayName("Should return empty when no RESERVED items")
         void shouldReturnEmptyWhenNoReservedItems() {
@@ -192,6 +210,9 @@ class CartServiceTest {
     @DisplayName("Clear Cart Tests")
     class ClearCartTests {
 
+        // Verifica que al vaciar el carrito se publique un evento de compensación por cada
+        // item reservado y se borren todos: prepara dos items RESERVED, invoca clearCart y
+        // comprueba que compensateStock se llama 2 veces.
         @Test
         @DisplayName("Should send compensate for each reserved item and delete all")
         void shouldSendCompensateForEachAndDeleteAll() {
@@ -222,6 +243,9 @@ class CartServiceTest {
             verify(stockEventPublisher, times(2)).compensateStock(any());
         }
 
+        // Verifica que vaciar un carrito ya vacío completa sin errores y sin compensaciones:
+        // el repositorio no devuelve items, invoca clearCart y comprueba que NUNCA se llama
+        // a compensateStock.
         @Test
         @DisplayName("Should handle empty cart on clear")
         void shouldHandleEmptyCartOnClear() {
@@ -240,6 +264,9 @@ class CartServiceTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class FallbackTests {
 
+        // Verifica el fallback del circuit breaker de addToCart: invoca por reflexión
+        // addToCartFallback con una excepción y comprueba que devuelve un Mono.error cuyo
+        // mensaje contiene "Cart service temporarily unavailable".
         @Test
         @DisplayName("addToCartFallback should return Mono.error with unavailable message")
         void addToCartFallbackShouldReturnError() throws Exception {
@@ -258,6 +285,9 @@ class CartServiceTest {
                     .verify();
         }
 
+        // Verifica el fallback del circuit breaker de removeFromCart: invoca por reflexión
+        // removeFromCartFallback con una excepción y comprueba que devuelve un Mono.error
+        // cuyo mensaje contiene "Cart service temporarily unavailable".
         @Test
         @DisplayName("removeFromCartFallback should return Mono.error with unavailable message")
         void removeFromCartFallbackShouldReturnError() throws Exception {
@@ -276,6 +306,9 @@ class CartServiceTest {
                     .verify();
         }
 
+        // Verifica el fallback del circuit breaker de getCart: invoca por reflexión
+        // getCartFallback con una excepción y comprueba que devuelve un Flux vacío
+        // (completa sin emitir elementos) en lugar de propagar el error.
         @Test
         @DisplayName("getCartFallback should return empty Flux")
         void getCartFallbackShouldReturnEmpty() throws Exception {
@@ -291,6 +324,9 @@ class CartServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica el fallback del circuit breaker de clearCart: invoca por reflexión
+        // clearCartFallback con una excepción y comprueba que devuelve un Mono.error cuyo
+        // mensaje contiene "Cart service temporarily unavailable".
         @Test
         @DisplayName("clearCartFallback should return Mono.error with unavailable message")
         void clearCartFallbackShouldReturnError() throws Exception {

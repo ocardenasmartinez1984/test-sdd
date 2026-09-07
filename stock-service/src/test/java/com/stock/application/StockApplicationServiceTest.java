@@ -61,6 +61,8 @@ class StockApplicationServiceTest {
     @DisplayName("Exists Tests")
     class ExistsTests {
 
+        // Simula que el repositorio confirma la existencia del producto "product-1"
+        // e invoca exists(); verifica que el Mono emite true.
         @Test
         @DisplayName("Should return true when product exists")
         void shouldReturnTrueWhenProductExists() {
@@ -71,6 +73,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Simula que el repositorio indica que "nonexistent" no existe e invoca
+        // exists(); verifica que el Mono emite false.
         @Test
         @DisplayName("Should return false when product does not exist")
         void shouldReturnFalseWhenProductNotExists() {
@@ -86,6 +90,8 @@ class StockApplicationServiceTest {
     @DisplayName("IsAvailable Tests")
     class IsAvailableTests {
 
+        // Con stock disponible de 90 (100 - 10 reservados), solicita 50 unidades
+        // mediante isAvailable(); verifica que devuelve true por haber stock suficiente.
         @Test
         @DisplayName("Should return true when sufficient stock available")
         void shouldReturnTrueWhenSufficientStock() {
@@ -97,6 +103,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Solicita exactamente la cantidad disponible (90) mediante isAvailable();
+        // verifica que devuelve true porque el límite exacto se considera disponible.
         @Test
         @DisplayName("Should return true when requesting exact available quantity")
         void shouldReturnTrueWhenRequestingExactAvailable() {
@@ -108,6 +116,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Solicita 100 unidades cuando solo hay 90 disponibles mediante isAvailable();
+        // verifica que devuelve false por stock insuficiente.
         @Test
         @DisplayName("Should return false when insufficient stock")
         void shouldReturnFalseWhenInsufficientStock() {
@@ -119,6 +129,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Simula que el producto no existe en el repositorio e invoca isAvailable();
+        // verifica que devuelve false cuando no se encuentra el producto.
         @Test
         @DisplayName("Should return false when product not found")
         void shouldReturnFalseWhenProductNotFound() {
@@ -134,6 +146,8 @@ class StockApplicationServiceTest {
     @DisplayName("GetAvailableQuantity Tests")
     class GetAvailableQuantityTests {
 
+        // Invoca getAvailableQuantity() sobre un producto con 100 unidades y 10 reservadas;
+        // verifica que la cantidad disponible calculada es 90 (100 - 10).
         @Test
         @DisplayName("Should return correct available quantity")
         void shouldReturnCorrectAvailableQuantity() {
@@ -144,6 +158,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Simula que el producto no existe e invoca getAvailableQuantity();
+        // verifica que devuelve 0 cuando el producto no se encuentra.
         @Test
         @DisplayName("Should return 0 when product not found")
         void shouldReturnZeroWhenProductNotFound() {
@@ -159,6 +175,8 @@ class StockApplicationServiceTest {
     @DisplayName("Reserve Tests")
     class ReserveTests {
 
+        // Con stock disponible, invoca reserve() para 50 unidades; verifica que devuelve
+        // true, que persiste el producto (save) y que invalida la caché (evictProduct).
         @Test
         @DisplayName("Should reserve stock successfully when available")
         void shouldReserveStockSuccessfully() {
@@ -174,6 +192,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).evictProduct("product-1");
         }
 
+        // Invoca reserve() para 100 unidades cuando solo hay 90 disponibles; verifica que
+        // devuelve false y que no se persiste ni se invalida la caché.
         @Test
         @DisplayName("Should fail reserve when insufficient stock")
         void shouldFailReserveWhenInsufficientStock() {
@@ -188,6 +208,8 @@ class StockApplicationServiceTest {
             verify(productCacheService, never()).evictProduct(anyString());
         }
 
+        // Simula que el producto no existe e invoca reserve(); verifica que devuelve
+        // false y que nunca se invalida la caché.
         @Test
         @DisplayName("Should fail reserve when product not found")
         void shouldFailReserveWhenProductNotFound() {
@@ -200,6 +222,8 @@ class StockApplicationServiceTest {
             verify(productCacheService, never()).evictProduct(anyString());
         }
 
+        // Realiza una reserva exitosa de 5 unidades e invoca reserve(); verifica que
+        // tras la reserva se invalida la caché del producto (evictProduct).
         @Test
         @DisplayName("Should evict cache after successful reservation")
         void shouldEvictCacheAfterSuccessfulReservation() {
@@ -214,6 +238,9 @@ class StockApplicationServiceTest {
             verify(productCacheService).evictProduct("product-1");
         }
 
+        // Reserva de nuevo la misma cantidad (10) para un pedido que ya tenía 10 reservadas;
+        // verifica idempotencia: la cantidad reservada no cambia y no se persiste ni se
+        // invalida la caché al no haber delta.
         @Test
         @DisplayName("Should be idempotent: re-reserving same quantity for same order does not double-count")
         void shouldBeIdempotentForSameOrder() {
@@ -230,6 +257,9 @@ class StockApplicationServiceTest {
             verify(productCacheService, never()).evictProduct(anyString());
         }
 
+        // Un pedido que ya reservaba 10 solicita ahora 15 en total; verifica que solo se
+        // aplica el delta (+5), que la cantidad reservada pasa a 15 y el mapa por pedido lo
+        // refleja, persistiendo e invalidando la caché.
         @Test
         @DisplayName("Should apply only the delta when an order updates its reserved quantity (cart add-more)")
         void shouldApplyDeltaWhenQuantityIncreases() {
@@ -254,6 +284,8 @@ class StockApplicationServiceTest {
     @DisplayName("Release Tests")
     class ReleaseTests {
 
+        // Invoca release() para liberar 5 unidades reservadas de un pedido existente;
+        // verifica que se persiste el producto y se invalida su caché.
         @Test
         @DisplayName("Should release reserved stock and evict cache")
         void shouldReleaseReservedStockAndEvictCache() {
@@ -268,6 +300,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).evictProduct("product-1");
         }
 
+        // Con solo 3 unidades reservadas, invoca release() liberando 10; verifica que la
+        // cantidad reservada no baja de 0 (el save comprueba que sea >= 0).
         @Test
         @DisplayName("Should not go below zero on release")
         void shouldNotGoBelowZeroOnRelease() {
@@ -287,6 +321,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).evictProduct("product-1");
         }
 
+        // Simula que el producto no existe e invoca release(); verifica que el flujo
+        // completa sin error y que no se persiste ni se invalida la caché.
         @Test
         @DisplayName("Should complete without error when product not found")
         void shouldCompleteWhenProductNotFound() {
@@ -304,6 +340,8 @@ class StockApplicationServiceTest {
     @DisplayName("ConfirmDispatch Tests")
     class ConfirmDispatchTests {
 
+        // Invoca confirmDispatch() para un pedido existente; verifica que reduce la
+        // cantidad total (a 90) y la reservada (a 0), persiste el producto e invalida la caché.
         @Test
         @DisplayName("Should confirm dispatch by reducing quantity and reserved, then evict cache")
         void shouldConfirmDispatchAndEvictCache() {
@@ -323,6 +361,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).evictProduct("product-1");
         }
 
+        // Simula que el producto no existe e invoca confirmDispatch(); verifica que el
+        // flujo completa sin error y que no se persiste ni se invalida la caché.
         @Test
         @DisplayName("Should complete without error when product not found for dispatch")
         void shouldCompleteWhenProductNotFoundForDispatch() {
@@ -340,6 +380,8 @@ class StockApplicationServiceTest {
     @DisplayName("GetProduct Tests - Cache-Aside Pattern")
     class GetProductCacheAsideTests {
 
+        // Simula un acierto de caché (cache hit) e invoca getProduct(); verifica que el
+        // producto se devuelve desde la caché sin consultar el repositorio.
         @Test
         @DisplayName("Should return product from cache on cache hit")
         void shouldReturnProductFromCacheOnHit() {
@@ -355,6 +397,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).getCachedProduct("product-1");
         }
 
+        // Simula un fallo de caché (cache miss) e invoca getProduct(); verifica que se
+        // consulta el repositorio, se devuelve el producto y se guarda en caché (cacheProduct).
         @Test
         @DisplayName("Should fetch from DB and cache on cache miss")
         void shouldFetchFromDbAndCacheOnMiss() {
@@ -374,6 +418,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).cacheProduct(testProduct);
         }
 
+        // Simula fallo de caché y producto ausente en la BD e invoca getProduct(); verifica
+        // que devuelve un Mono vacío y que nunca se intenta cachear.
         @Test
         @DisplayName("Should return empty when cache miss and product not in DB")
         void shouldReturnEmptyWhenCacheMissAndNotInDb() {
@@ -393,6 +439,8 @@ class StockApplicationServiceTest {
     @DisplayName("GetAllProducts Tests")
     class GetAllProductsTests {
 
+        // Simula que el repositorio devuelve un producto e invoca getAllProducts();
+        // verifica que el Flux emite dicho producto.
         @Test
         @DisplayName("Should get all products from repository")
         void shouldGetAllProducts() {
@@ -403,6 +451,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Simula que el repositorio no tiene productos e invoca getAllProducts();
+        // verifica que el Flux completa vacío.
         @Test
         @DisplayName("Should return empty flux when no products exist")
         void shouldReturnEmptyWhenNoProducts() {
@@ -417,6 +467,8 @@ class StockApplicationServiceTest {
     @DisplayName("CreateProduct Tests")
     class CreateProductTests {
 
+        // Crea un producto nuevo sin cantidad reservada e invoca createProduct(); verifica
+        // que se inicializa la reservada en 0, se persiste y se guarda en caché.
         @Test
         @DisplayName("Should create product with default reserved quantity and cache it")
         void shouldCreateProductWithDefaultReservedQuantityAndCache() {
@@ -450,6 +502,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).cacheProduct(savedProduct);
         }
 
+        // Crea un producto que ya trae cantidad reservada (5) e invoca createProduct();
+        // verifica que se preserva ese valor en lugar de reiniciarlo a 0.
         @Test
         @DisplayName("Should preserve existing reserved quantity when not null")
         void shouldPreserveExistingReservedQuantity() {
@@ -476,6 +530,8 @@ class StockApplicationServiceTest {
     @DisplayName("UpdateStock Tests")
     class UpdateStockTests {
 
+        // Invoca updateStock() para fijar la cantidad en 200; verifica que se actualiza la
+        // cantidad del producto y que se invalida su caché (evictProduct).
         @Test
         @DisplayName("Should update stock quantity and evict cache")
         void shouldUpdateStockQuantityAndEvictCache() {
@@ -495,6 +551,8 @@ class StockApplicationServiceTest {
             verify(productCacheService).evictProduct("product-1");
         }
 
+        // Simula que el producto no existe e invoca updateStock(); verifica que devuelve
+        // vacío y que no se persiste ni se invalida la caché.
         @Test
         @DisplayName("Should return empty when updating non-existent product")
         void shouldReturnEmptyWhenProductNotFound() {
@@ -512,6 +570,8 @@ class StockApplicationServiceTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class CircuitBreakerFallbackTests {
 
+        // Invoca por reflexión el fallback existsFallback ante un fallo simulado;
+        // verifica que devuelve un Mono con false.
         @Test
         @DisplayName("existsFallback should return false")
         void existsFallbackShouldReturnFalse() throws Exception {
@@ -526,6 +586,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback isAvailableFallback ante un fallo simulado;
+        // verifica que devuelve un Mono con false.
         @Test
         @DisplayName("isAvailableFallback should return false")
         void isAvailableFallbackShouldReturnFalse() throws Exception {
@@ -540,6 +602,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback getAvailableQuantityFallback ante un fallo;
+        // verifica que devuelve un Mono con 0.
         @Test
         @DisplayName("getAvailableQuantityFallback should return 0")
         void getAvailableQuantityFallbackShouldReturnZero() throws Exception {
@@ -554,6 +618,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback reserveFallback ante un fallo simulado;
+        // verifica que devuelve un Mono con false.
         @Test
         @DisplayName("reserveFallback should return false")
         void reserveFallbackShouldReturnFalse() throws Exception {
@@ -568,6 +634,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback releaseFallback ante un fallo simulado;
+        // verifica que devuelve un Mono vacío que completa sin error.
         @Test
         @DisplayName("releaseFallback should return empty Mono")
         void releaseFallbackShouldReturnEmpty() throws Exception {
@@ -581,6 +649,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback confirmDispatchFallback ante un fallo simulado;
+        // verifica que devuelve un Mono vacío que completa sin error.
         @Test
         @DisplayName("confirmDispatchFallback should return empty Mono")
         void confirmDispatchFallbackShouldReturnEmpty() throws Exception {
@@ -594,6 +664,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback getProductFallback ante un fallo simulado;
+        // verifica que devuelve un Mono vacío que completa sin error.
         @Test
         @DisplayName("getProductFallback should return empty Mono")
         void getProductFallbackShouldReturnEmpty() throws Exception {
@@ -607,6 +679,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback getAllProductsFallback ante un fallo simulado;
+        // verifica que devuelve un Flux vacío que completa sin error.
         @Test
         @DisplayName("getAllProductsFallback should return empty Flux")
         void getAllProductsFallbackShouldReturnEmpty() throws Exception {
@@ -620,6 +694,8 @@ class StockApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Invoca por reflexión el fallback createProductFallback ante un fallo simulado;
+        // verifica que emite un error con el mensaje "Service temporarily unavailable".
         @Test
         @DisplayName("createProductFallback should return error")
         void createProductFallbackShouldReturnError() throws Exception {
@@ -636,6 +712,8 @@ class StockApplicationServiceTest {
                     .verify();
         }
 
+        // Invoca por reflexión el fallback updateStockFallback ante un fallo simulado;
+        // verifica que emite un error con el mensaje "Service temporarily unavailable".
         @Test
         @DisplayName("updateStockFallback should return error")
         void updateStockFallbackShouldReturnError() throws Exception {

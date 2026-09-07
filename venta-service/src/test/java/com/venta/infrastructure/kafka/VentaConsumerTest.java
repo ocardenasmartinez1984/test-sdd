@@ -39,6 +39,9 @@ class VentaConsumerTest {
     @DisplayName("Consume Stock Reserve Response Tests")
     class ConsumeStockReserveResponseTests {
 
+        // Verifica el consumo exitoso de la respuesta de reserva de stock: convierte el mapa a
+        // StockReserveResponseEvent, invoca consumeStockReserveResponse y comprueba que se
+        // llamó a objectMapper.convertValue con el tipo esperado.
         @Test
         @DisplayName("Should consume stock reserve response successfully")
         void shouldConsumeStockReserveResponse() {
@@ -62,6 +65,9 @@ class VentaConsumerTest {
             verify(objectMapper).convertValue(message, StockReserveResponseEvent.class);
         }
 
+        // Verifica que un error de conversión en la respuesta de stock se PROPAGA para permitir
+        // retry/DLQ de Kafka: convertValue lanza IllegalArgumentException y se comprueba que
+        // consumeStockReserveResponse relanza y que NUNCA se llama a handleStockResponse.
         @Test
         @DisplayName("Should PROPAGATE conversion exception so Kafka can retry/DLQ")
         void shouldHandleExceptionInStockReserveResponse() {
@@ -78,6 +84,9 @@ class VentaConsumerTest {
             verify(sagaOrchestrator, never()).handleStockResponse(any());
         }
 
+        // Verifica que un mapa vacío en la respuesta de stock PROPAGA la excepción para
+        // permitir retry/DLQ: convertValue lanza IllegalArgumentException y se comprueba que
+        // consumeStockReserveResponse relanza y que NUNCA se llama a handleStockResponse.
         @Test
         @DisplayName("Should PROPAGATE on empty message map so Kafka can retry/DLQ")
         void shouldHandleEmptyMessageMap() {
@@ -93,6 +102,9 @@ class VentaConsumerTest {
             verify(sagaOrchestrator, never()).handleStockResponse(any());
         }
 
+        // Verifica que un mapa incompleto (sin campos requeridos) se maneja sin lanzar: la
+        // conversión devuelve un evento con campos nulos, se invoca consumeStockReserveResponse
+        // y se comprueba que se llamó a convertValue sin excepción.
         @Test
         @DisplayName("Should handle message with missing required fields gracefully")
         void shouldHandleMessageWithMissingRequiredFields() {
@@ -122,6 +134,9 @@ class VentaConsumerTest {
     @DisplayName("Consume Despacho Response Tests")
     class ConsumeDespachoResponseTests {
 
+        // Verifica el consumo exitoso de la respuesta de despacho: convierte el mapa a
+        // DespachoResponseEvent, invoca consumeDespachoResponse y comprueba que se llamaron
+        // convertValue y sagaOrchestrator.handleDespachoResponse con el evento.
         @Test
         @DisplayName("Should consume despacho response successfully")
         void shouldConsumeDespachoResponse() {
@@ -145,6 +160,9 @@ class VentaConsumerTest {
             verify(sagaOrchestrator).handleDespachoResponse(event);
         }
 
+        // Verifica que un error de conversión en la respuesta de despacho se PROPAGA para
+        // permitir retry/DLQ: convertValue lanza IllegalArgumentException y se comprueba que
+        // consumeDespachoResponse relanza y que NUNCA se llama a handleDespachoResponse.
         @Test
         @DisplayName("Should PROPAGATE conversion exception so Kafka can retry/DLQ")
         void shouldHandleExceptionInDespachoResponse() {
@@ -161,6 +179,9 @@ class VentaConsumerTest {
             verify(sagaOrchestrator, never()).handleDespachoResponse(any());
         }
 
+        // Verifica que un mapa vacío en la respuesta de despacho PROPAGA la excepción para
+        // permitir retry/DLQ: convertValue lanza IllegalArgumentException y se comprueba que
+        // consumeDespachoResponse relanza y que NUNCA se llama a handleDespachoResponse.
         @Test
         @DisplayName("Should PROPAGATE on empty message map so Kafka can retry/DLQ")
         void shouldHandleEmptyMessageMapForDespachoResponse() {
@@ -181,6 +202,9 @@ class VentaConsumerTest {
     @DisplayName("Consume Despacho Delivered Tests")
     class ConsumeDespachoDeliveredTests {
 
+        // Verifica el consumo exitoso del evento de despacho entregado: extrae orderId del mapa,
+        // invoca consumeDespachoDelivered y comprueba que se llama a handleDespachoDelivered
+        // con "order-1".
         @Test
         @DisplayName("Should consume despacho delivered successfully")
         void shouldConsumeDespachoDelivered() {
@@ -194,6 +218,9 @@ class VentaConsumerTest {
             verify(sagaOrchestrator).handleDespachoDelivered("order-1");
         }
 
+        // Verifica que un mapa vacío en despacho entregado se maneja sin lanzar: orderId será
+        // null, se invoca consumeDespachoDelivered y se comprueba que se llama a
+        // handleDespachoDelivered con null.
         @Test
         @DisplayName("Should handle empty message map for despacho delivered gracefully")
         void shouldHandleEmptyMessageMapForDespachoDelivered() {
@@ -208,6 +235,9 @@ class VentaConsumerTest {
             verify(sagaOrchestrator).handleDespachoDelivered(null);
         }
 
+        // Verifica que un mapa sin el campo orderId se maneja sin lanzar: get("orderId")
+        // devuelve null, se invoca consumeDespachoDelivered y se comprueba que se llama a
+        // handleDespachoDelivered con null.
         @Test
         @DisplayName("Should handle message with missing orderId field")
         void shouldHandleMessageWithMissingOrderId() {

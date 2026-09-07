@@ -28,6 +28,9 @@ class VentaProducerTest {
     @DisplayName("Reserve Stock Tests")
     class ReserveStockTests {
 
+        // Verifica que reserveStock envía el evento al topic correcto: invoca reserveStock y
+        // comprueba que KafkaTemplate.send se llama con "saga.stock.reserve-command", la clave
+        // "order-1" y el evento.
         @Test
         @DisplayName("Should send stock reserve event to correct topic")
         void shouldSendStockReserveEvent() {
@@ -42,6 +45,9 @@ class VentaProducerTest {
             verify(kafkaTemplate).send("saga.stock.reserve-command", "order-1", event);
         }
 
+        // Verifica que reserveStock propaga la excepción cuando KafkaTemplate.send lanza:
+        // configura send para lanzar "Kafka broker unavailable" y comprueba que reserveStock
+        // relanza el RuntimeException.
         @Test
         @DisplayName("Should propagate exception when KafkaTemplate.send throws")
         void shouldPropagateExceptionWhenKafkaSendThrows() {
@@ -63,6 +69,9 @@ class VentaProducerTest {
     @DisplayName("Compensate Stock Tests")
     class CompensateStockTests {
 
+        // Verifica que compensateStock envía el evento al topic correcto: invoca compensateStock
+        // y comprueba que KafkaTemplate.send se llama con "saga.stock.compensate-command", la
+        // clave "order-1" y el evento.
         @Test
         @DisplayName("Should send stock compensate event to correct topic")
         void shouldSendStockCompensateEvent() {
@@ -77,6 +86,9 @@ class VentaProducerTest {
             verify(kafkaTemplate).send("saga.stock.compensate-command", "order-1", event);
         }
 
+        // Verifica que compensateStock propaga la excepción cuando KafkaTemplate.send lanza:
+        // configura send para lanzar "Kafka broker unavailable" y comprueba que compensateStock
+        // relanza el RuntimeException.
         @Test
         @DisplayName("Should propagate exception when KafkaTemplate.send throws for compensate")
         void shouldPropagateExceptionWhenKafkaSendThrowsForCompensate() {
@@ -98,6 +110,9 @@ class VentaProducerTest {
     @DisplayName("Request Despacho Tests")
     class RequestDespachoTests {
 
+        // Verifica que requestDespacho envía el evento al topic correcto: invoca requestDespacho
+        // y comprueba que KafkaTemplate.send se llama con "saga.despacho.create-command", la
+        // clave "order-1" y el evento.
         @Test
         @DisplayName("Should send despacho request event to correct topic")
         void shouldSendDespachoRequestEvent() {
@@ -113,6 +128,9 @@ class VentaProducerTest {
             verify(kafkaTemplate).send("saga.despacho.create-command", "order-1", event);
         }
 
+        // Verifica que requestDespacho propaga la excepción cuando KafkaTemplate.send lanza:
+        // configura send para lanzar "Kafka broker unavailable" y comprueba que requestDespacho
+        // relanza el RuntimeException.
         @Test
         @DisplayName("Should propagate exception when KafkaTemplate.send throws for despacho")
         void shouldPropagateExceptionWhenKafkaSendThrowsForDespacho() {
@@ -135,6 +153,9 @@ class VentaProducerTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class FallbackTests {
 
+        // Verifica el fallback del circuit breaker para reserveStock: invoca por reflexión
+        // reserveStockFallback con una excepción y comprueba que registra el error sin lanzar
+        // (no propaga ninguna excepción).
         @Test
         @DisplayName("reserveStockFallback should log error and not throw")
         void reserveStockFallbackShouldNotThrow() throws Exception {
@@ -153,6 +174,9 @@ class VentaProducerTest {
                     .doesNotThrowAnyException();
         }
 
+        // Verifica el fallback del circuit breaker para compensateStock: invoca por reflexión
+        // compensateStockFallback con una excepción y comprueba que registra el error sin
+        // lanzar (no propaga ninguna excepción).
         @Test
         @DisplayName("compensateStockFallback should log error and not throw")
         void compensateStockFallbackShouldNotThrow() throws Exception {
@@ -171,6 +195,9 @@ class VentaProducerTest {
                     .doesNotThrowAnyException();
         }
 
+        // Verifica el fallback del circuit breaker para requestDespacho: invoca por reflexión
+        // requestDespachoFallback con una excepción y comprueba que registra el error sin
+        // lanzar (no propaga ninguna excepción).
         @Test
         @DisplayName("requestDespachoFallback should log error and not throw")
         void requestDespachoFallbackShouldNotThrow() throws Exception {

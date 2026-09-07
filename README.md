@@ -198,6 +198,7 @@ adds live monitoring:
 - **Control** tab - buttons to bring phases / the whole stack / tooling up & down, with live output.
 - **Logs** tab - logs of every `saga-*` container.
 - **Resources** tab - live CPU / RAM usage per container, with high-usage alerts.
+- **Datos** tab - wipe the data of the MongoDB service databases (`stock_db` / `venta_db` / `despacho_db`), individually or all at once, with a confirmation prompt.
 
 ```bash
 python3 services-script/stack_gui.py

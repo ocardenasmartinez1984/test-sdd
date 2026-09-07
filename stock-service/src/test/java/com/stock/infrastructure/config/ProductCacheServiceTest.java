@@ -53,6 +53,8 @@ class ProductCacheServiceTest {
     @DisplayName("GetCachedProduct Tests")
     class GetCachedProductTests {
 
+        // Simula un acierto de caché en Redis para "product:product-1" e invoca
+        // getCachedProduct(); verifica que devuelve el producto deserializado con sus datos.
         @Test
         @DisplayName("Should return product on cache hit")
         void shouldReturnProductOnCacheHit() {
@@ -71,6 +73,8 @@ class ProductCacheServiceTest {
             verify(valueOperations).get("product:product-1");
         }
 
+        // Simula un fallo de caché (Redis devuelve vacío) e invoca getCachedProduct();
+        // verifica que devuelve un Mono vacío y que no se intenta deserializar.
         @Test
         @DisplayName("Should return empty Mono on cache miss")
         void shouldReturnEmptyOnCacheMiss() {
@@ -89,6 +93,8 @@ class ProductCacheServiceTest {
     @DisplayName("CacheProduct Tests")
     class CacheProductTests {
 
+        // Invoca cacheProduct(); verifica que almacena el producto en Redis con la clave y un
+        // TTL de 5 minutos, y que devuelve el mismo producto.
         @Test
         @DisplayName("Should cache product with TTL and return the product")
         void shouldCacheProductWithTtlAndReturn() {
@@ -106,6 +112,8 @@ class ProductCacheServiceTest {
             verify(valueOperations).set("product:product-1", testProduct, Duration.ofMinutes(5));
         }
 
+        // Invoca cacheProduct() y bloquea el resultado; verifica específicamente que el TTL
+        // usado en Redis es de exactamente 5 minutos.
         @Test
         @DisplayName("Should use 5-minute TTL for product cache")
         void shouldUseFiveMinuteTtl() {
@@ -123,6 +131,8 @@ class ProductCacheServiceTest {
     @DisplayName("EvictProduct Tests")
     class EvictProductTests {
 
+        // Invoca evictProduct(); verifica que borra tanto la clave del producto
+        // ("product:product-1") como la de la lista completa ("products:all").
         @Test
         @DisplayName("Should delete product key and all-products key")
         void shouldDeleteProductAndAllProductsKeys() {
@@ -136,6 +146,8 @@ class ProductCacheServiceTest {
             verify(redisTemplate).delete("products:all");
         }
 
+        // Simula que las claves no existen (delete devuelve 0) e invoca evictProduct();
+        // verifica que el flujo completa correctamente aun sin claves que borrar.
         @Test
         @DisplayName("Should complete even if keys dont exist (delete returns 0)")
         void shouldCompleteEvenIfKeysNotExist() {
@@ -151,6 +163,8 @@ class ProductCacheServiceTest {
     @DisplayName("EvictAllProducts Tests")
     class EvictAllProductsTests {
 
+        // Invoca evictAllProducts(); verifica que borra la clave de la lista completa
+        // ("products:all") en Redis.
         @Test
         @DisplayName("Should delete all-products key")
         void shouldDeleteAllProductsKey() {
@@ -162,6 +176,8 @@ class ProductCacheServiceTest {
             verify(redisTemplate).delete("products:all");
         }
 
+        // Simula que la clave "products:all" no existe (delete devuelve 0) e invoca
+        // evictAllProducts(); verifica que el flujo completa correctamente igualmente.
         @Test
         @DisplayName("Should complete even if all-products key does not exist")
         void shouldCompleteEvenIfKeyNotExist() {

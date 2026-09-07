@@ -46,6 +46,9 @@ class DespachoConsumerTest {
     @DisplayName("Successful Processing Tests")
     class SuccessfulProcessingTests {
 
+        // Verifica el flujo feliz del consumidor: convierte el mensaje Map a DespachoRequestEvent,
+        // invoca crearDespacho (que devuelve un despacho) y comprueba que se llamó a convertValue
+        // y a crearDespacho con el evento esperado.
         @Test
         @DisplayName("Should process despacho request and send success response")
         void shouldProcessDespachoRequestSuccessfully() {
@@ -85,6 +88,8 @@ class DespachoConsumerTest {
     @DisplayName("Error Handling Tests")
     class ErrorHandlingTests {
 
+        // Verifica que si la conversión del mensaje lanza IllegalArgumentException, el consumidor
+        // envía una respuesta de fallo (sendDespachoResponse) y NO llega a invocar crearDespacho.
         @Test
         @DisplayName("Should send failure response on conversion exception")
         void shouldSendFailureResponseOnConversionException() {
@@ -101,6 +106,8 @@ class DespachoConsumerTest {
             verify(despachoApplicationService, never()).crearDespacho(any());
         }
 
+        // Verifica que cuando falla la conversión y el mensaje no trae orderId, la respuesta de
+        // fallo capturada usa "UNKNOWN" como orderId y success=false.
         @Test
         @DisplayName("Should handle null orderId in error response")
         void shouldHandleNullOrderIdInErrorResponse() {
@@ -121,6 +128,8 @@ class DespachoConsumerTest {
             assertThat(response.getSuccess()).isFalse();
         }
 
+        // Verifica que si crearDespacho devuelve un Mono.error, el consumidor envía una respuesta
+        // de fallo con el orderId original, success=false, trackingNumber nulo y el motivo del error.
         @Test
         @DisplayName("Should send failure response when crearDespacho returns Mono.error")
         void shouldSendFailureResponseWhenCrearDespachoReturnsMonoError() {
@@ -154,6 +163,9 @@ class DespachoConsumerTest {
             assertThat(response.getReason()).isEqualTo("Dispatch service temporarily unavailable");
         }
 
+        // Verifica que ante un mensaje con todos los valores nulos que provoca excepción en la
+        // conversión, la respuesta de fallo capturada usa orderId "UNKNOWN", success=false y el
+        // motivo contiene el texto del error.
         @Test
         @DisplayName("Should handle message with null values")
         void shouldHandleMessageWithNullValues() {
@@ -178,6 +190,9 @@ class DespachoConsumerTest {
             assertThat(response.getReason()).contains("Null values in message");
         }
 
+        // Verifica que ante un mensaje vacío (mapa vacío) que provoca excepción en la conversión,
+        // la respuesta de fallo usa orderId "UNKNOWN", success=false y motivo con el texto del
+        // error, y que nunca se invoca crearDespacho.
         @Test
         @DisplayName("Should handle empty message map")
         void shouldHandleEmptyMessageMap() {

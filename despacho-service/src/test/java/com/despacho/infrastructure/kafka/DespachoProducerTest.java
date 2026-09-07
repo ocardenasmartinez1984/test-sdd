@@ -30,6 +30,8 @@ class DespachoProducerTest {
     @DisplayName("Send Response Tests")
     class SendResponseTests {
 
+        // Verifica que sendDespachoResponse, ante un evento de éxito (success=true con tracking),
+        // publica el evento en el topic "saga.despacho.create-reply" usando el orderId como clave.
         @Test
         @DisplayName("Should send despacho response with success to correct topic")
         void shouldSendSuccessResponse() {
@@ -44,6 +46,8 @@ class DespachoProducerTest {
             verify(kafkaTemplate).send("saga.despacho.create-reply", "order-1", event);
         }
 
+        // Verifica que sendDespachoResponse, ante un evento de fallo (success=false con motivo),
+        // también publica el evento en el topic "saga.despacho.create-reply" con la clave orderId.
         @Test
         @DisplayName("Should send despacho response with failure to correct topic")
         void shouldSendFailureResponse() {
@@ -58,6 +62,8 @@ class DespachoProducerTest {
             verify(kafkaTemplate).send("saga.despacho.create-reply", "order-1", event);
         }
 
+        // Verifica que si el KafkaTemplate lanza una excepción al enviar, sendDespachoResponse
+        // propaga esa RuntimeException al llamador (assertThrows) tras intentar el envío.
         @Test
         @DisplayName("Should propagate exception when KafkaTemplate throws")
         void shouldPropagateExceptionWhenKafkaTemplateThrows() {
@@ -81,6 +87,9 @@ class DespachoProducerTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class CircuitBreakerFallbackTests {
 
+        // Verifica, invocando por reflexión el fallback del circuit breaker, que
+        // sendDespachoResponseFallback no lanza ninguna excepción y no interactúa con el
+        // KafkaTemplate (degradación silenciosa que solo registra el fallo).
         @Test
         @DisplayName("sendDespachoResponseFallback should handle gracefully without throwing")
         void sendDespachoResponseFallbackShouldHandleGracefully() throws Exception {

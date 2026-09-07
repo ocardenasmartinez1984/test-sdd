@@ -53,6 +53,8 @@ class OutboxPublisherTest {
     @DisplayName("PublishPendingEvents Tests")
     class PublishPendingEventsTests {
 
+        // Con un evento outbox pendiente, invoca publishPendingEvents(); verifica que se envía
+        // al topic correcto por Kafka y que el evento se persiste con estado SENT y processedAt.
         @Test
         @DisplayName("Should publish pending events and mark as SENT")
         void shouldPublishPendingEventsAndMarkAsSent() {
@@ -71,6 +73,8 @@ class OutboxPublisherTest {
             assertThat(savedEvent.getProcessedAt()).isNotNull();
         }
 
+        // Sin eventos pendientes (repositorio devuelve vacío), invoca publishPendingEvents();
+        // verifica que no se envía nada por Kafka ni se persiste ningún evento.
         @Test
         @DisplayName("Should not reprocess SENT events")
         void shouldNotReprocessSentEvents() {
@@ -83,6 +87,8 @@ class OutboxPublisherTest {
             verify(outboxRepository, never()).save(any(OutboxEvent.class));
         }
 
+        // Con dos eventos pendientes, invoca publishPendingEvents(); verifica que cada evento
+        // se envía a su topic correspondiente con su clave y payload, respetando el orden.
         @Test
         @DisplayName("Should process multiple pending events in order")
         void shouldProcessMultiplePendingEvents() {
@@ -112,6 +118,8 @@ class OutboxPublisherTest {
     @DisplayName("Retry Logic Tests")
     class RetryLogicTests {
 
+        // Simula que el envío a Kafka falla e invoca publishPendingEvents(); verifica que el
+        // evento se guarda con retryCount incrementado a 1 y permanece en estado PENDING.
         @Test
         @DisplayName("Should increment retry count on Kafka failure")
         void shouldIncrementRetryCountOnKafkaFailure() {
@@ -130,6 +138,9 @@ class OutboxPublisherTest {
             assertThat(savedEvent.getStatus()).isEqualTo(OutboxEvent.STATUS_PENDING);
         }
 
+        // Con un evento que ya lleva 4 reintentos y Kafka fallando de nuevo, invoca
+        // publishPendingEvents(); verifica que al alcanzar el 5º reintento el evento se marca
+        // como FAILED con retryCount = 5.
         @Test
         @DisplayName("Should mark event as FAILED after max retries (5)")
         void shouldMarkAsFailedAfterMaxRetries() {
@@ -150,6 +161,8 @@ class OutboxPublisherTest {
             assertThat(savedEvent.getStatus()).isEqualTo(OutboxEvent.STATUS_FAILED);
         }
 
+        // Con un evento que lleva 2 reintentos y Kafka fallando, invoca publishPendingEvents();
+        // verifica que retryCount sube a 3 y el evento sigue en PENDING por estar bajo el máximo.
         @Test
         @DisplayName("Should keep event as PENDING when retry count is below max")
         void shouldKeepPendingWhenBelowMaxRetries() {

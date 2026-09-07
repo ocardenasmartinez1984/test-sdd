@@ -33,6 +33,8 @@ class StockProducerTest {
     @DisplayName("SendReserveResponse Tests")
     class SendReserveResponseTests {
 
+        // Con un evento de respuesta de reserva exitosa, invoca sendReserveResponse();
+        // verifica que se envía al topic "saga.stock.reserve-reply" con la clave del pedido.
         @Test
         @DisplayName("Should send reserve response to correct topic with success")
         void shouldSendReserveResponseSuccess() {
@@ -47,6 +49,8 @@ class StockProducerTest {
             verify(kafkaTemplate).send("saga.stock.reserve-reply", "order-1", event);
         }
 
+        // Con un evento de respuesta de reserva fallida (con motivo), invoca sendReserveResponse();
+        // verifica que se envía al topic "saga.stock.reserve-reply" con la clave del pedido.
         @Test
         @DisplayName("Should send reserve response to correct topic with failure")
         void shouldSendReserveResponseFailure() {
@@ -62,6 +66,8 @@ class StockProducerTest {
             verify(kafkaTemplate).send("saga.stock.reserve-reply", "order-1", event);
         }
 
+        // Simula que KafkaTemplate.send lanza una excepción e invoca sendReserveResponse();
+        // verifica que la RuntimeException se propaga al llamador.
         @Test
         @DisplayName("Should propagate exception when KafkaTemplate throws")
         void shouldPropagateExceptionWhenKafkaTemplateFails() {
@@ -82,6 +88,8 @@ class StockProducerTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class CircuitBreakerFallbackTests {
 
+        // Invoca por reflexión el fallback sendReserveResponseFallback ante un fallo simulado;
+        // verifica que maneja la falla con elegancia sin lanzar ninguna excepción.
         @Test
         @DisplayName("sendReserveResponseFallback should handle failure gracefully without throwing")
         void sendReserveResponseFallbackShouldNotThrow() throws Exception {
@@ -99,6 +107,8 @@ class StockProducerTest {
                     fallback.invoke(stockProducer, event, new RuntimeException("Kafka down")));
         }
 
+        // Invoca por reflexión el fallback sendReserveResponseFallback ante un fallo simulado;
+        // verifica que no interactúa con KafkaTemplate (verifyNoInteractions).
         @Test
         @DisplayName("sendReserveResponseFallback should not interact with KafkaTemplate")
         void sendReserveResponseFallbackShouldNotUseKafka() throws Exception {

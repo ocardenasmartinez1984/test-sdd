@@ -49,6 +49,8 @@ class OrderQueryServiceTest {
     @DisplayName("Get Venta Tests")
     class GetVentaTests {
 
+        // Verifica que getVenta devuelve la orden por id: prepara findById, invoca getVenta
+        // y comprueba que la orden emitida tiene el id y customerId esperados.
         @Test
         @DisplayName("Should get venta by id")
         void shouldGetVentaById() {
@@ -62,6 +64,8 @@ class OrderQueryServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que getVenta emite error cuando la orden no existe: findById devuelve vacío
+        // y se comprueba que se propaga un RuntimeException con mensaje "Order not found".
         @Test
         @DisplayName("Should throw error when venta not found")
         void shouldThrowErrorWhenVentaNotFound() {
@@ -77,6 +81,8 @@ class OrderQueryServiceTest {
     @DisplayName("Listar Ventas Tests")
     class ListarVentasTests {
 
+        // Verifica que listarVentas devuelve todas las órdenes: findAll devuelve una orden y
+        // se comprueba que se emite con el id esperado.
         @Test
         @DisplayName("Should list all ventas")
         void shouldListAllVentas() {
@@ -87,6 +93,8 @@ class OrderQueryServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que listarVentas devuelve un flujo vacío cuando no hay órdenes: findAll
+        // devuelve Flux vacío y se comprueba que el resultado completa sin emitir elementos.
         @Test
         @DisplayName("Should return empty flux when no orders exist")
         void shouldReturnEmptyWhenNoOrdersExist() {
@@ -101,6 +109,8 @@ class OrderQueryServiceTest {
     @DisplayName("Ventas Por Cliente Tests")
     class VentasPorClienteTests {
 
+        // Verifica que ventasPorCliente devuelve las órdenes de un cliente: findByCustomerId
+        // devuelve una orden y se comprueba que se emite con el customerId esperado.
         @Test
         @DisplayName("Should find ventas by customer")
         void shouldFindVentasByCustomer() {
@@ -111,6 +121,9 @@ class OrderQueryServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que ventasPorCliente devuelve vacío cuando el cliente no tiene órdenes:
+        // findByCustomerId devuelve Flux vacío y se comprueba que el resultado completa sin
+        // emitir elementos.
         @Test
         @DisplayName("Should return empty flux when customer has no orders")
         void shouldReturnEmptyWhenCustomerHasNoOrders() {
@@ -125,6 +138,8 @@ class OrderQueryServiceTest {
     @DisplayName("Ventas Por Estado Tests")
     class VentasPorEstadoTests {
 
+        // Verifica que ventasPorEstado devuelve las órdenes de un estado: findByStatus(PENDING)
+        // devuelve una orden y se comprueba que se emite con estado PENDING.
         @Test
         @DisplayName("Should find ventas by status")
         void shouldFindVentasByStatus() {
@@ -135,6 +150,9 @@ class OrderQueryServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que ventasPorEstado devuelve vacío cuando no hay órdenes en ese estado:
+        // findByStatus(COMPLETED) devuelve Flux vacío y se comprueba que el resultado completa
+        // sin emitir elementos.
         @Test
         @DisplayName("Should return empty flux when no orders with given status")
         void shouldReturnEmptyWhenNoOrdersWithStatus() {
@@ -149,6 +167,9 @@ class OrderQueryServiceTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class FallbackTests {
 
+        // Verifica el fallback del circuit breaker de getVenta: invoca por reflexión
+        // getVentaFallback con una excepción y comprueba que devuelve un Mono.error cuyo
+        // mensaje contiene "Sales service temporarily unavailable".
         @Test
         @DisplayName("getVentaFallback should return Mono.error with unavailable message")
         void getVentaFallbackShouldReturnError() throws Exception {
@@ -166,6 +187,9 @@ class OrderQueryServiceTest {
                     .verify();
         }
 
+        // Verifica el fallback del circuit breaker de listarVentas: invoca por reflexión
+        // listarVentasFallback con una excepción y comprueba que devuelve un Flux vacío
+        // (completa sin emitir elementos) en lugar de propagar el error.
         @Test
         @DisplayName("listarVentasFallback should return empty Flux")
         void listarVentasFallbackShouldReturnEmpty() throws Exception {
@@ -181,6 +205,8 @@ class OrderQueryServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica el fallback del circuit breaker de ventasPorCliente: invoca por reflexión
+        // ventasPorClienteFallback con una excepción y comprueba que devuelve un Flux vacío.
         @Test
         @DisplayName("ventasPorClienteFallback should return empty Flux")
         void ventasPorClienteFallbackShouldReturnEmpty() throws Exception {
@@ -196,6 +222,8 @@ class OrderQueryServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica el fallback del circuit breaker de ventasPorEstado: invoca por reflexión
+        // ventasPorEstadoFallback con una excepción y comprueba que devuelve un Flux vacío.
         @Test
         @DisplayName("ventasPorEstadoFallback should return empty Flux")
         void ventasPorEstadoFallbackShouldReturnEmpty() throws Exception {

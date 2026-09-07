@@ -58,6 +58,8 @@ class SagaOrchestratorTest {
     @DisplayName("Handle Stock Response Tests")
     class HandleStockResponseTests {
 
+        // Verifica el flujo feliz de handleStockResponse: ante una respuesta exitosa, la orden
+        // pasa a STOCK_RESERVED, se guarda y se publica la solicitud de despacho (requestDespacho).
         @Test
         @DisplayName("Should set STOCK_RESERVED and send despacho request on success")
         void shouldSetStockReservedOnSuccess() {
@@ -86,6 +88,8 @@ class SagaOrchestratorTest {
             verify(despachoEventPublisher).requestDespacho(any());
         }
 
+        // Verifica que ante una respuesta de stock fallida la orden pasa a STOCK_FAILED con
+        // su motivo: prepara el evento success=false y comprueba que NUNCA se solicita despacho.
         @Test
         @DisplayName("Should set STOCK_FAILED on failure")
         void shouldSetStockFailedOnFailure() {
@@ -111,6 +115,9 @@ class SagaOrchestratorTest {
             verify(despachoEventPublisher, never()).requestDespacho(any());
         }
 
+        // Verifica que al recibir una respuesta de stock para una orden inexistente se emite
+        // error: findById devuelve vacío y se comprueba que handleStockResponse propaga un
+        // RuntimeException "Order not found: nonexistent" sin guardar ni pedir despacho.
         @Test
         @DisplayName("Should return error when order not found")
         void shouldReturnErrorWhenOrderNotFound() {
@@ -136,6 +143,8 @@ class SagaOrchestratorTest {
     @DisplayName("Handle Despacho Response Tests")
     class HandleDespachoResponseTests {
 
+        // Verifica el flujo feliz de handleDespachoResponse: ante una respuesta exitosa la
+        // orden pasa a DISPATCHING y se guarda, comprobando que NUNCA se compensa stock.
         @Test
         @DisplayName("Should set DISPATCHING on success")
         void shouldSetDispatchingOnSuccess() {
@@ -160,6 +169,8 @@ class SagaOrchestratorTest {
             verify(stockEventPublisher, never()).compensateStock(any());
         }
 
+        // Verifica que ante una respuesta de despacho fallida la orden pasa a DISPATCH_FAILED
+        // y se dispara la compensación de stock (compensateStock) para revertir la reserva.
         @Test
         @DisplayName("Should set DISPATCH_FAILED and send stock compensate on failure")
         void shouldSetDispatchFailedAndCompensateOnFailure() {
@@ -187,6 +198,9 @@ class SagaOrchestratorTest {
             verify(stockEventPublisher).compensateStock(any());
         }
 
+        // Verifica que al recibir una respuesta de despacho para una orden inexistente se
+        // emite error: findById devuelve vacío y se comprueba que handleDespachoResponse
+        // propaga "Order not found: nonexistent" sin guardar ni compensar stock.
         @Test
         @DisplayName("Should return error when order not found")
         void shouldReturnErrorWhenOrderNotFound() {
@@ -212,6 +226,8 @@ class SagaOrchestratorTest {
     @DisplayName("Handle Despacho Delivered Tests")
     class HandleDespachoDeliveredTests {
 
+        // Verifica que cuando la orden está en DISPATCHING y llega la entrega, pasa a COMPLETED,
+        // se guarda y se confirma el stock (confirmStock) para descontar el stock físico.
         @Test
         @DisplayName("Should set COMPLETED when order is DISPATCHING")
         void shouldSetCompletedWhenDispatching() {
@@ -232,6 +248,8 @@ class SagaOrchestratorTest {
             verify(stockEventPublisher).confirmStock(any());
         }
 
+        // Verifica que si la orden no está en DISPATCHING (aquí PENDING) la entrega no cambia
+        // su estado: invoca handleDespachoDelivered y comprueba que NUNCA se guarda la orden.
         @Test
         @DisplayName("Should not update status when order is not DISPATCHING")
         void shouldNotUpdateWhenNotDispatching() {
@@ -245,6 +263,9 @@ class SagaOrchestratorTest {
             verify(orderRepository, never()).save(any(Order.class));
         }
 
+        // Verifica que al notificar entrega de una orden inexistente se emite error:
+        // findById devuelve vacío y se comprueba que handleDespachoDelivered propaga
+        // "Order not found: nonexistent" sin guardar cambios.
         @Test
         @DisplayName("Should return error when order not found")
         void shouldReturnErrorWhenOrderNotFound() {
@@ -263,6 +284,9 @@ class SagaOrchestratorTest {
     @DisplayName("Concurrent Saga Events Tests")
     class ConcurrentSagaEventsTests {
 
+        // Verifica el manejo concurrente en handleStockResponse: findById devuelve la orden
+        // pero save falla con "Concurrent modification"; se comprueba que el error se propaga
+        // y que NUNCA se solicita despacho.
         @Test
         @DisplayName("Should handle concurrent stock response - save conflict")
         void shouldHandleConcurrentStockResponseSaveConflict() {
@@ -289,6 +313,9 @@ class SagaOrchestratorTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class FallbackTests {
 
+        // Verifica que el fallback de handleStockResponse PROPAGA un error transitorio para
+        // permitir retry/DLQ: invoca por reflexión handleStockResponseFallback con un error
+        // genérico "DB down" y comprueba que el Mono emite ese RuntimeException.
         @Test
         @DisplayName("handleStockResponseFallback should PROPAGATE a transient error for retry/DLQ")
         void handleStockResponseFallbackShouldPropagateTransient() throws Exception {
@@ -309,6 +336,9 @@ class SagaOrchestratorTest {
                     .verify();
         }
 
+        // Verifica que el fallback de handleDespachoResponse PROPAGA un error transitorio para
+        // permitir retry/DLQ: invoca por reflexión handleDespachoResponseFallback con "DB down"
+        // y comprueba que el Mono emite ese RuntimeException.
         @Test
         @DisplayName("handleDespachoResponseFallback should PROPAGATE a transient error for retry/DLQ")
         void handleDespachoResponseFallbackShouldPropagateTransient() throws Exception {
@@ -329,6 +359,9 @@ class SagaOrchestratorTest {
                     .verify();
         }
 
+        // Verifica que el fallback de handleDespachoDelivered PROPAGA un error transitorio
+        // para permitir retry/DLQ: invoca por reflexión handleDespachoDeliveredFallback con
+        // "DB down" y comprueba que el Mono emite ese RuntimeException.
         @Test
         @DisplayName("handleDespachoDeliveredFallback should PROPAGATE a transient error for retry/DLQ")
         void handleDespachoDeliveredFallbackShouldPropagateTransient() throws Exception {
@@ -345,6 +378,9 @@ class SagaOrchestratorTest {
                     .verify();
         }
 
+        // Verifica que el fallback COMPLETA VACÍO (sin error) ante una excepción terminal
+        // OrderNotFoundException: invoca por reflexión handleStockResponseFallback con dicha
+        // excepción y comprueba que el Mono completa sin emitir error (no se reintenta).
         @Test
         @DisplayName("fallback should COMPLETE EMPTY for a terminal OrderNotFoundException")
         void fallbackShouldCompleteEmptyForOrderNotFound() throws Exception {

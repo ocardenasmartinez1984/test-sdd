@@ -44,6 +44,9 @@ class SagaReconcilerTest {
                 despachoEventPublisher, Duration.ofMinutes(2));
     }
 
+    // Verifica que el reconciliador re-emite la reserva de stock para órdenes atascadas en
+    // PENDING: prepara una orden PENDING antigua, invoca reconcile y comprueba (con captor)
+    // que se llama a reserveStock con su orderId y que NO se solicita despacho.
     @Test
     @DisplayName("Should re-emit stock reserve for orders stuck in PENDING")
     void shouldRedrivePendingOrders() {
@@ -64,6 +67,9 @@ class SagaReconcilerTest {
         verify(despachoEventPublisher, never()).requestDespacho(any());
     }
 
+    // Verifica que el reconciliador re-emite la solicitud de despacho para órdenes atascadas
+    // en STOCK_RESERVED: prepara una orden STOCK_RESERVED antigua, invoca reconcile y
+    // comprueba (con captor) que se llama a requestDespacho con su orderId y NO a reserveStock.
     @Test
     @DisplayName("Should re-emit despacho request for orders stuck in STOCK_RESERVED")
     void shouldRedriveStockReservedOrders() {
@@ -84,6 +90,9 @@ class SagaReconcilerTest {
         verify(stockEventPublisher, never()).reserveStock(any());
     }
 
+    // Verifica que reconcile consulta únicamente los estados intermedios: invoca reconcile
+    // y, con un captor, comprueba que la colección de estados pasada al repositorio contiene
+    // exactamente PENDING y STOCK_RESERVED.
     @Test
     @DisplayName("Should query only intermediate statuses")
     void shouldQueryIntermediateStatuses() {
@@ -98,6 +107,9 @@ class SagaReconcilerTest {
                 .containsExactlyInAnyOrder(OrderStatus.PENDING, OrderStatus.STOCK_RESERVED);
     }
 
+    // Verifica que cuando no hay órdenes atascadas reconcile completa sin efectos: el
+    // repositorio devuelve Flux vacío y se comprueba que NUNCA se llama a reserveStock ni
+    // a requestDespacho.
     @Test
     @DisplayName("Should complete when no stuck orders")
     void shouldCompleteWhenNoStuckOrders() {

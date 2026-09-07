@@ -61,6 +61,9 @@ class DespachoApplicationServiceTest {
     @DisplayName("Crear Despacho Tests")
     class CrearDespachoTests {
 
+        // Verifica que crearDespacho persiste el despacho copiando todos los datos
+        // del evento de solicitud, le asigna un tracking number con prefijo "TRK-",
+        // lo deja en estado PREPARANDO y rellena las fechas createdAt/updatedAt.
         @Test
         @DisplayName("Should create despacho with tracking number and PREPARANDO status")
         void shouldCreateDespachoSuccessfully() {
@@ -93,6 +96,8 @@ class DespachoApplicationServiceTest {
             verify(dispatchRepository).save(any(Dispatch.class));
         }
 
+        // Verifica el formato del tracking number generado: exactamente 12 caracteres
+        // ("TRK-" + 8 caracteres hexadecimales en mayúscula), garantizando el patrón esperado.
         @Test
         @DisplayName("Should generate unique tracking numbers")
         void shouldGenerateUniqueTrackingNumbers() {
@@ -121,6 +126,9 @@ class DespachoApplicationServiceTest {
     @DisplayName("Actualizar Estado Tests")
     class ActualizarEstadoTests {
 
+        // Verifica que actualizarEstado busca el despacho por id, cambia su estado a
+        // ENVIADO y persiste el cambio, comprobando que el resultado emitido tiene el
+        // nuevo estado y que se invocó save en el repositorio.
         @Test
         @DisplayName("Should update dispatch status successfully")
         void shouldUpdateStatusSuccessfully() {
@@ -143,6 +151,8 @@ class DespachoApplicationServiceTest {
             verify(dispatchRepository).save(any(Dispatch.class));
         }
 
+        // Verifica que al pasar un despacho a estado ENTREGADO se publica el evento de
+        // notificación en el topic Kafka "saga.despacho.delivered" con la clave del orderId.
         @Test
         @DisplayName("Should notify delivered when status is ENTREGADO")
         void shouldNotifyDeliveredWhenEntregado() {
@@ -162,6 +172,8 @@ class DespachoApplicationServiceTest {
             verify(kafkaTemplate).send(eq("saga.despacho.delivered"), eq("order-1"), any());
         }
 
+        // Verifica que al actualizar a un estado distinto de ENTREGADO (aquí ENVIADO)
+        // NO se envía ningún evento de entrega a Kafka (verify never sobre el send).
         @Test
         @DisplayName("Should not notify when status is not ENTREGADO")
         void shouldNotNotifyWhenNotEntregado() {
@@ -181,6 +193,8 @@ class DespachoApplicationServiceTest {
             verify(kafkaTemplate, never()).send(eq("saga.despacho.delivered"), anyString(), any());
         }
 
+        // Verifica que si el despacho a actualizar no existe (findById devuelve Mono.empty),
+        // actualizarEstado completa sin emitir ningún elemento (Mono vacío).
         @Test
         @DisplayName("Should return empty when dispatch not found")
         void shouldReturnEmptyWhenDispatchNotFound() {
@@ -190,6 +204,9 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica el ciclo completo de transiciones de estado: primero PREPARANDO -> ENVIADO
+        // (sin notificación Kafka) y luego ENVIADO -> ENTREGADO (que sí publica el evento de
+        // entrega), comprobando el estado emitido y las interacciones con Kafka en cada paso.
         @Test
         @DisplayName("Should handle multiple state transitions PREPARANDO -> ENVIADO -> ENTREGADO")
         void shouldHandleMultipleStateTransitions() {
@@ -236,6 +253,9 @@ class DespachoApplicationServiceTest {
             verify(kafkaTemplate).send(eq("saga.despacho.delivered"), eq("order-1"), any());
         }
 
+        // Verifica que aunque el envío a Kafka al notificar la entrega lance una excepción,
+        // la actualización de estado a ENTREGADO se completa igualmente y emite el despacho,
+        // demostrando que el fallo de notificación no interrumpe el flujo principal.
         @Test
         @DisplayName("Should handle notifyDelivered when Kafka send throws exception")
         void shouldHandleNotifyDeliveredWhenKafkaThrowsException() {
@@ -262,6 +282,8 @@ class DespachoApplicationServiceTest {
     @DisplayName("Query Tests")
     class QueryTests {
 
+        // Verifica que buscarPorTracking consulta el repositorio por número de tracking y
+        // emite el despacho correspondiente con el trackingNumber y orderId esperados.
         @Test
         @DisplayName("Should find dispatch by tracking number")
         void shouldFindByTrackingNumber() {
@@ -275,6 +297,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que buscarPorOrden consulta el repositorio por orderId y emite el
+        // despacho asociado a esa orden.
         @Test
         @DisplayName("Should find dispatch by order id")
         void shouldFindByOrderId() {
@@ -285,6 +309,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que listarPorEstado consulta el repositorio filtrando por estado
+        // (PREPARANDO) y emite los despachos que se encuentran en ese estado.
         @Test
         @DisplayName("Should list dispatches by status")
         void shouldListByStatus() {
@@ -295,6 +321,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que listarTodos delega en findAll del repositorio y emite todos los
+        // despachos existentes, comprobando el id del despacho devuelto.
         @Test
         @DisplayName("Should list all dispatches")
         void shouldListAll() {
@@ -305,6 +333,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica que si no existe ningún despacho con el tracking buscado, buscarPorTracking
+        // completa sin emitir elementos (Mono vacío).
         @Test
         @DisplayName("Should return empty when tracking not found")
         void shouldReturnEmptyWhenTrackingNotFound() {
@@ -319,6 +349,9 @@ class DespachoApplicationServiceTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class CircuitBreakerFallbackTests {
 
+        // Verifica, invocando por reflexión el método de fallback del circuit breaker,
+        // que crearDespachoFallback devuelve un Mono.error con el mensaje
+        // "Dispatch service temporarily unavailable".
         @Test
         @DisplayName("crearDespachoFallback should return Mono.error with correct message")
         void crearDespachoFallbackShouldReturnMonoError() throws Exception {
@@ -344,6 +377,8 @@ class DespachoApplicationServiceTest {
                     .verify();
         }
 
+        // Verifica, invocando por reflexión el fallback, que actualizarEstadoFallback
+        // devuelve un Mono.error con el mensaje "Dispatch service temporarily unavailable".
         @Test
         @DisplayName("actualizarEstadoFallback should return Mono.error with correct message")
         void actualizarEstadoFallbackShouldReturnMonoError() throws Exception {
@@ -363,6 +398,8 @@ class DespachoApplicationServiceTest {
                     .verify();
         }
 
+        // Verifica, invocando por reflexión el fallback, que buscarPorTrackingFallback
+        // devuelve un Mono.empty (degradación silenciosa sin error) ante un fallo.
         @Test
         @DisplayName("buscarPorTrackingFallback should return Mono.empty")
         void buscarPorTrackingFallbackShouldReturnMonoEmpty() throws Exception {
@@ -378,6 +415,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica, invocando por reflexión el fallback, que buscarPorOrdenFallback
+        // devuelve un Mono.empty (degradación silenciosa) ante un fallo.
         @Test
         @DisplayName("buscarPorOrdenFallback should return Mono.empty")
         void buscarPorOrdenFallbackShouldReturnMonoEmpty() throws Exception {
@@ -393,6 +432,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica, invocando por reflexión el fallback, que listarPorEstadoFallback
+        // devuelve un Flux.empty (lista vacía) ante un fallo.
         @Test
         @DisplayName("listarPorEstadoFallback should return Flux.empty")
         void listarPorEstadoFallbackShouldReturnFluxEmpty() throws Exception {
@@ -408,6 +449,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica, invocando por reflexión el fallback, que listarTodosFallback
+        // devuelve un Flux.empty (lista vacía) ante un fallo.
         @Test
         @DisplayName("listarTodosFallback should return Flux.empty")
         void listarTodosFallbackShouldReturnFluxEmpty() throws Exception {
@@ -423,6 +466,8 @@ class DespachoApplicationServiceTest {
                     .verifyComplete();
         }
 
+        // Verifica, invocando por reflexión el fallback, que notifyDeliveredFallback
+        // no lanza excepción (solo registra el fallo) y no interactúa con el KafkaTemplate.
         @Test
         @DisplayName("notifyDeliveredFallback should not throw and handle gracefully")
         void notifyDeliveredFallbackShouldHandleGracefully() throws Exception {

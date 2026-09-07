@@ -44,6 +44,9 @@ class StockConsumerTest {
     @DisplayName("HandleStockReserve Tests")
     class HandleStockReserveTests {
 
+        // Recibe un mensaje de reserva válido, la reserva tiene éxito y se invoca
+        // handleStockReserve; verifica que convierte el mensaje al evento y delega en
+        // reserve() del servicio con los datos correctos.
         @Test
         @DisplayName("Should handle stock reserve and send success response")
         void shouldHandleStockReserveSuccess() {
@@ -68,6 +71,8 @@ class StockConsumerTest {
             verify(stockApplicationService).reserve("order-1", "product-1", 5);
         }
 
+        // Recibe un mensaje de reserva de 500 unidades que el servicio rechaza (reserve=false)
+        // e invoca handleStockReserve; verifica que se delega en reserve() con esos datos.
         @Test
         @DisplayName("Should handle stock reserve and send failure response")
         void shouldHandleStockReserveFailure() {
@@ -96,6 +101,8 @@ class StockConsumerTest {
     @DisplayName("HandleStockCompensate Tests")
     class HandleStockCompensateTests {
 
+        // Recibe un mensaje de compensación e invoca handleStockCompensate; verifica que
+        // convierte el mensaje al evento y delega en release() del servicio para liberar stock.
         @Test
         @DisplayName("Should handle stock compensate event")
         void shouldHandleStockCompensate() {
@@ -124,6 +131,9 @@ class StockConsumerTest {
     @DisplayName("Edge Cases - Malformed Messages")
     class MalformedMessageTests {
 
+        // Con un mensaje malformado que hace que ObjectMapper lance IllegalArgumentException,
+        // invoca handleStockReserve; verifica que se propaga la excepción y que nunca se
+        // reserva ni se envía respuesta.
         @Test
         @DisplayName("Should handle malformed message when ObjectMapper throws IllegalArgumentException")
         void shouldHandleMalformedMessage() {
@@ -140,6 +150,8 @@ class StockConsumerTest {
             verify(stockProducer, never()).sendReserveResponse(any());
         }
 
+        // Con un mensaje vacío que produce un evento sin quantity, invoca handleStockReserve;
+        // verifica que lanza NullPointerException al desempaquetar el Integer nulo a int.
         @Test
         @DisplayName("Should handle empty message map - NPE from null quantity unboxing")
         void shouldHandleEmptyMessage() {
@@ -155,6 +167,8 @@ class StockConsumerTest {
                     stockConsumer.handleStockReserve(emptyMessage));
         }
 
+        // Con un mensaje cuyo quantity es null, invoca handleStockReserve; verifica que lanza
+        // NullPointerException por el desempaquetado del Integer nulo a int.
         @Test
         @DisplayName("Should throw NullPointerException when quantity is null due to Integer unboxing")
         void shouldThrowNpeWhenQuantityIsNull() {
@@ -175,6 +189,9 @@ class StockConsumerTest {
                     stockConsumer.handleStockReserve(messageWithNulls));
         }
 
+        // Con un mensaje malformado que hace que ObjectMapper lance IllegalArgumentException,
+        // invoca handleStockCompensate; verifica que se propaga la excepción y que nunca se
+        // llama a release().
         @Test
         @DisplayName("Should handle compensate with malformed message")
         void shouldHandleCompensateMalformedMessage() {

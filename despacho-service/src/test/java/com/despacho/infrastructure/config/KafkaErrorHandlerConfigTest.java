@@ -24,6 +24,8 @@ class KafkaErrorHandlerConfigTest {
     @DisplayName("Error Handler Bean Tests")
     class ErrorHandlerBeanTests {
 
+        // Verifica que el método errorHandler de la configuración crea un bean CommonErrorHandler
+        // no nulo y que es una instancia de DefaultErrorHandler.
         @Test
         @DisplayName("Should create a valid CommonErrorHandler bean")
         void shouldCreateValidCommonErrorHandler() {
@@ -35,6 +37,9 @@ class KafkaErrorHandlerConfigTest {
             assertThat(errorHandler).isInstanceOf(DefaultErrorHandler.class);
         }
 
+        // Verifica que el errorHandler se construye correctamente con su DeadLetterPublishingRecoverer
+        // y backoff, comprobando que el bean resultante no es nulo y es un DefaultErrorHandler
+        // (lo que valida que la configuración de la Dead Letter Topic quedó inicializada).
         @Test
         @DisplayName("Should create error handler with DeadLetterPublishingRecoverer")
         void shouldCreateErrorHandlerWithDeadLetterRecoverer() {

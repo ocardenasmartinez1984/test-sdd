@@ -53,6 +53,9 @@ class OrderCommandServiceTest {
     @DisplayName("Crear Venta Tests")
     class CrearVentaTests {
 
+        // Verifica el flujo feliz de crearVenta: guarda una orden nueva, comprueba que
+        // queda con id "order-1" y estado PENDING, y que se publica el evento de reserva
+        // de stock (reserveStock).
         @Test
         @DisplayName("Should create order with PENDING status and send stock reserve event")
         void shouldCreateOrderAndSendStockReserveEvent() {
@@ -82,6 +85,9 @@ class OrderCommandServiceTest {
     @DisplayName("Cancelar Venta Tests")
     class CancelarVentaTests {
 
+        // Verifica que cancelar una orden en estado PENDING la deja en CANCELLED sin
+        // compensar stock: prepara la orden PENDING, invoca cancelarVenta y comprueba el
+        // estado CANCELLED y que NUNCA se llama a compensateStock (aún no había reserva).
         @Test
         @DisplayName("Should cancel order in PENDING status")
         void shouldCancelPendingOrder() {
@@ -104,6 +110,9 @@ class OrderCommandServiceTest {
             verify(stockEventPublisher, never()).compensateStock(any());
         }
 
+        // Verifica que cancelar una orden en STOCK_RESERVED la deja en CANCELLED y publica
+        // el evento de compensación: prepara la orden STOCK_RESERVED, invoca cancelarVenta
+        // y comprueba el estado CANCELLED y que se llama a compensateStock.
         @Test
         @DisplayName("Should cancel order in STOCK_RESERVED and send compensate event")
         void shouldCancelStockReservedOrderAndSendCompensate() {
@@ -127,6 +136,9 @@ class OrderCommandServiceTest {
             verify(stockEventPublisher).compensateStock(any());
         }
 
+        // Verifica que cancelar una orden inexistente produce error: el repositorio devuelve
+        // Mono.empty() en findById, y se comprueba que cancelarVenta emite un RuntimeException
+        // cuyo mensaje contiene "Order not found".
         @Test
         @DisplayName("Should throw error when order not found")
         void shouldThrowErrorWhenOrderNotFound() {
@@ -137,6 +149,9 @@ class OrderCommandServiceTest {
                     .verify();
         }
 
+        // Verifica que no se puede cancelar una orden ya COMPLETED: prepara la orden en
+        // estado COMPLETED e invoca cancelarVenta, comprobando que emite un RuntimeException
+        // cuyo mensaje contiene "Cannot cancel order in status".
         @Test
         @DisplayName("Should throw error when cancelling COMPLETED order")
         void shouldThrowErrorWhenCancellingCompletedOrder() {
@@ -150,6 +165,9 @@ class OrderCommandServiceTest {
                     .verify();
         }
 
+        // Verifica que no se puede cancelar una orden ya CANCELLED: prepara la orden en
+        // estado CANCELLED e invoca cancelarVenta, comprobando que emite un RuntimeException
+        // cuyo mensaje contiene "Cannot cancel order in status".
         @Test
         @DisplayName("Should throw error when cancelling CANCELLED order")
         void shouldThrowErrorWhenCancellingCancelledOrder() {
@@ -163,6 +181,9 @@ class OrderCommandServiceTest {
                     .verify();
         }
 
+        // Verifica que cancelar una orden en DISPATCHING la deja en CANCELLED y publica el
+        // evento de compensación: prepara la orden DISPATCHING, invoca cancelarVenta y
+        // comprueba el estado CANCELLED y que se llama a compensateStock.
         @Test
         @DisplayName("Should cancel order in DISPATCHING and send compensate event")
         void shouldCancelDispatchingOrderAndSendCompensate() {
@@ -191,6 +212,9 @@ class OrderCommandServiceTest {
     @DisplayName("Actualizar Estado Tests")
     class ActualizarEstadoTests {
 
+        // Verifica que actualizarEstado cambia el estado de la orden: prepara findById y save,
+        // invoca actualizarEstado a COMPLETED y comprueba que la orden emitida queda en
+        // estado COMPLETED.
         @Test
         @DisplayName("Should update order status")
         void shouldUpdateOrderStatus() {
@@ -212,6 +236,9 @@ class OrderCommandServiceTest {
     @DisplayName("CircuitBreaker Fallback Tests")
     class FallbackTests {
 
+        // Verifica el fallback del circuit breaker de crearVenta: invoca por reflexión
+        // crearVentaFallback con una excepción y comprueba que devuelve un Mono.error cuyo
+        // mensaje contiene "Sales service temporarily unavailable".
         @Test
         @DisplayName("crearVentaFallback should return Mono.error with unavailable message")
         void crearVentaFallbackShouldReturnError() throws Exception {
@@ -229,6 +256,9 @@ class OrderCommandServiceTest {
                     .verify();
         }
 
+        // Verifica el fallback del circuit breaker de cancelarVenta: invoca por reflexión
+        // cancelarVentaFallback con una excepción y comprueba que devuelve un Mono.error cuyo
+        // mensaje contiene "Sales service temporarily unavailable".
         @Test
         @DisplayName("cancelarVentaFallback should return Mono.error with unavailable message")
         void cancelarVentaFallbackShouldReturnError() throws Exception {
@@ -246,6 +276,9 @@ class OrderCommandServiceTest {
                     .verify();
         }
 
+        // Verifica el fallback del circuit breaker de actualizarEstado: invoca por reflexión
+        // actualizarEstadoFallback con una excepción y comprueba que devuelve un Mono.error
+        // cuyo mensaje contiene "Sales service temporarily unavailable".
         @Test
         @DisplayName("actualizarEstadoFallback should return Mono.error with unavailable message")
         void actualizarEstadoFallbackShouldReturnError() throws Exception {
@@ -268,6 +301,9 @@ class OrderCommandServiceTest {
     @DisplayName("Edge Case Tests")
     class EdgeCaseTests {
 
+        // Verifica el manejo de cancelación concurrente: la orden está PENDING en findById
+        // pero save falla con "Optimistic locking failure"; se comprueba que cancelarVenta
+        // propaga ese RuntimeException.
         @Test
         @DisplayName("Should handle concurrent cancellation - order already cancelled between findById and save")
         void shouldHandleConcurrentCancellation() {

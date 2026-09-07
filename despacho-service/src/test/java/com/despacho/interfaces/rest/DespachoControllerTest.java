@@ -55,6 +55,8 @@ class DespachoControllerTest {
     @DisplayName("Listar Todos Tests")
     class ListarTodosTests {
 
+        // Verifica que el endpoint listarTodos del controlador delega en el servicio y
+        // emite en el flujo el despacho devuelto, comprobando su id y orderId.
         @Test
         @DisplayName("Should list all dispatches")
         void shouldListAllDispatches() {
@@ -68,6 +70,8 @@ class DespachoControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que cuando el servicio no devuelve despachos, el endpoint listarTodos
+        // emite un flujo vacío que completa sin elementos.
         @Test
         @DisplayName("Should return empty list when no dispatches exist")
         void shouldReturnEmptyListWhenNoDispatches() {
@@ -82,6 +86,8 @@ class DespachoControllerTest {
     @DisplayName("Buscar Por Tracking Tests")
     class BuscarPorTrackingTests {
 
+        // Verifica que al buscar por tracking existente, el endpoint responde 200 OK
+        // con un cuerpo no nulo cuyo trackingNumber coincide con el solicitado.
         @Test
         @DisplayName("Should find dispatch by tracking number")
         void shouldFindByTrackingNumber() {
@@ -96,6 +102,8 @@ class DespachoControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que cuando el servicio no encuentra el tracking (Mono.empty), el endpoint
+        // responde con estado 404 NOT_FOUND.
         @Test
         @DisplayName("Should return 404 when tracking not found")
         void shouldReturn404WhenTrackingNotFound() {
@@ -111,6 +119,8 @@ class DespachoControllerTest {
     @DisplayName("Buscar Por Orden Tests")
     class BuscarPorOrdenTests {
 
+        // Verifica que al buscar por orderId existente, el endpoint responde 200 OK con
+        // un cuerpo no nulo cuyo orderId coincide con el solicitado.
         @Test
         @DisplayName("Should find dispatch by order id")
         void shouldFindByOrderId() {
@@ -125,6 +135,8 @@ class DespachoControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que cuando el servicio no encuentra la orden (Mono.empty), el endpoint
+        // responde con estado 404 NOT_FOUND.
         @Test
         @DisplayName("Should return 404 when order not found")
         void shouldReturn404WhenOrderNotFound() {
@@ -140,6 +152,8 @@ class DespachoControllerTest {
     @DisplayName("Listar Por Estado Tests")
     class ListarPorEstadoTests {
 
+        // Verifica que el endpoint listarPorEstado delega en el servicio con el estado dado
+        // (PREPARANDO) y emite los despachos que tienen ese estado.
         @Test
         @DisplayName("Should list dispatches by status")
         void shouldListByStatus() {
@@ -150,6 +164,8 @@ class DespachoControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que cuando ningún despacho coincide con el estado (CANCELADO), el
+        // endpoint listarPorEstado emite un flujo vacío que completa sin elementos.
         @Test
         @DisplayName("Should return empty list when no dispatches match status")
         void shouldReturnEmptyListWhenNoDispatchesMatchStatus() {
@@ -159,6 +175,9 @@ class DespachoControllerTest {
                     .verifyComplete();
         }
 
+        // Test parametrizado que recorre TODOS los valores del enum DispatchStatus y verifica
+        // que, para cada estado, el endpoint listarPorEstado devuelve el despacho preparado
+        // con ese estado, comprobando que el estado emitido coincide con el solicitado.
         @ParameterizedTest
         @EnumSource(DispatchStatus.class)
         @DisplayName("Should handle all DispatchStatus values in listarPorEstado")
@@ -181,6 +200,8 @@ class DespachoControllerTest {
     @DisplayName("Actualizar Estado Tests")
     class ActualizarEstadoTests {
 
+        // Verifica que el endpoint actualizarEstado delega en el servicio y, ante una
+        // actualización exitosa, responde 200 OK con el cuerpo cuyo estado es el nuevo (ENVIADO).
         @Test
         @DisplayName("Should update dispatch status")
         void shouldUpdateStatus() {
@@ -201,6 +222,8 @@ class DespachoControllerTest {
                     .verifyComplete();
         }
 
+        // Verifica que al intentar actualizar un despacho inexistente (servicio devuelve
+        // Mono.empty), el endpoint responde con estado 404 NOT_FOUND.
         @Test
         @DisplayName("Should return 404 when updating non-existent dispatch")
         void shouldReturn404WhenUpdatingNonExistentDispatch() {
